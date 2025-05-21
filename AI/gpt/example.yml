@@ -1,0 +1,55 @@
+Incident ID: INC-2025-0432
+Title: SMS Delivery Failure in Asia-Pacific Region
+Severity: SEV-1
+Status: Resolved
+Detected At: 2025-05-20 03:12 UTC
+Detected By: Alertmanager (Twilio Gateway Latency Alert)
+Commander: Alex Tran
+
+Summary:
+Between 03:12 and 05:48 UTC, users in the Asia-Pacific region experienced SMS delivery failures due to a misconfigured BGP route on one of our upstream telecom partners.
+
+Business Impact:
+Approximately 15 million SMS messages were delayed or failed during peak business hours, affecting OTP delivery for banking and authentication use cases.
+
+Root Cause:
+A manual configuration update at Telecom Partner X introduced an invalid BGP advertisement, which caused packet loss between our Singapore gateway and their backbone.
+
+Services Affected:
+- SMS Gateway
+- Monitoring Service
+
+Regions Affected:
+- APAC
+
+Timeline:
+- 03:12 UTC: Alert triggered for increased SMS delivery latency
+- 03:14 UTC: SRE on call acknowledged incident
+- 03:22 UTC: Initial investigation identified regional pattern
+- 03:41 UTC: Correlated with upstream routing changes
+- 04:10 UTC: Contacted Telecom Partner X
+- 04:45 UTC: Partner reverted BGP change
+- 05:10 UTC: Message delivery returned to normal
+- 05:48 UTC: Incident declared resolved
+
+Communication Logs:
+- 03:20 UTC: Slack message in #incident-apac: "SMS failures observed"
+- 03:45 UTC: Zoom war room opened
+- 06:00 UTC: Post on Status Page: "Issue resolved"
+
+Action Items:
+- [ ] Implement automated route validation in upstream integrations – Owner: NetOps (Due: 2025-05-25)
+- [ ] Improve regional failover for SMS traffic – Owner: Platform Team (Due: 2025-06-01)
+- [x] Update on-call runbook with upstream escalation contacts – Owner: SRE (Completed)
+
+Postmortem:
+A full postmortem has been documented in Confluence:
+[Postmortem - INC-2025-0432](https://confluence.company.com/incidents/postmortems/INC-2025-0432)
+
+Lessons Learned:
+- Need automated alerting for asymmetric packet loss patterns
+- Partner route announcements must be validated in staging before production push
+- Escalation contact list must be centrally maintained
+
+Follow-up Meeting:
+- Scheduled for 2025-05-22 at 14:00 UTC with all stakeholders.

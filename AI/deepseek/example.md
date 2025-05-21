@@ -16,7 +16,9 @@
 ## Incident Summary
 
 **Description**:
+
 SMS delivery failure rates spiked to 98% across all regions, causing widespread customer outages. Initial investigation revealed API timeouts between the SMS gateway and the core messaging database.
+
 **Affected Services**:
 
 - SMS/MMS Gateway
@@ -85,7 +87,6 @@ SMS delivery failure rates spiked to 98% across all regions, causing widespread 
 **Resolution Time (UTC)**: 2023-05-15 10:00
 **Verified By**: Jane Doe (Messaging Team Lead)
 **Verification Steps**:
-
 - Confirmed SMS success rate at 99.95% via Grafana dashboard.
 - Validated end-to-end delivery via test scripts in Staging.
 

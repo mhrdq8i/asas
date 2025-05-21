@@ -48,8 +48,10 @@ class Incident(SQLModel, table=True):
     severity: Severity
     status: IncidentStatus = IncidentStatus.INVESTIGATING
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow, sa_column_kwargs={
-                                 "onupdate": datetime.utcnow})
+    updated_at: datetime = Field(default_factory=datetime.utcnow,
+                                 sa_column_kwargs={
+                                     "onupdate": datetime.utcnow}
+                                 )
 
     # Relationships
     affected_services: List["AffectedService"] = Relationship(

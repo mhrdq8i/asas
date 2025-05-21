@@ -19,20 +19,20 @@
 [Brief summary of the incident, including symptoms and initial observations.]
 **Affected Services**:
 
--   [Voice Services]
--   [SMS/MMS]
--   [Mobile Data]
--   [API Gateways]
--   [Billing System]
--   [Other critical components]
+- [Voice Services]
+- [SMS/MMS]
+- [Mobile Data]
+- [API Gateways]
+- [Billing System]
+- [Other critical components]
 
 **Service Owners**:
 
--   [Team/Person responsible for the affected service(s)]
+- [Team/Person responsible for the affected service(s)]
 
 **Severity Justification**:
 
--   [Impact on customers, revenue, SLA breaches, or regulatory compliance.]
+- [Impact on customers, revenue, SLA breaches, or regulatory compliance.]
 
 ---
 
@@ -52,20 +52,20 @@
 
 **Scope**:
 
--   [Geographic regions affected (e.g., North America, APAC)]
--   [% of customers impacted]
--   [Specific user segments (e.g., prepaid/postpaid, enterprise clients)]
+- [Geographic regions affected (e.g., North America, APAC)]
+- [% of customers impacted]
+- [Specific user segments (e.g., prepaid/postpaid, enterprise clients)]
 
 **Business Impact**:
 
--   [Estimated revenue loss]
--   [Customer complaints/tickets raised]
--   [Regulatory/SLA penalties (if applicable)]
+- [Estimated revenue loss]
+- [Customer complaints/tickets raised]
+- [Regulatory/SLA penalties (if applicable)]
 
 **Root Cause (Preliminary)**:
 
--   [Technical cause (e.g., misconfiguration, code bug, network partition)]
--   [Contributing factors (e.g., insufficient capacity planning)]
+- [Technical cause (e.g., misconfiguration, code bug, network partition)]
+- [Contributing factors (e.g., insufficient capacity planning)]
 
 ---
 
@@ -81,8 +81,8 @@
 **Verified By**: [Engineer/Team Name]
 **Verification Steps**:
 
--   [Confirmed SMS delivery success rate back to 99.9%]
--   [Checked monitoring dashboards (e.g., Grafana, Prometheus)]
+- [Confirmed SMS delivery success rate back to 99.9%]
+- [Checked monitoring dashboards (e.g., Grafana, Prometheus)]
 
 ---
 
@@ -90,16 +90,16 @@
 
 **Root Cause Analysis (RCA)**:
 
--   [Detailed technical explanation with evidence (logs, metrics, traces).]
+- [Detailed technical explanation with evidence (logs, metrics, traces).]
 
 **Contributing Factors**:
 
--   [Process gaps (e.g., missed load testing)]
--   [Human error (e.g., misconfigured deployment)]
+- [Process gaps (e.g., missed load testing)]
+- [Human error (e.g., misconfigured deployment)]
 
 **Lessons Learned**:
 
--   [Example: Improve auto-scaling thresholds for peak traffic.]
+- [Example: Improve auto-scaling thresholds for peak traffic.]
 
 **Action Items**:
 | **Task** | **Owner** | **Due Date** | **Status** |
@@ -111,18 +111,18 @@
 
 ## Supporting Information
 
--   **Logs**: [Links to relevant logs (e.g., Kibana, CloudWatch)]
--   **Metrics**: [Screenshots of dashboards showing anomaly]
--   **Communication**: [Slack/Email threads with stakeholders]
+- **Logs**: [Links to relevant logs (e.g., Kibana, CloudWatch)]
+- **Metrics**: [Screenshots of dashboards showing anomaly]
+- **Communication**: [Slack/Email threads with stakeholders]
 
 ---
 
 ## Incident Participants
 
--   **Incident Commander**: [Name]
--   **SRE Team**: [Names]
--   **Customer Support Lead**: [Name]
--   **Third-Party Vendor (if applicable)**: [Vendor Name/Contact]
+- **Incident Commander**: [Name]
+- **SRE Team**: [Names]
+- **Customer Support Lead**: [Name]
+- **Third-Party Vendor (if applicable)**: [Vendor Name/Contact]
 
 ---
 
