@@ -111,11 +111,12 @@ SMS delivery failure rates spiked to 98% across all regions, causing widespread 
 2. Improve alerting on query-per-second (QPS) thresholds.
 
 **Action Items**:
-| **Task** | **Owner** | **Due Date** | **Status** |
-|-----------------------------------|-----------------|--------------|----------------|
-| Implement canary deployment pipeline | CI/CD Team | 2023-06-01 | In Progress |
-| Update Cassandra alerts for QPS | Monitoring Team | 2023-05-25 | Completed |
-| Add load-testing for retry logic | Messaging Team | 2023-06-15 | Open |
+
+| **Task**                             | **Owner**       | **Due Date** | **Status**  |
+| ------------------------------------ | --------------- | ------------ | ----------- |
+| Implement canary deployment pipeline | CI/CD Team      | 2023-06-01   | In Progress |
+| Update Cassandra alerts for QPS      | Monitoring Team | 2023-05-25   | Completed   |
+| Add load-testing for retry logic     | Messaging Team  | 2023-06-15   | Open        |
 
 ---
 

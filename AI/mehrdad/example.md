@@ -9,16 +9,11 @@
 - **Detected By:** Prometheus Alert (SIP 5xx error rate)
 - **Incident Commander:** Maria Schuster
 - **Status**: [Open, Doing, Resolved]
-
-## Summary
-
-### Short Description
-
-A configuration change on the EU Session Border Controller caused SIP 5xx errors, dropping ~10 % of all call setups between 07:42 and 08:50 UTC.
+- **Summary**: Short Description
 
 ## Affects
 
-### **Services Affected:**
+### Services Affected
 
 - **SIP Proxy**
 - **Media Gateway**
@@ -39,7 +34,7 @@ Southeast Asia (Philippines, Indonesia), Fiber Backbone Route SEA-07
 
 - Estimated $180,000 in lost revenue (based on SLA penalties).
 
-## Root Cause Analysis (Preliminary)
+## Root Cause Analysis (Shallow RCA)
 
 ### What Happened
 
@@ -120,10 +115,13 @@ Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
 
 ### Metadata
 
-- Incident number
-- status
+- **Incident number**
+- **Status**
+- **Document link**
 
-### Root Cause Analysis (RCA)
+### Root Cause Analysis (Deep RCA)
+
+Completed part of the **Shallow RCA**
 
 - A code change in v2.1.3 introduced unbounded retries for failed database queries under high latency.
 - Cassandra nodes became overloaded, triggering cascading failures. Logs show CPU saturation at 95% for 30 minutes.
@@ -139,6 +137,8 @@ Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
 2. Improve alerting on query-per-second (QPS) thresholds.
 
 ### Action Items
+
+Completed part of the **_Long‑Term Preventative Measures_**
 
 | **Task**                             | **Owner**       | **Due Date** | **Status**  |
 | ------------------------------------ | --------------- | ------------ | ----------- |
