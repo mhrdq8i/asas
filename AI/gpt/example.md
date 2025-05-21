@@ -37,10 +37,10 @@ _Telecommunications Platform_
 
 | Metric                    | Baseline | Observed | Threshold |
 | ------------------------- | -------- | -------- | --------- |
-| Call Setup Success Rate   | ≥ 99.9 %  | 89.7 %   | ≤ 99.0 %  |
-| Average Call Latency (ms) | 150 ms    | 360 ms   | ≥ 300 ms  |
-| SIP 5xx Error Rate (%)    | ≤ 0.1 %   | 12.4 %   | ≥ 1.0 %   |
-| CDR Ingestion Lag (min)   | ≤ 1 min   | 5 min    | ≥ 2 min   |
+| Call Setup Success Rate   | ≥ 99.9 % | 89.7 %   | ≤ 99.0 %  |
+| Average Call Latency (ms) | 150 ms   | 360 ms   | ≥ 300 ms  |
+| SIP 5xx Error Rate (%)    | ≤ 0.1 %  | 12.4 %   | ≥ 1.0 %   |
+| CDR Ingestion Lag (min)   | ≤ 1 min  | 5 min    | ≥ 2 min   |
 
 **Business Impact:**
 
@@ -58,7 +58,7 @@ _Telecommunications Platform_
 | 07:45      | Incident declared                                 | Maria Schuster  |
 | 07:50      | Identified recent SBC config push at 07:30 UTC    | Networking SRE  |
 | 07:56      | Rolled back SBC header‑rewrite rule               | Release Team    |
-| 08:05      | Error rate still 8 % → shifted 30 % traffic to DR  | Networking SRE  |
+| 08:05      | Error rate still 8 % → shifted 30 % traffic to DR | Networking SRE  |
 | 08:20      | Call success rate improves to 96.3 %              | On‑call SRE     |
 | 08:35      | Full traffic shifted to standby cluster           | Networking SRE  |
 | 08:50      | Metrics returned to baseline; incident resolved   | Maria Schuster  |
@@ -69,6 +69,7 @@ _Telecommunications Platform_
 ## 4. Root Cause Analysis
 
 - **What Happened:**
+
   A new SIP header‑rewrite rule was deployed without validating the custom “X-Operator-Route” header, causing proxy mismatches and 5xx responses.
 
 - **Why It Happened:**

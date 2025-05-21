@@ -87,6 +87,7 @@ SMS delivery failure rates spiked to 98% across all regions, causing widespread 
 **Resolution Time (UTC)**: 2023-05-15 10:00
 **Verified By**: Jane Doe (Messaging Team Lead)
 **Verification Steps**:
+
 - Confirmed SMS success rate at 99.95% via Grafana dashboard.
 - Validated end-to-end delivery via test scripts in Staging.
 
@@ -135,8 +136,9 @@ SMS delivery failure rates spiked to 98% across all regions, causing widespread 
 
 ---
 
-**Approvals**
-| **Role** | **Name** | **Date** |
-|----------------------|----------------|----------------|
-| Incident Lead | Alex Lee | 2023-05-16 |
+### **Approvals**
+
+| **Role**            | **Name**      | **Date**   |
+| ------------------- | ------------- | ---------- |
+| Incident Lead       | Alex Lee      | 2023-05-16 |
 | Engineering Manager | Sarah Johnson | 2023-05-16 |

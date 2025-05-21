@@ -116,6 +116,7 @@ class ActionItem(SQLModel, table=True):
     postmortem: Optional[PostMortem] = Relationship(
         back_populates="action_items")
 
+
 # Create all tables
 
 
