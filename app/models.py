@@ -1,17 +1,19 @@
+from datetime import datetime, date, timezone
 from typing import List, Annotated
 from uuid import UUID, uuid4
-from datetime import datetime, date
 from enum import Enum
+
 from sqlmodel import Field, Relationship, SQLModel
+from pydantic import EmailStr, SecretStr
 
 
 # Enums
 class SeverityEnum(str, Enum):
-    severity_1 = "Severity Level 1"
-    severity_2 = "Severity Level 2"
-    severity_3 = "Severity Level 3"
-    severity_4 = "Severity Level 4"
-    severity_5 = "Severity Level 5"
+    severity_l1 = "Severity Level 1"
+    severity_l2 = "Severity Level 2"
+    severity_l3 = "Severity Level 3"
+    severity_l4 = "Severity Level 4"
+    severity_l5 = "Severity Level 5"
 
 
 class StatusEnum(str, Enum):
@@ -21,8 +23,8 @@ class StatusEnum(str, Enum):
 
 
 class UserRoleEnum(str, Enum):
-    superadmin = "Super Admin"
     admin = "Admin"
+    team = "Team"
     viewer = "Viewer"
 
 
@@ -34,12 +36,15 @@ class BaseEntityWithID(SQLModel):
 class User(BaseEntityWithID, table=True):
     username: Annotated[str, Field(index=True, unique=True)]
     full_name: str | None = None
-    email: Annotated[str, Field(index=True, unique=True)]
-    hashed_password: str
+    email: Annotated[EmailStr, Field(index=True, unique=True)]
+    hashed_password: Annotated[SecretStr, Field(
+        sa_column_kwargs={"nullable": False})
+    ]
     is_active: Annotated[bool, Field(default=True)]
     is_superuser: Annotated[bool, Field(default=False)]
     role: Annotated[UserRoleEnum, Field(default=UserRoleEnum.viewer)]
 
+    # Relations
     incidents_commander: List["Incident"] = Relationship(
         back_populates="commander")
     timeline_entries: List["TimelineEntry"] = Relationship(
@@ -52,14 +57,21 @@ class User(BaseEntityWithID, table=True):
 class Incident(BaseEntityWithID, table=True):
     title: str
     severity: SeverityEnum
-    date_detected: datetime
+    time_detected: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )]
     detected_by_id: UUID | None = None
     detected_by_name: str | None = None
     incident_commander_id: Annotated[UUID, Field(foreign_key="user.id")]
     status: StatusEnum
     summary: str
-    related_links: str | None = None  # New field
+    related_links: str | None = None
+    resolution_time: Annotated[datetime | None, Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )]
+    long_term_measures: str | None = None
 
+    # Relations
     commander: User = Relationship(back_populates="incidents_commander")
     services: List["ServiceAffected"] = Relationship(back_populates="incident")
     regions: List["RegionAffected"] = Relationship(back_populates="incident")
@@ -74,8 +86,6 @@ class Incident(BaseEntityWithID, table=True):
     timeline: List["TimelineEntry"] = Relationship(back_populates="incident")
     communications: List["CommunicationLog"] = Relationship(
         back_populates="incident")
-    resolution_time: datetime | None = None
-    long_term_measures: str | None = None
     postmortem: "PostMortem" | None = Relationship(
         back_populates="incident",
         sa_relationship_kwargs={"uselist": False}
@@ -100,19 +110,23 @@ class BaseIncidentEntity(BaseEntityWithID, table=False):
 
 
 # Affected entities
-class ServiceAffected(BaseIncidentEntity, table=True):
+class BaseAffected(BaseIncidentEntity, table=False):
+    pass
+
+
+class ServiceAffected(BaseAffected, table=True):
     service_name: str
     incident: "Incident" = Relationship(back_populates="services")
 
 
-class RegionAffected(BaseIncidentEntity, table=True):
+class RegionAffected(BaseAffected, table=True):
     region: str
     incident: "Incident" = Relationship(back_populates="regions")
 
 
-# Abstract base for impacts, extends incident entity with description
+# Impact entities
 class BaseImpact(BaseIncidentEntity, table=False):
-    description: str
+    pass
 
 
 class CustomerImpact(BaseImpact, table=True):
@@ -125,8 +139,6 @@ class BusinessImpact(BaseImpact, table=True):
 
 # Shallow root cause analysis
 class ShallowRCA(BaseIncidentEntity, table=True):
-    unique_shallow: Annotated[bool, Field(
-        default=True)]  # enforce single record
     what_happened: str
     why_it_happened: str
     technical_cause: str
@@ -136,16 +148,20 @@ class ShallowRCA(BaseIncidentEntity, table=True):
 
 # Timeline of events
 class TimelineEntry(BaseIncidentEntity, table=True):
-    time: datetime
+    time: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )]
     event: str
     owner_id: Annotated[UUID, Field(foreign_key="user.id")]
     incident: "Incident" = Relationship(back_populates="timeline")
-    owner_user: User = Relationship(back_populates="timeline_entries")
+    owner_user: "User" = Relationship(back_populates="timeline_entries")
 
 
 # Communication logs
 class CommunicationLog(BaseIncidentEntity, table=True):
-    time: datetime
+    time: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )]
     channel: str
     message: str
     incident: "Incident" = Relationship(back_populates="communications")
@@ -157,7 +173,7 @@ class PostMortem(BaseIncidentEntity, table=True):
     deep_rca: str | None = None
     contributing_factors: str | None = None
     lessons_learned: str | None = None
-    approvals: str | None = None
+    approvals: List["Approval"] = Relationship(back_populates="postmortem")
     incident: "Incident" = Relationship(back_populates="postmortem")
     action_items: List["ActionItem"] = Relationship(
         back_populates="postmortem")
@@ -165,10 +181,21 @@ class PostMortem(BaseIncidentEntity, table=True):
 
 # Action items for post-mortem
 class ActionItem(BaseEntityWithID, table=True):
-    postmortem_id: Annotated[int, Field(foreign_key="postmortem.id")]
     task: str
-    owner_id: Annotated[UUID, Field(foreign_key="user.id")]
-    due_date: date
     status: StatusEnum
+    due_date: Annotated[date, Field(default_factory=date.today)]
+    owner_id: Annotated[UUID, Field(foreign_key="user.id")]
+    owner_user: "User" = Relationship(back_populates="action_items")
+    postmortem_id: Annotated[UUID, Field(foreign_key="postmortem.id")]
     postmortem: "PostMortem" = Relationship(back_populates="action_items")
-    owner_user: User = Relationship(back_populates="action_items")
+
+
+class Approval(BaseEntityWithID, table=True):
+    comment: str | None = None
+    postmortem_id: Annotated[int, Field(foreign_key="postmortem.id")]
+    approver_id: Annotated[UUID, Field(foreign_key="user.id")]
+    approved_at: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )]
+    postmortem: "PostMortem" = Relationship(back_populates="approvals")
+    approver: "User" = Relationship(back_populates="approvals")

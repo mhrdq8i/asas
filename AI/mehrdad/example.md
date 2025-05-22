@@ -59,12 +59,12 @@ Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
 
 | Time (UTC) | Event                                             | Owner/Team      |
 | ---------- | ------------------------------------------------- | --------------- |
-| 07:42      | Prometheus alert: SIP 5xx error rate at 2 %       | Monitoring Team |
+| 07:42      | Prometheus alert: SIP 5xx error rate at 2 %        | Monitoring Team |
 | 07:45      | Incident declared                                 | Maria Schuster  |
 | 07:50      | Identified recent SBC config push at 07:30 UTC    | Networking SRE  |
 | 07:56      | Rolled back SBC header‑rewrite rule               | Release Team    |
-| 08:05      | Error rate still 8 % → shifted 30 % traffic to DR | Networking SRE  |
-| 08:20      | Call success rate improves to 96.3 %              | On‑call SRE     |
+| 08:05      | Error rate still 8 % → shifted 30 % traffic to DR  | Networking SRE  |
+| 08:20      | Call success rate improves to 96.3 %               | On‑call SRE     |
 | 08:35      | Full traffic shifted to standby cluster           | Networking SRE  |
 | 08:50      | Metrics returned to baseline; incident resolved   | Maria Schuster  |
 | 09:00      | Post‑incident monitoring started                  | Monitoring Team |
