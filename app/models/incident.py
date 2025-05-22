@@ -1,14 +1,17 @@
-from datetime import datetime, date, timezone
+from datetime import datetime, timezone
 from typing import List, Annotated
-from uuid import UUID, uuid4
-from enum import Enum
+from uuid import UUID
 
-from sqlmodel import Field, Relationship, SQLModel
-from pydantic import EmailStr, SecretStr
+from sqlmodel import Field, Relationship
+
+from models.enums import SeverityEnum, StatusEnum
+from app.models.user import User
+from app.models.base import BaseEntityID, BaseIncidentEntity
+from app.models.postmortem import PostMortem
 
 
 # Core Incident model
-class Incident(BaseEntityWithID, table=True):
+class Incident(BaseEntityID, table=True):
     title: str
     severity: SeverityEnum
     time_detected: Annotated[datetime, Field(
@@ -116,7 +119,7 @@ class CommunicationLog(BaseIncidentEntity, table=True):
 
 
 # Abstract base for all postmortem-related entities
-class BasePostmortemEntity(BaseEntityWithID, table=False):
+class BasePostmortemEntity(BaseEntityID, table=False):
     content: str
     postmortem_id: Annotated[UUID, Field(
         foreign_key="postmortem.postmortem_id")]

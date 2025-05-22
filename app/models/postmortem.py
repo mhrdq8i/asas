@@ -4,11 +4,11 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from app.models.base import BaseEntityWithID
+from app.models.base import BaseEntityID
 
 
 # Abstract base for all postmortem-related entities
-class BasePostmortemEntity(BaseEntityWithID, table=False):
+class BasePostmortemEntity(BaseEntityID, table=False):
     content: str
     postmortem_id: Annotated[UUID, Field(
         foreign_key="postmortem.postmortem_id")]
@@ -16,7 +16,7 @@ class BasePostmortemEntity(BaseEntityWithID, table=False):
 
 
 # Postmortem and its parts
-class PostMortem(BaseEntityWithID, BaseIncidentEntity, table=True):
+class PostMortem(BaseEntityID, BaseIncidentEntity, table=True):
     incident: Annotated["Incident", Relationship(back_populates="postmortem")]
     approvals: Annotated[List["Approval"],
                          Relationship(back_populates="postmortem")]
