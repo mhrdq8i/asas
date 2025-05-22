@@ -7,52 +7,6 @@ from sqlmodel import Field, Relationship, SQLModel
 from pydantic import EmailStr, SecretStr
 
 
-# Enums
-class SeverityEnum(str, Enum):
-    severity_l1 = "Severity Level 1"
-    severity_l2 = "Severity Level 2"
-    severity_l3 = "Severity Level 3"
-    severity_l4 = "Severity Level 4"
-    severity_l5 = "Severity Level 5"
-
-
-class StatusEnum(str, Enum):
-    open = "Open"
-    doing = "Doing"
-    resolved = "Resolved"
-
-
-class UserRoleEnum(str, Enum):
-    admin = "Admin"
-    team = "Team"
-    viewer = "Viewer"
-
-
-class BaseEntityWithID(SQLModel):
-    id: Annotated[UUID, Field(default_factory=uuid4, primary_key=True)]
-
-
-# User model for authentication/authorization
-class User(BaseEntityWithID, table=True):
-    username: Annotated[str, Field(index=True, unique=True)]
-    full_name: str | None = None
-    email: Annotated[EmailStr, Field(index=True, unique=True)]
-    hashed_password: Annotated[SecretStr, Field(
-        sa_column_kwargs={"nullable": False})
-    ]
-    is_active: Annotated[bool, Field(default=True)]
-    is_superuser: Annotated[bool, Field(default=False)]
-    role: Annotated[UserRoleEnum, Field(default=UserRoleEnum.viewer)]
-
-    # Relations
-    incidents_commander: List["Incident"] = Relationship(
-        back_populates="commander")
-    timeline_entries: List["TimelineEntry"] = Relationship(
-        back_populates="owner_user")
-    action_items: List["ActionItem"] = Relationship(
-        back_populates="owner_user")
-
-
 # Core Incident model
 class Incident(BaseEntityWithID, table=True):
     title: str
@@ -101,12 +55,6 @@ class Incident(BaseEntityWithID, table=True):
             raise ValueError(
                 "At least one of detected_by_id or detected_by_name must be set."
             )
-
-
-# Abstract base for all incident-related entities
-class BaseIncidentEntity(BaseEntityWithID, table=False):
-    incident_id: Annotated[UUID, Field(foreign_key="incident.incident_id")]
-    incident: "Incident" = Relationship()
 
 
 # Affected entities
@@ -167,35 +115,9 @@ class CommunicationLog(BaseIncidentEntity, table=True):
     incident: "Incident" = Relationship(back_populates="communications")
 
 
-# Post-mortem details
-class PostMortem(BaseIncidentEntity, table=True):
-    metadata: str | None = None
-    deep_rca: str | None = None
-    contributing_factors: str | None = None
-    lessons_learned: str | None = None
-    approvals: List["Approval"] = Relationship(back_populates="postmortem")
-    incident: "Incident" = Relationship(back_populates="postmortem")
-    action_items: List["ActionItem"] = Relationship(
-        back_populates="postmortem")
-
-
-# Action items for post-mortem
-class ActionItem(BaseEntityWithID, table=True):
-    task: str
-    status: StatusEnum
-    due_date: Annotated[date, Field(default_factory=date.today)]
-    owner_id: Annotated[UUID, Field(foreign_key="user.id")]
-    owner_user: "User" = Relationship(back_populates="action_items")
-    postmortem_id: Annotated[UUID, Field(foreign_key="postmortem.id")]
-    postmortem: "PostMortem" = Relationship(back_populates="action_items")
-
-
-class Approval(BaseEntityWithID, table=True):
-    comment: str | None = None
-    postmortem_id: Annotated[int, Field(foreign_key="postmortem.id")]
-    approver_id: Annotated[UUID, Field(foreign_key="user.id")]
-    approved_at: Annotated[datetime, Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )]
-    postmortem: "PostMortem" = Relationship(back_populates="approvals")
-    approver: "User" = Relationship(back_populates="approvals")
+# Abstract base for all postmortem-related entities
+class BasePostmortemEntity(BaseEntityWithID, table=False):
+    content: str
+    postmortem_id: Annotated[UUID, Field(
+        foreign_key="postmortem.postmortem_id")]
+    postmortem: "PostMortem" = Relationship()
