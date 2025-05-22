@@ -3,11 +3,13 @@ from typing import List, Annotated
 from sqlmodel import Field, Relationship
 from pydantic import EmailStr, SecretStr
 
-from app.
 from app.models.enums import UserRoleEnum
+from app.models.base import BaseEntityID
+from app.models.incident import Incident, TimelineEntry
+from app.models.postmortem import ActionItem
 
 
-class User(BaseEntityWithID, table=True):
+class User(BaseEntityID, table=True):
     username: Annotated[str, Field(index=True, unique=True)]
     full_name: str | None = None
     email: Annotated[EmailStr, Field(index=True, unique=True)]

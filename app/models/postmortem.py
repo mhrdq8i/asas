@@ -4,15 +4,15 @@ from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
-from app.models.base import BaseEntityID
-
-
-# Abstract base for all postmortem-related entities
-class BasePostmortemEntity(BaseEntityID, table=False):
-    content: str
-    postmortem_id: Annotated[UUID, Field(
-        foreign_key="postmortem.postmortem_id")]
-    postmortem: "PostMortem" = Relationship()
+from app.models.enums import StatusEnum
+from app.models.base import (
+    BaseEntityID,
+    BaseIncidentEntity,
+    BasePostmortemEntity,
+    Approval
+)
+from app.models.user import User
+from app.models.incident import Incident
 
 
 # Postmortem and its parts
@@ -58,4 +58,4 @@ class ActionItem(BasePostmortemEntity, table=True):
     status: StatusEnum
     postmortem: Annotated[PostMortem, Relationship(
         back_populates="action_items")]
-    owner_user: Annotated[User, Relationship(back_populates="action_items")]
+    owner_user: Annotated["User", Relationship(back_populates="action_items")]
