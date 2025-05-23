@@ -12,37 +12,65 @@ from app.models.postmortem import PostMortem
 
 # Core Incident model
 class Incident(BaseEntityID, table=True):
+
     title: str
+
     severity: SeverityEnum
-    time_detected: Annotated[datetime, Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )]
-    detected_by_id: UUID | None = None
-    detected_by_name: str | None = None
-    incident_commander_id: Annotated[UUID, Field(foreign_key="user.id")]
+
     status: StatusEnum
+
     summary: str
-    related_links: str | None = None
-    resolution_time: Annotated[datetime | None, Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )]
+
     long_term_measures: str | None = None
+
+    related_links: str | None = None
+
+    detected_by_id: UUID | None = None
+
+    detected_by_name: str | None = None
+
+    incident_commander_id: Annotated[
+        UUID,
+        Field(foreign_key="user.id")
+    ]
+
+    time_detected: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(
+            timezone.utc
+        )
+    )]
+
+    resolution_time: Annotated[
+        datetime | None, Field(
+            default_factory=lambda: datetime.now(
+                timezone.utc
+            )
+        )]
 
     # Relations
     commander: User = Relationship(back_populates="incidents_commander")
+
     services: List["ServiceAffected"] = Relationship(back_populates="incident")
+
     regions: List["RegionAffected"] = Relationship(back_populates="incident")
+
     customer_impacts: List["CustomerImpact"] = Relationship(
         back_populates="incident")
+
     business_impacts: List["BusinessImpact"] = Relationship(
         back_populates="incident")
+
+    """ Step one of Root Cause Analysis """
     shallow_rca: "ShallowRCA" | None = Relationship(
         back_populates="incident",
         sa_relationship_kwargs={"uselist": False}
     )
+
     timeline: List["TimelineEntry"] = Relationship(back_populates="incident")
+
     communications: List["CommunicationLog"] = Relationship(
         back_populates="incident")
+
     postmortem: "PostMortem" | None = Relationship(
         back_populates="incident",
         sa_relationship_kwargs={"uselist": False}
@@ -62,65 +90,98 @@ class Incident(BaseEntityID, table=True):
 
 # Affected entities
 class BaseAffected(BaseIncidentEntity, table=False):
+
     pass
 
 
 class ServiceAffected(BaseAffected, table=True):
+
     service_name: str
-    incident: "Incident" = Relationship(back_populates="services")
+
+    incident: "Incident" = Relationship(
+        back_populates="services"
+    )
 
 
 class RegionAffected(BaseAffected, table=True):
+
     region: str
-    incident: "Incident" = Relationship(back_populates="regions")
+
+    incident: "Incident" = Relationship(
+        back_populates="regions"
+    )
 
 
-# Impact entities
 class BaseImpact(BaseIncidentEntity, table=False):
+
     pass
 
 
 class CustomerImpact(BaseImpact, table=True):
-    incident: "Incident" = Relationship(back_populates="customer_impacts")
+
+    incident: "Incident" = Relationship(
+        back_populates="customer_impacts"
+    )
 
 
 class BusinessImpact(BaseImpact, table=True):
-    incident: "Incident" = Relationship(back_populates="business_impacts")
+
+    incident: "Incident" = Relationship(
+        back_populates="business_impacts"
+    )
 
 
-# Shallow root cause analysis
 class ShallowRCA(BaseIncidentEntity, table=True):
+
     what_happened: str
+
     why_it_happened: str
+
     technical_cause: str
+
     detection_mechanism: str
-    incident: "Incident" = Relationship(back_populates="shallow_rca")
+
+    incident: "Incident" = Relationship(
+        back_populates="shallow_rca"
+    )
 
 
-# Timeline of events
 class TimelineEntry(BaseIncidentEntity, table=True):
-    time: Annotated[datetime, Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )]
+
     event: str
-    owner_id: Annotated[UUID, Field(foreign_key="user.id")]
-    incident: "Incident" = Relationship(back_populates="timeline")
-    owner_user: "User" = Relationship(back_populates="timeline_entries")
 
-
-# Communication logs
-class CommunicationLog(BaseIncidentEntity, table=True):
     time: Annotated[datetime, Field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(
+            timezone.utc
+        )
     )]
-    channel: str
+
+    owner_id: Annotated[
+        UUID,
+        Field(foreign_key="user.id")
+    ]
+
+    incident: "Incident" = Relationship(
+        back_populates="timeline"
+    )
+
+    owner: "User" = Relationship(
+        back_populates="timeline_entries"
+    )
+
+
+class CommunicationLog(BaseIncidentEntity, table=True):
+
     message: str
-    incident: "Incident" = Relationship(back_populates="communications")
 
+    channel: str
 
-# Abstract base for all postmortem-related entities
-class BasePostmortemEntity(BaseEntityID, table=False):
-    content: str
-    postmortem_id: Annotated[UUID, Field(
-        foreign_key="postmortem.postmortem_id")]
-    postmortem: "PostMortem" = Relationship()
+    time: Annotated[datetime, Field(
+        default_factory=lambda: datetime.now(
+            timezone.utc
+        )
+    )]
+
+    incident: "Incident" = Relationship(
+        back_populates="communications"
+    )

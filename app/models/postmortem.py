@@ -38,14 +38,16 @@ class PostMortem(BaseEntityID, BaseIncidentEntity, table=True):
     ]
 
     metadata: Annotated[
-        "PostmortemMetadata" | None, Relationship(
+        "PostmortemMetadata" | None,
+        Relationship(
             back_populates="postmortem",
             sa_relationship_kwargs={"uselist": False}
         )
     ]
 
     deep_rca: Annotated[
-        "DeepRCA" | None, Relationship(
+        "DeepRCA" | None,
+        Relationship(
             back_populates="postmortem",
             sa_relationship_kwargs={"uselist": False}
         )
@@ -83,7 +85,8 @@ class DeepRCA(BasePostmortemEntity, table=True):
 class ContributingFactor(BasePostmortemEntity, table=True):
 
     postmortem: Annotated[
-        PostMortem, Relationship(
+        PostMortem,
+        Relationship(
             back_populates="contributing_factors"
         )
     ]
@@ -92,7 +95,8 @@ class ContributingFactor(BasePostmortemEntity, table=True):
 class LessonLearned(BasePostmortemEntity, table=True):
 
     postmortem: Annotated[
-        PostMortem, Relationship(
+        PostMortem,
+        Relationship(
             back_populates="lessons_learned"
         )
     ]
