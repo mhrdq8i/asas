@@ -54,52 +54,161 @@ class BaseEntity(SQLModel):
 # --------------- User Model ---------------
 
 class User(BaseEntity, table=True):
-    username: Annotated[str, Field(index=True, unique=True, nullable=False)]
-    full_name: Annotated[str | None, Field(default=None)]
-    email: Annotated[EmailStr, Field(index=True, unique=True, nullable=False)]
-    hashed_password: Annotated[SecretStr, Field(
-        sa_column_kwargs={"nullable": False})]
-    is_active: Annotated[bool, Field(default=True, nullable=False)]
-    is_superuser: Annotated[bool, Field(default=False, nullable=False)]
-    role: Annotated[UserRoleEnum, Field(
-        default=UserRoleEnum.viewer, nullable=False)]
+    username: Annotated[
+        str,
+        Field(
+            index=True,
+            unique=True,
+            nullable=False
+        )
+    ]
+    full_name: Annotated[
+        str | None,
+        Field(
+            default=None
+        )
+    ]
+    email: Annotated[
+        EmailStr,
+        Field(
+            index=True,
+            unique=True,
+            nullable=False
+        )
+    ]
+    hashed_password: Annotated[
+        SecretStr,
+        Field(
+            sa_column_kwargs={
+                "nullable": False
+            }
+        )
+    ]
+    is_active: Annotated[
+        bool,
+        Field(
+            default=True,
+            nullable=False
+        )
+    ]
+    is_superuser: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False
+        )
+    ]
+    role: Annotated[
+        UserRoleEnum,
+        Field(
+            default=UserRoleEnum.viewer,
+            nullable=False
+        )
+    ]
 
     # Email verification
-    is_email_verified: Annotated[bool, Field(default=False, nullable=False)]
-    email_verification_token: Annotated[str |
-                                        None, Field(default=None, index=True)]
-    email_verified_at: Annotated[datetime | None, Field(default=None)]
+    is_email_verified: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False
+        )
+    ]
+    email_verification_token: Annotated[
+        str | None,
+        Field(
+            default=None,
+            index=True
+        )
+    ]
+    email_verified_at: Annotated[
+        datetime | None,
+        Field(
+            default=None
+        )
+    ]
 
     # Password reset
-    reset_token: Annotated[str | None, Field(default=None, index=True)]
-    reset_token_expires: Annotated[datetime | None, Field(default=None)]
+    reset_token: Annotated[
+        str | None,
+        Field(
+            default=None,
+            index=True
+        )
+    ]
+    reset_token_expires: Annotated[
+        datetime | None,
+        Field(
+            default=None
+        )
+    ]
 
     # Soft delete
-    is_deleted: Annotated[bool, Field(
-        default=False, nullable=False, index=True)]
-    deleted_at: Annotated[datetime | None, Field(default=None)]
+    is_deleted: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False,
+            index=True
+        )
+    ]
+    deleted_at: Annotated[
+        datetime | None,
+        Field(default=None
+              )
+    ]
 
     # Profile fields
-    avatar_url: Annotated[str | None, Field(default=None)]
-    bio: Annotated[str | None, Field(default=None, sa_column=Column(Text))]
-    timezone: Annotated[str | None, Field(
-        default="Asia/Tehran")]
+    avatar_url: Annotated[
+        str | None,
+        Field(
+            default=None
+        )
+    ]
+    bio: Annotated[
+        str | None,
+        Field(
+            default=None,
+            sa_column=Column(Text)
+        )
+    ]
+    timezone: Annotated[
+        str | None,
+        Field(
+            default="Asia/Tehran"
+        )
+    ]
 
     # Last login
-    last_login_at: Annotated[datetime | None, Field(default=None)]
-    last_login_ip: Annotated[str | None, Field(default=None)]
+    last_login_at: Annotated[
+        datetime | None,
+        Field(
+            default=None
+        )
+    ]
+    last_login_ip: Annotated[
+        str | None,
+        Field(
+            default=None
+        )
+    ]
 
     # Relationships
     incidents_commanded: List["IncidentMetadata"] = Relationship(
-        back_populates="commander")
+        back_populates="commander"
+    )
     timeline_events_owned: List["TimelineEvent"] = Relationship(
-        back_populates="owner_user")
+        back_populates="owner_user"
+    )
     action_items_owned: List["ActionItem"] = Relationship(
-        back_populates="owner_user")
+        back_populates="owner_user"
+    )
     sign_offs_made: List["SignOffEntry"] = Relationship(
-        back_populates="approver_user")
+        back_populates="approver_user"
+    )
     post_mortem_approvals_made: List["PostMortemApproval"] = Relationship(
-        back_populates="approver_user")
+        back_populates="approver_user"
+    )
 
 
 # --------------- Main Incident Table ---------------
@@ -694,11 +803,9 @@ class PostMortemApproval(BaseEntity, table=True):
     )
 
 
-# Forward references update for relationships
 User.model_rebuild()
 Incident.model_rebuild()
 IncidentMetadata.model_rebuild()
-# AffectedItemBase does not need model_rebuild as it's not a table and has no complex relationships itself.
 AffectedService.model_rebuild()
 AffectedRegion.model_rebuild()
 Impacts.model_rebuild()
@@ -727,35 +834,6 @@ if __name__ == "__main__":
 
     # create_db_and_tables()
 
-    # with Session(engine) as session:
-    #     # 1. Create an Incident
-    #     incident_entry = Incident()
-    #     session.add(incident_entry)
-    #     session.commit()
-    #     session.refresh(incident_entry)
-    #     print(f"Created Incident with ID: {incident_entry.id}")
-
-    #     # 2. Create an AffectedService
-    #     affected_service_entry = AffectedService(
-    #         name="Payment Gateway", # This 'name' is inherited from AffectedItemBase
-    #         incident_id=incident_entry.id
-    #     )
-    #     session.add(affected_service_entry)
-    #     session.commit()
-    #     session.refresh(affected_service_entry)
-    #     print(f"Created AffectedService: {affected_service_entry.name} (ID: {affected_service_entry.id}) for Incident {affected_service_entry.incident_id}")
-
-    #     # 3. Create an AffectedRegion
-    #     affected_region_entry = AffectedRegion(
-    #         name="North America", # This 'name' is inherited from AffectedItemBase
-    #         incident_id=incident_entry.id
-    #     )
-    #     session.add(affected_region_entry)
-    #     session.commit()
-    #     session.refresh(affected_region_entry)
-    #     print(f"Created AffectedRegion: {affected_region_entry.name} (ID: {affected_region_entry.id}) for Incident {affected_region_entry.incident_id}")
-
-    #     # Retrieve incident and its affected services/regions
     #     retrieved_incident = session.get(Incident, incident_entry.id)
     #     if retrieved_incident:
     #         print(f"\nIncident {retrieved_incident.id} details:")
