@@ -1,4 +1,3 @@
-# src/core/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import PostgresDsn, model_validator
 from typing import Any, Dict
@@ -38,8 +37,10 @@ class Settings(BaseSettings):
         """
         db_url = values.get('DATABASE_URL')
 
-        if db_url and isinstance(db_url, str):  # If DATABASE_URL is already set
-            if "sqlite" in db_url:  # Allow sqlite for local testing/dev
+        # If DATABASE_URL is already set
+        if db_url and isinstance(db_url, str):
+            # Allow sqlite for local testing/dev
+            if "sqlite" in db_url:
                 pass
             elif db_url.startswith(
                 "postgresql://"
@@ -55,8 +56,10 @@ class Settings(BaseSettings):
                 "postgresql+asyncpg://"
             ):
                 raise ValueError(
-                    f"DATABASE_URL '{db_url}' is for PostgreSQL but does not use the 'postgresql+asyncpg://' scheme. "
-                    "Please ensure the URL starts with 'postgresql+asyncpg://' or is a valid SQLite DSN."
+                    f"DATABASE_URL '{db_url}' is for PostgreSQL but\
+                          does not use the 'postgresql+asyncpg://' scheme. "
+                    "Please ensure the URL starts with 'postgresql+asyncpg://'\
+                          or is a valid SQLite DSN."
                 )
             return values
 
@@ -78,9 +81,12 @@ class Settings(BaseSettings):
         if missing_params:
             if db_url is None:
                 raise ValueError(
-                    f"DATABASE_URL is not set and the following PostgreSQL connection parameters are missing: "
-                    f"{', '.join(missing_params)}. Please provide either a full DATABASE_URL or all "
-                    "POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_SERVER, POSTGRES_PORT, POSTGRES_DB "
+                    f"DATABASE_URL is not set and the following \
+                        PostgreSQL connection parameters are missing: "
+                    f"{', '.join(missing_params)}.\
+                          Please provide either a full DATABASE_URL or all "
+                    "POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_SERVER,\
+                          POSTGRES_PORT, POSTGRES_DB "
                     "in the environment or .env file."
                 )
 
@@ -90,10 +96,13 @@ class Settings(BaseSettings):
                 port_number = int(pg_port_str)
 
             if pg_user is None or pg_password is None or pg_db is None:
-                # This case should ideally be caught by the missing_params check if DATABASE_URL was also None.
-                # Adding an explicit check here for robustness before calling PostgresDsn.build
+                # This case should ideally be caught by the missing_params
+                # check if DATABASE_URL was also None.
+                # Adding an explicit check here for robustness
+                # before calling PostgresDsn.build
                 raise ValueError(
-                    "Cannot construct DATABASE_URL: User, Password, or DB name is missing."
+                    "Cannot construct DATABASE_URL:\
+                          User, Password, or DB name is missing."
                 )
 
             values['DATABASE_URL'] = str(
@@ -109,7 +118,8 @@ class Settings(BaseSettings):
         except ValueError as e:
             raise ValueError(
                 f"Error constructing DATABASE_URL from parts. "
-                f"POSTGRES_PORT ('{pg_port_str}') must be a valid integer if provided. Original error: {e}"
+                f"POSTGRES_PORT ('{pg_port_str}') must be \
+                    a valid integer if provided. Original error: {e}"
             )
 
         return values
