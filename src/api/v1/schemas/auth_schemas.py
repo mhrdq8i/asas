@@ -124,21 +124,16 @@ class UserCreateInternal(UserCreate):
     It includes all necessary fields,
     including potentially pre-processed ones.
     """
-
     # CRUD will receive the hashed password
     hashed_password: str
-
     is_active: bool = True
-
     is_superuser: bool = False
-
     is_email_verified: bool = False
 
 
 class UserUpdatePassword(BaseModel):
 
     current_password: str
-
     new_password: str = PydanticField(
         min_length=8
     )
