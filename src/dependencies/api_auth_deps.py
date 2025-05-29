@@ -113,7 +113,8 @@ async def get_current_active_user(
 ) -> User:
     """
     Dependency to get the current active user.
-    Relies on get_current_user and then checks if the user is active.
+    Relies on get_current_user and then
+    checks if the user is active.
     """
     if not current_user.is_active:
         # You might want a more specific exception here
@@ -138,7 +139,8 @@ async def get_current_active_superuser(
     """
     if not current_user.is_superuser:
         raise InsufficientPermissionsException(
-            detail="The user doesn't have enough privileges (not a superuser)."
+            detail="The user doesn't have enough\
+                privileges (not a superuser)."
         )
 
     return current_user
@@ -151,6 +153,7 @@ async def get_current_active_superuser(
 #     )
 # ):
 #     if current_user.role != required_role:
-#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-#                             detail="Operation not permitted for this user role.")
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Operation not permitted for this user role.")
 #     return current_user
