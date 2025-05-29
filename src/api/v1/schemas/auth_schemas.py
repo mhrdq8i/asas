@@ -1,139 +1,91 @@
-from uuid import UUID
-from datetime import datetime
-
 from pydantic import (
     BaseModel,
     EmailStr,
     Field as PydanticField
 )
 
-from src.models.user import UserRoleEnum
 
-
-class UserBase(BaseModel):
+class Token(BaseModel):
     """
-    Base schema for user attributes,
-    shared by create and read schemas.
+    Schema for the access token response.
     """
+    access_token: str
+    token_type: str = "bearer"
 
+
+class TokenPayload(BaseModel):
+    """
+    Schema for the data (payload) encoded within the JWT.
+    'sub' (subject) typically holds the username or user ID.
+    """
+    sub: str | None = None
+    # To differentiate token types (
+    # e.g.,
+    # access,
+    # refresh,
+    # password_reset,
+    # email_verify
+    # )
+    type: str | None = None
+    # Expiration time (timestamp),
+    # usually handled by JWT library
+    exp: int | None = None
+
+
+class PasswordResetRequest(BaseModel):
+    """
+    Schema for requesting a password reset.
+    """
     email: EmailStr
 
-    username: str = PydanticField(
-        min_length=3,
-        max_length=50
-    )
 
-    full_name: str | None = None
-
-    # Default role can be set here or during user creation logic
-    # role: UserRoleEnum = UserRoleEnum.viewer
-    is_active: bool = True
-
-    is_superuser: bool = False
-
-    # Profile fields - keeping them optional
-    avatar_url: str | None = None
-
-    bio: str | None = None
-
-    timezone: str | None = None
-
-
-class UserCreate(UserBase):
+class PasswordResetConfirm(BaseModel):
     """
-    Schema for creating a new user.
-    Requires a password.
+    Schema for confirming a password
+    reset with a new password.
+    The token will be passed as a path
+    or query parameter in the endpoint.
     """
-
-    password: str = PydanticField(
-        min_length=8,
-        description="User password"
-    )
-
-    # Default role for new users
-    role: UserRoleEnum = UserRoleEnum.viewer
-
-
-class UserUpdate(BaseModel):
-    """
-    Schema for updating user information.
-    All fields are optional.
-    """
-
-    email: EmailStr | None = None
-
-    full_name: str | None = None
-
-    username: str | None = PydanticField(
-        default=None,
-        min_length=3,
-        max_length=50
-    )
-
-    password: str | None = PydanticField(
-        default=None,
-        min_length=8,
-        description="New password (if changing)"
-    )
-
-    is_active: bool | None = None
-
-    is_superuser: bool | None = None
-
-    role: UserRoleEnum | None = None
-
-    avatar_url: str | None = None
-
-    bio: str | None = None
-
-    timezone: str | None = None
-
-
-class UserRead(UserBase):
-    """
-    Schema for returning user information to the client.
-    Excludes sensitive data like passwords.
-    """
-
-    id: UUID
-
-    # Role should be included in the read model
-    role: UserRoleEnum
-
-    created_at: datetime
-
-    updated_at: datetime
-
-    # Assuming this comes from the DB model
-    is_email_verified: bool = False
-
-    last_login_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
-
-
-# --- Schema for internal use, e.g.,
-# when creating user in DB with hashed_password ---
-# This is not directly exposed via API
-# but used by CRUD/Service layer.
-class UserCreateInternal(UserCreate):
-    """
-    Internal schema for creating a user,
-    used by CRUD operations.
-    It includes all necessary fields,
-    including potentially pre-processed ones.
-    """
-    # CRUD will receive the hashed password
-    hashed_password: str
-    is_active: bool = True
-    is_superuser: bool = False
-    is_email_verified: bool = False
-
-
-class UserUpdatePassword(BaseModel):
-
-    current_password: str
     new_password: str = PydanticField(
-        min_length=8
+        min_length=8,
+        description="The new password"
     )
+
+
+class PasswordResetConfirmWithToken(PasswordResetConfirm):
+    """
+    Schema for confirming a password reset,
+    including the token in the body.
+    This can be an alternative if you prefer to
+    send the token in the request body.
+    """
+    token: str = PydanticField(
+        description="The password reset token received by the user"
+    )
+
+
+class EmailVerificationRequest(BaseModel):
+    """
+    Schema for requesting an email verification link.
+    Typically, this would be for the currently logged-in user,
+    so no email field is needed here.
+    The endpoint would get the user from the auth token.
+    """
+    pass  # No fields needed, user is identified by auth token
+
+
+class EmailVerifyTokenSchema(BaseModel):
+    """
+    Schema for verifying an email using a token.
+    The token is usually passed as a query parameter.
+    """
+    token: str = PydanticField(
+        description="The email verification token"
+    )
+
+
+class Msg(BaseModel):
+    """
+    Generic message schema for simple responses.
+    """
+    message: str
