@@ -121,8 +121,11 @@ class UserRead(UserBase):
 
 class UserCreateInternal(UserCreate):
     """
-    Internal schema for creating a user, used by CRUD operations.
-    It includes all necessary fields, including potentially pre-processed ones.
+    Internal schema for creating a user,
+    used by CRUD operations.
+
+    It includes all necessary fields,
+    including potentially pre-processed ones.
     """
 
     # CRUD will receive the hashed password
