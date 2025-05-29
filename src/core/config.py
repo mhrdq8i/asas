@@ -20,13 +20,16 @@ class Settings(BaseSettings):
     DATABASE_ECHO: bool = True
 
     # JWT settings
-    SECRET_KEY: str = "your_super_secret_key_that_is_at_least_32_bytes_long"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     @model_validator(mode='before')
     @classmethod
-    def assemble_db_connection(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def assemble_db_connection(
+        cls,
+        values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Constructs the DATABASE_URL from individual PostgreSQL components
         if DATABASE_URL is not explicitly provided.
