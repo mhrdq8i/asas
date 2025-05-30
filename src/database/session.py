@@ -1,5 +1,7 @@
 from sqlmodel import SQLModel
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -7,13 +9,14 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from src.core.config import settings
-from src import models
+
 
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,
     echo=True,
     future=True
 )
+
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,
@@ -26,9 +29,12 @@ AsyncSessionLocal = sessionmaker(
 
 async def init_db():
     print("Creating database tables (async)...")
+
     try:
-        print(f"Models known by SQLModel.metadata before create_all: {list(SQLModel.metadata.tables.keys())}"
+        print(f"Models known by SQLModel.metadata before create_all:\
+               {list(SQLModel.metadata.tables.keys())}"
               )
+
         if not SQLModel.metadata.tables:
             print(
                 "CRITICAL: SQLModel.metadata is empty in create_db_and_tables! "
@@ -38,12 +44,14 @@ async def init_db():
 
         async with engine.begin() as conn:
             await conn.run_sync(SQLModel.metadata.create_all)
+
         print("Database tables created successfully (async).")
+
     except Exception as e:
         print(f"Error creating database tables (async): {e}")
 
 
-async def get_session() -> AsyncSession:
+async def get_async_session() -> AsyncSession:
     async_session = AsyncSessionLocal()
     try:
         yield async_session

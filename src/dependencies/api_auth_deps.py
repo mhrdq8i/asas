@@ -6,7 +6,7 @@ from fastapi.security import (
     OAuth2PasswordBearer
 )
 
-from src.exceptions import (
+from src.exceptions.user_exceptions import (
     NotAuthenticatedException,
     InsufficientPermissionsException
 )

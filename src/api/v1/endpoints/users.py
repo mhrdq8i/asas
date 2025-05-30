@@ -13,17 +13,27 @@ from src.api.v1.schemas.user_schemas import (
     UserRead,
     UserUpdate
 )
-from src.dependencies.service_deps import get_user_service
+from src.dependencies.service_deps import (
+    get_user_service
+)
 from src.dependencies.api_auth_deps import (
     get_current_active_user,
     get_current_active_superuser
 )
-from src.services.user_service import UserService
-from src.models.user import User as UserModel
-from src.exceptions import (
-    DuplicateResourceException,
-    UserNotFoundException,
+from src.services.user_service import (
+    UserService
+)
+from src.models.user import (
+    User as UserModel
+)
+from src.exceptions.base_exceptions import (
     AppException
+)
+from src.exceptions.common_exceptions import (
+    DuplicateResourceException
+)
+from src.exceptions.user_exceptions import (
+    UserNotFoundException
 )
 
 

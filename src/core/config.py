@@ -1,5 +1,11 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import PostgresDsn, model_validator
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict
+)
+from pydantic import (
+    PostgresDsn,
+    model_validator
+)
 from typing import Any, Dict
 
 
@@ -8,11 +14,11 @@ class Settings(BaseSettings):
     Application settings are managed by this class.
     Values are read from environment variables or a .env file.
     """
-    POSTGRES_USER: str | None = None
-    POSTGRES_PASSWORD: str | None = None
-    POSTGRES_SERVER: str | None = "localhost"
-    POSTGRES_PORT: str | None = "5432"
-    POSTGRES_DB: str | None = None
+    POSTGRES_USER: str | None
+    POSTGRES_PASSWORD: str | None
+    POSTGRES_SERVER: str | None
+    POSTGRES_PORT: str | None
+    POSTGRES_DB: str | None
 
     # DATABASE_URL can be fully provided or constructed from the parts above
     DATABASE_URL: PostgresDsn | str | None = None
@@ -30,9 +36,11 @@ class Settings(BaseSettings):
         values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Constructs the DATABASE_URL from individual PostgreSQL components
+        Constructs the DATABASE_URL from individual
+        PostgreSQL components
         if DATABASE_URL is not explicitly provided.
-        It also ensures that the URL uses the asyncpg driver for PostgreSQL.
+        It also ensures that the URL uses the asyncpg
+        driver for PostgreSQL.
         Raises ValueError for configuration issues.
         """
         db_url = values.get('DATABASE_URL')
@@ -75,8 +83,10 @@ class Settings(BaseSettings):
             "POSTGRES_PASSWORD": pg_password,
             "POSTGRES_DB": pg_db
         }
-        missing_params = [key for key,
-                          value in required_pg_params.items() if value is None]
+        missing_params = [
+            key for key,
+            value in required_pg_params.items() if value is None
+        ]
 
         if missing_params:
             if db_url is None:
@@ -115,6 +125,7 @@ class Settings(BaseSettings):
                     path=f"/{pg_db}"
                 )
             )
+
         except ValueError as e:
             raise ValueError(
                 f"Error constructing DATABASE_URL from parts. "

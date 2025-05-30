@@ -30,10 +30,12 @@ from src.core.security import (
 )
 from src.exceptions.common_exceptions import (
     DuplicateResourceException,
-    AuthenticationFailedException,
-    UserNotFoundException,
     InvalidOperationException,
     InvalidInputException,
+)
+from src.exceptions.user_exceptions import (
+    AuthenticationFailedException,
+    UserNotFoundException,
     InsufficientPermissionsException
 )
 # For password reset token expiry, etc.

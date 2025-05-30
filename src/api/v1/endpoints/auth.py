@@ -22,13 +22,18 @@ from src.api.v1.schemas.auth_schemas import (
 )
 from src.dependencies.service_deps import get_user_service
 from src.dependencies.api_auth_deps import get_current_active_user
-from src.exceptions import (
-    AuthenticationFailedException,
-    InvalidInputException,
-    UserNotFoundException,
-    InvalidOperationException,
+from src.exceptions.base_exceptions import (
     AppException
 )
+from src.exceptions.common_exceptions import (
+    InvalidInputException,
+    InvalidOperationException
+)
+from src.exceptions.user_exceptions import (
+    AuthenticationFailedException,
+    UserNotFoundException,
+)
+
 
 router = APIRouter(
     tags=["authentication"]
