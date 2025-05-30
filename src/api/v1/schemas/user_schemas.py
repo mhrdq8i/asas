@@ -1,66 +1,45 @@
+from pydantic import BaseModel, EmailStr, Field as PydanticField
+import uuid
 from datetime import datetime
-from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    Field as PydanticField
-)
-
-from src.models.user import UserRoleEnum
+from ....models.user import UserRoleEnum  # Corrected relative import path
 
 
 class UserBase(BaseModel):
     """
-    Base schema for user attributes,
-    shared by create and read schemas.
+    Base schema for user attributes, shared by create and read schemas.
     """
     email: EmailStr
-    username: str = PydanticField(
-        min_length=3,
-        max_length=50
-    )
+    username: str = PydanticField(min_length=3, max_length=50)
     full_name: str | None = None
-    # Default role can be set here
-    # or during user creation logic
-    role: UserRoleEnum = UserRoleEnum.viewer
-    is_active: bool = True
-    is_superuser: bool = False
+    # role is not in UserBase, will be added in specific schemas if needed or UserRead
+    is_active: bool = True  # Default for UserBase, can be overridden
+    is_superuser: bool = False  # Default for UserBase, can be overridden
+
     avatar_url: str | None = None
     bio: str | None = None
     timezone: str | None = None
 
 
+# --- Schema for User Creation (Input from API) ---
 class UserCreate(UserBase):
     """
-    Schema for creating a new user.
-    Requires a password.
+    Schema for creating a new user via API. Requires a plain password.
     """
-    password: str = PydanticField(
-        min_length=8,
-        description="User password"
-    )
-    # Default role for new users
-    role: UserRoleEnum = UserRoleEnum.viewer
+    password: str = PydanticField(min_length=8, description="User password")
+    role: UserRoleEnum = UserRoleEnum.viewer  # Default role for new users via API
 
 
+# --- Schema for User Update (Input from API - example, can be expanded) ---
 class UserUpdate(BaseModel):
     """
-    Schema for updating user information.
-    All fields are optional.
+    Schema for updating user information. All fields are optional.
     """
     email: EmailStr | None = None
     full_name: str | None = None
     username: str | None = PydanticField(
-        default=None,
-        min_length=3,
-        max_length=50
-    )
-    password: str | None = PydanticField(
-        default=None,
-        min_length=8,
-        description="New password (if changing)"
-    )
+        default=None, min_length=3, max_length=50)
+    # Password update should be handled by a dedicated endpoint and schema
     is_active: bool | None = None
     is_superuser: bool | None = None
     role: UserRoleEnum | None = None
@@ -69,48 +48,42 @@ class UserUpdate(BaseModel):
     timezone: str | None = None
 
 
-# This schema should NOT include sensitive
-# information like hashed_password.
+# --- Schema for Reading User Information (Output to API) ---
 class UserRead(UserBase):
     """
     Schema for returning user information to the client.
     Excludes sensitive data like passwords.
     """
-    id: UUID
-    # Role should be included in the read model
-    role: UserRoleEnum
-    created_at: datetime
-    updated_at: datetime
-    # Assuming this comes from the DB model
-    is_email_verified: bool = False
+    id: uuid.UUID
+    role: UserRoleEnum  # Role should be included in the read model
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    is_email_verified: bool  # Value will come from the DB model instance
     last_login_at: datetime | None = None
 
     class Config:
         from_attributes = True
 
 
-class UserCreateInternal(UserCreate):
+# --- Schema for internal use by service/CRUD layer to create user in DB ---
+class UserCreateInternal(UserBase):  # Inherits from UserBase
     """
-    Internal schema for creating a user,
-    used by CRUD operations.
-
-    It includes all necessary fields,
-    including potentially pre-processed ones.
+    Internal schema for creating a user, used by CRUD operations.
+    Accepts hashed_password instead of plain password.
     """
+    hashed_password: str  # This is now the password field for internal creation
 
-    # CRUD will receive the hashed password
-    hashed_password: str
-    is_active: bool = True
-    is_superuser: bool = False
-    # Default for new users
-    is_email_verified: bool = False
+    # Fields that are part of User model but might not be in UserBase,
+    # or need specific defaults for internal creation different from API creation.
+    # UserCreate (API input) defines role, is_active, is_superuser defaults for API.
+    # Here, we ensure they are present for DB creation if not in UserBase.
+    role: UserRoleEnum  # This field must be provided when creating UserCreateInternal instance
+    # is_active is in UserBase with default True
+    # is_superuser is in UserBase with default False
+    is_email_verified: bool = False  # Default for new users internally
 
-# You might also want a schema for updating password specifically
 
-
+# Schema for updating password by the user themselves
 class UserUpdatePassword(BaseModel):
-
     current_password: str
-    new_password: str = PydanticField(
-        min_length=8
-    )
+    new_password: str = PydanticField(min_length=8)

@@ -37,7 +37,7 @@ async def init_db():
 
         if not SQLModel.metadata.tables:
             print(
-                "CRITICAL: SQLModel.metadata is empty in create_db_and_tables! "
+                "CRITICAL: SQLModel.metadata is empty in create_db_and_tables!"
                 "Models might not have been imported correctly via 'from . "
                 "import models' in database.py"
             )

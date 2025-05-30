@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, List
 
-from pydantic import EmailStr, SecretStr
+from pydantic import EmailStr
 from sqlmodel import Field, Relationship
 from sqlalchemy import Column, String, Text
 
@@ -33,7 +33,7 @@ class User(BaseEntity, table=True):
         )
     ]
     hashed_password: Annotated[
-        SecretStr,
+        str,
         Field(
             sa_column=Column(
                 String,

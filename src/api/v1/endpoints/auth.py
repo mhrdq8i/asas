@@ -35,9 +35,7 @@ from src.exceptions.user_exceptions import (
 )
 
 
-router = APIRouter(
-    tags=["authentication"]
-)
+router = APIRouter()
 
 
 @router.post(
@@ -92,7 +90,7 @@ async def login_for_access_token(
 
 
 @router.post(
-    "/request-password-recovery",
+    "/password-recovery",
     response_model=Msg,
     status_code=status.HTTP_200_OK,
     summary="Request Password Recovery"
@@ -202,7 +200,7 @@ async def reset_password(
 
 
 @router.post(
-    "/request-email-verification",
+    "/email-verification",
     response_model=Msg,
     status_code=status.HTTP_200_OK,
     summary="Request Email Verification Token"

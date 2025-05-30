@@ -68,7 +68,7 @@ app.include_router(
 
 app.include_router(
     users_router_v1.router,
-    prefix="/api/v1",
+    prefix="/api/v1/users",
     tags=["V1 - Users"]
 )
 

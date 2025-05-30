@@ -12,126 +12,180 @@ from typing import Any, Dict
 class Settings(BaseSettings):
     """
     Application settings are managed by this class.
-    Values are read from environment variables or a .env file.
+    Values MUST be provided via
+    environment variables or a .env file.
+    No default values are assumed in the
+    class definition itself for most fields.
     """
-    POSTGRES_USER: str | None
-    POSTGRES_PASSWORD: str | None
-    POSTGRES_SERVER: str | None
-    POSTGRES_PORT: str | None
-    POSTGRES_DB: str | None
+    POSTGRES_SCHEME: str | None = None
+    POSTGRES_USER: str | None = None
+    POSTGRES_PASSWORD: str | None = None
+    POSTGRES_SERVER: str | None = None
+    POSTGRES_PORT: str | None = None
+    POSTGRES_DB: str | None = None
 
-    # DATABASE_URL can be fully provided or constructed from the parts above
     DATABASE_URL: PostgresDsn | str | None = None
-    DATABASE_ECHO: bool = True
+    # Must be in .env or environment
+    DATABASE_ECHO: bool
 
-    # JWT settings
+    # JWT settings - Must be in .env or environment
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     @model_validator(mode='before')
     @classmethod
-    def assemble_db_connection(
+    def assemble_and_validate_db_connection(
         cls,
         values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Constructs the DATABASE_URL from individual
-        PostgreSQL components
-        if DATABASE_URL is not explicitly provided.
-        It also ensures that the URL uses the asyncpg
-        driver for PostgreSQL.
-        Raises ValueError for configuration issues.
+        Constructs DATABASE_URL if not provided,
+        or validates it if provided.
+        Ensures all necessary DB components are present
+        if DATABASE_URL is to be constructed.
         """
-        db_url = values.get('DATABASE_URL')
 
-        # If DATABASE_URL is already set
-        if db_url and isinstance(db_url, str):
-            # Allow sqlite for local testing/dev
-            if "sqlite" in db_url:
-                pass
-            elif db_url.startswith(
-                "postgresql://"
-            ) or db_url.startswith(
-                "postgres://"
-            ):
-                values['DATABASE_URL'] = db_url.replace(
-                    "postgresql://", "postgresql+asyncpg://"
+        print(
+            f"--------------------------------------------------\n\
+DEBUG: Initial values received by validator: {values} \n\
+--------------------------------------------------"
+        )
+
+        db_url_provided = values.get('DATABASE_URL')
+
+        if db_url_provided and isinstance(
+            db_url_provided,
+            str
+        ):
+            # If DATABASE_URL is fully provided,
+            # validate and normalize it
+            if "sqlite" in db_url_provided:
+                values['DATABASE_URL'] = db_url_provided  # Allow sqlite
+
+            elif db_url_provided.startswith("postgresql://") or \
+                    db_url_provided.startswith("postgres://"):
+                values['DATABASE_URL'] = db_url_provided.replace(
+                    "postgresql://",
+                    "postgresql+asyncpg://"
                 ).replace(
-                    "postgres://", "postgresql+asyncpg://"
+                    "postgres://",
+                    "postgresql+asyncpg://"
                 )
-            elif not db_url.startswith(
-                "postgresql+asyncpg://"
-            ):
+
+            elif not db_url_provided.startswith("postgresql+asyncpg://"):
                 raise ValueError(
-                    f"DATABASE_URL '{db_url}' is for PostgreSQL but\
-                          does not use the 'postgresql+asyncpg://' scheme. "
-                    "Please ensure the URL starts with 'postgresql+asyncpg://'\
-                          or is a valid SQLite DSN."
+                    f"DATABASE_URL '{db_url_provided}' for PostgreSQL \
+                        must use 'postgresql+asyncpg://', "
+                    f"'postgresql://', or 'postgres://' scheme."
                 )
             return values
 
-        # If DATABASE_URL is not set, try to construct it from parts
-        pg_user = values.get('POSTGRES_USER')
-        pg_password = values.get('POSTGRES_PASSWORD')
-        pg_server = values.get('POSTGRES_SERVER')
-        pg_port_str = values.get('POSTGRES_PORT')
-        pg_db = values.get('POSTGRES_DB')
+        elif db_url_provided is not None and not isinstance(
+                db_url_provided, str
+        ):
+            # If DATABASE_URL is provided but not a string
+            # (e.g. set to null in some env config)
+            raise ValueError(
+                f"DATABASE_URL must be a string if provided,\
+                      got: {type(db_url_provided)}")
 
-        required_pg_params = {
-            "POSTGRES_USER": pg_user,
-            "POSTGRES_PASSWORD": pg_password,
-            "POSTGRES_DB": pg_db
+        # If DATABASE_URL is not provided
+        # (i.e., db_url_provided is None),
+        # construct it from parts
+        # All parts now MUST be present in
+        # 'values' (from .env or environment)
+        scheme = values.get('POSTGRES_SCHEME')
+        user = values.get('POSTGRES_USER')
+        password = values.get('POSTGRES_PASSWORD')
+        server = values.get('POSTGRES_SERVER')
+        port_str = values.get('POSTGRES_PORT')
+        db_name = values.get('POSTGRES_DB')
+
+        # Check if all necessary components for
+        # PostgreSQL construction are provided
+        # These are now effectively mandatory
+        # if DATABASE_URL is not set.
+        essential_parts = {
+            "POSTGRES_SCHEME": scheme,
+            "POSTGRES_USER": user,
+            "POSTGRES_PASSWORD": password,
+            "POSTGRES_SERVER": server,
+            "POSTGRES_PORT": port_str,
+            "POSTGRES_DB": db_name,
         }
+
         missing_params = [
             key for key,
-            value in required_pg_params.items() if value is None
+            value in essential_parts.items() if value is None
         ]
 
         if missing_params:
-            if db_url is None:
-                raise ValueError(
-                    f"DATABASE_URL is not set and the following \
-                        PostgreSQL connection parameters are missing: "
-                    f"{', '.join(missing_params)}.\
-                          Please provide either a full DATABASE_URL or all "
-                    "POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_SERVER,\
-                          POSTGRES_PORT, POSTGRES_DB "
-                    "in the environment or .env file."
-                )
+            raise ValueError(
+                f"Cannot construct DATABASE_URL.\
+                     DATABASE_URL is not set, and the following "
+                f"parameters required for its construction are missing:\
+                     {', '.join(missing_params)}. "
+                f"Please provide either a full DATABASE_URL or all of these: "
+                f"{', '.join(essential_parts.keys())} \
+                    in the environment or .env file."
+            )
 
         try:
-            port_number: int | None = None
-            if pg_port_str is not None:
-                port_number = int(pg_port_str)
+            # Port can be None if not specified,
+            # PostgresDsn.build handles default
+            port: int | None = None
+            # Should not be None if missing_params is empty
+            if port_str is not None:
+                # Ensure port_str is treated
+                # as string before int conversion
+                port = int(str(port_str))
 
-            if pg_user is None or pg_password is None or pg_db is None:
-                # This case should ideally be caught by the missing_params
-                # check if DATABASE_URL was also None.
-                # Adding an explicit check here for robustness
-                # before calling PostgresDsn.build
-                raise ValueError(
-                    "Cannot construct DATABASE_URL:\
-                          User, Password, or DB name is missing."
-                )
+            # Construct the DSN string
+            # Assert parts are not None
+            # due to the check above,
+            # help type checker
+            assert scheme is not None
+            assert user is not None
+            assert password is not None
+            assert server is not None
+            assert db_name is not None
 
-            values['DATABASE_URL'] = str(
-                PostgresDsn.build(
-                    scheme="postgresql+asyncpg",
-                    username=pg_user,
-                    password=pg_password,
-                    host=pg_server or "localhost",
-                    port=port_number,
-                    path=f"/{pg_db}"
-                )
+            constructed_url = f"{scheme}://{user}:{password}@{server}:{port}/{db_name}"
+
+            # Validate the constructed URL with PostgresDsn
+            # (or let it be a string if it's for sqlite)
+            if "sqlite" not in scheme:
+                # This will raise ValueError if invalid
+                PostgresDsn(constructed_url)
+
+            values['DATABASE_URL'] = constructed_url
+            print(
+                f"DEBUG: \Constructed DATABASE_URL: {constructed_url}"
             )
-
+        # Catches int() conversion or
+        # PostgresDsn validation error
         except ValueError as e:
+            # Add more context to the error
+            original_error_msg = str(e)
+
+            if "invalid port number" in \
+                original_error_msg.lower() or \
+                    "invalid literal \
+                        for int()" in original_error_msg.lower():
+
+                detailed_error = f"POSTGRES_PORT \
+                    ('{port_str}') must be a valid integer."
+            else:
+                detailed_error = f"Ensure all parts \
+                      (USER, PASSWORD, SERVER, PORT, DB, SCHEME) \
+                          form a valid DSN. \
+                            Original Pydantic/validation\
+                                 error: {original_error_msg}"
+
             raise ValueError(
-                f"Error constructing DATABASE_URL from parts. "
-                f"POSTGRES_PORT ('{pg_port_str}') must be \
-                    a valid integer if provided. Original error: {e}"
-            )
+                f"Error constructing DATABASE_URL \
+                    from parts. {detailed_error}")
 
         return values
 
@@ -142,5 +196,8 @@ class Settings(BaseSettings):
     )
 
 
-# Create an instance of the settings
+# Create an instance of the settings.
+# Pydantic will raise validation errors if
+# required fields are missing.
+# (those without defaults and not set by the validator)
 settings = Settings()

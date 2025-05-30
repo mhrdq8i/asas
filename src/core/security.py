@@ -1,16 +1,24 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
-from jose import jwt, JWTError  # type: ignore
-from passlib.context import CryptContext  # type: ignore
+from jose import jwt, JWTError
+from pwdlib import PasswordHash
 
 from src.core.config import settings
 
+
+# from passlib.context import CryptContext
 # Password Hashing Context
 # We use bcrypt as the hashing algorithm.
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
-)
+# pwd_context = CryptContext(
+#     schemes=["bcrypt"],
+#     deprecated="auto"
+# )
+
+
+# This will typically use Argon2
+# if installed with 'pwdlib[argon2]'
+password_hasher = PasswordHash.recommended()
+
 
 ALGORITHM = settings.ALGORITHM
 SECRET_KEY = settings.SECRET_KEY  # This should be a strong, random string
@@ -22,22 +30,30 @@ def verify_password(
     hashed_password: str
 ) -> bool:
     """
-    Verifies a plain password against a hashed password.
+    Verifies a plain password against
+     a hashed password using pwdlib.
     """
-    try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception:
-        # Log an error here in a real application
-        return False
+
+    # pwdlib expects bytes for password, so we encode the plain password
+    return password_hasher.verify(
+        plain_password.encode('utf-8'),
+        hashed_password
+    )
 
 
 def get_password_hash(
         password: str
 ) -> str:
     """
-    Hashes a plain password.
+    Hashes a plain password using pwdlib.
     """
-    return pwd_context.hash(password)
+
+    # pwdlib expects bytes for password, so we encode it
+    # The hash produced will be a string
+
+    return password_hasher.hash(
+        password.encode('utf-8')
+    )
 
 
 def create_access_token(
