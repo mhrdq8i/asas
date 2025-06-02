@@ -3,96 +3,172 @@ from datetime import datetime, date
 from typing import Optional, List, Annotated
 
 from sqlalchemy import Column, Text
-from sqlmodel import Relationship, Field
+from sqlmodel import Relationship, Field, DateTime
 
-from src.models.base import BaseEntity, SeverityLevel, IncidentStatus
+from src.models.base import (
+    BaseEntity,
+    SeverityLevelEnum,
+    IncidentStatusEnum
+)
+from src.models.user import User
+from src.models.postmortem import PostMortem
 
 
 class Incident(BaseEntity, table=True):
+    __tablename__ = "incidents"
 
-    incident_metadata: Optional["IncidentMetadata"] = Relationship(
+    incident_metadata: Optional[
+        "IncidentMetadata"
+    ] = Relationship(
         back_populates="incident_ref",
-        sa_relationship_kwargs={"uselist": False}
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
     )
-    impacts: Optional["Impacts"] = Relationship(
-        back_populates="incident",
-        sa_relationship_kwargs={"uselist": False}
+    impacts: Optional[
+        "Impacts"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
     )
-    shallow_rca: Optional["ShallowRCA"] = Relationship(
-        back_populates="incident",
-        sa_relationship_kwargs={"uselist": False}
+    shallow_rca: Optional[
+        "ShallowRCA"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
     )
-    resolution_mitigation: Optional["ResolutionMitigation"] = Relationship(
-        back_populates="incident",
-        sa_relationship_kwargs={"uselist": False}
+    resolution_mitigation: Optional[
+        "ResolutionMitigation"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
     )
-    post_mortem: Optional["PostMortem"] = Relationship(
-        back_populates="incident", sa_relationship_kwargs={"uselist": False}
+    postmortem: Optional[
+        "PostMortem"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
     )
-    affected_services: List["AffectedService"] = Relationship(
-        back_populates="incident"
+
+    affected_services: List[
+        "AffectedService"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
-    affected_regions: List["AffectedRegion"] = Relationship(
-        back_populates="incident"
+    affected_regions: List[
+        "AffectedRegion"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
-    timeline_events: List["TimelineEvent"] = Relationship(
-        back_populates="incident"
+    timeline_events: List[
+        "TimelineEvent"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
-    communication_log_entries: List["CommunicationLogEntry"] = Relationship(
-        back_populates="incident"
+    communication_logs: List[
+        "CommunicationLog"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
-    sign_offs: List["SignOffEntry"] = Relationship(
-        back_populates="incident"
+    sign_offs: List[
+        "SignOff"
+    ] = Relationship(
+        back_populates="incident_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
 
 
 class IncidentMetadata(BaseEntity, table=True):
+    __tablename__ = "incident_metadata"
 
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             unique=True,
-            index=True,
-            description="Links to the specific Incident record's id"
+            index=True
         )
     ]
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
+        back_populates="incident_metadata"
+    )
+
     title: Annotated[
         str,
         Field(
-            description="Main incident title"
+            description="Main incident title",
+            max_length=255
         )
     ]
     severity: Annotated[
-        SeverityLevel, Field(
+        SeverityLevelEnum,
+        Field(
             description="Severity level of the incident"
         )
     ]
-    date_time_detected_utc: Annotated[
+    datetime_detected_utc: Annotated[
         datetime,
         Field(
-            description="Date/Time Detected (UTC)"
+            description="Date/Time Detected (UTC)",
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     detected_by: Annotated[
         str,
         Field(
             sa_column=Column(Text),
-            description="Source of detection, e.g., Prometheus Alert or User ID"
+            description="Source of detection, e.g.,\
+             Prometheus Alert or User ID"
         )
     ]
     commander_id: Annotated[
         UUID | None,
         Field(
             default=None,
-            foreign_key="user.id",
+            foreign_key="users.id",
             index=True
         )
     ]
+    commander: Optional[
+        "User"
+    ] = Relationship(
+        back_populates="incident_commander"
+    )
     status: Annotated[
-        IncidentStatus,
+        IncidentStatusEnum,
         Field(
-            default=IncidentStatus.OPEN,
+            default=IncidentStatusEnum.OPEN,
             description="Current status of the incident"
         )
     ]
@@ -104,47 +180,50 @@ class IncidentMetadata(BaseEntity, table=True):
         )
     ]
 
-    commander: Optional["User"] = Relationship(
-        back_populates="incidents_commanded"
-    )
-    incident_ref: Optional["Incident"] = Relationship(
-        back_populates="incident_metadata"
-    )
 
-
-# --------------- Affects ---------------
-
-class AffectedItemBase(BaseEntity, table=False):
+class AffectedItemBase(BaseEntity):
     name: Annotated[
         str,
         Field(
-            description="Name of the affected item (e.g., service, region, network)"
+            description="Name of the affected item",
+            max_length=255
         )
     ]
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             index=True
         )
     ]
+    # incident_ref relationship
+    # should be defined
+    # in concrete classes
+    # for specific back_populates
 
 
 class AffectedService(AffectedItemBase, table=True):
+    __tablename__ = "affected_services"
 
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="affected_services"
     )
 
 
 class AffectedRegion(AffectedItemBase, table=True):
+    __tablename__ = "affected_regions"
 
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="affected_regions"
     )
 
 
 class Impacts(BaseEntity, table=True):
+    __tablename__ = "impacts"
 
     customer_impact: Annotated[
         str,
@@ -157,24 +236,27 @@ class Impacts(BaseEntity, table=True):
         str,
         Field(
             sa_column=Column(Text),
-            description="Details of business impact, e.g., estimated lost revenue"
+            description="Details of business impact, e.g., \
+               estimated lost revenue"
         )
     ]
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             unique=True,
             index=True
         )
     ]
-
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="impacts"
     )
 
 
 class ShallowRCA(BaseEntity, table=True):
+    __tablename__ = "shallow_rca"
 
     what_happened: Annotated[
         str,
@@ -183,11 +265,13 @@ class ShallowRCA(BaseEntity, table=True):
             description="Description of what happened"
         )
     ]
-    why_it_happened_points: Annotated[
+    # For List[str], SQLModel should default
+    # to JSON type on PostgreSQL.
+    # No need for sa_column=Column(Text).
+    why_it_happened: Annotated[
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
             description="List of reasons why it happened"
         )
     ]
@@ -195,7 +279,6 @@ class ShallowRCA(BaseEntity, table=True):
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
             description="List of technical causes of the incident"
         )
     ]
@@ -203,34 +286,39 @@ class ShallowRCA(BaseEntity, table=True):
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
             description="How the incident was detected"
         )
     ]
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             unique=True,
             index=True
         )
     ]
-
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="shallow_rca"
     )
 
 
 class TimelineEvent(BaseEntity, table=True):
+    __tablename__ = "timeline_events"
 
     time_utc: Annotated[
         datetime,
         Field(
-            description="Time of the event in UTC"
+            description="Time of the event in UTC",
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     event_description: Annotated[
-        str, Field(
+        str,
+        Field(
             sa_column=Column(Text),
             description="Description of the event"
         )
@@ -239,76 +327,98 @@ class TimelineEvent(BaseEntity, table=True):
         UUID | None,
         Field(
             default=None,
-            foreign_key="user.id",
+            foreign_key="users.id",
             index=True
         )
     ]
+    owner_user: Optional[
+        "User"
+    ] = Relationship(
+        back_populates="timeline_events_owned"
+    )
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             index=True
         )
     ]
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="timeline_events"
-    )
-    owner_user: Optional["User"] = Relationship(
-        back_populates="timeline_events_owned"
     )
 
 
 class ResolutionMitigation(BaseEntity, table=True):
+    __tablename__ = "resolution_mitigations"
 
     resolution_time_utc: Annotated[
         datetime | None,
         Field(
             default=None,
-            description="Time the incident was resolved in UTC"
+            description="Time the incident was resolved in UTC",
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             unique=True,
             index=True
         )
     ]
-
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="resolution_mitigation"
     )
-    short_term_remediation_steps: List["RemediationStep"] = Relationship(
-        back_populates="resolution_mitigation"
+    short_term_remediation_steps: List[
+        "RemediationStep"
+    ] = Relationship(
+        back_populates="resolution_mitigation_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
-    long_term_preventative_measures: List["LongTermPreventativeMeasure"] = Relationship(
-        back_populates="resolution_mitigation"
+    long_term_preventative_measures: List[
+        "LongTermPreventativeMeasure"
+    ] = Relationship(
+        back_populates="resolution_mitigation_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
     )
 
 
 class RemediationStep(BaseEntity, table=True):
+    __tablename__ = "remediation_steps"
 
     step_description: Annotated[
         str,
         Field(
             sa_column=Column(Text),
-            description="Description of the remediation step"
+            description="Remediation actions"
         )
     ]
     resolution_mitigation_id: Annotated[
-        UUID | None,
+        UUID,
         Field(
-            default=None,
-            foreign_key="resolutionmitigation.id"
+            foreign_key="resolution_mitigations.id"
         )
     ]
-    resolution_mitigation: Optional["ResolutionMitigation"] = Relationship(
+    resolution_mitigation_ref: Optional[
+        "ResolutionMitigation"
+    ] = Relationship(
         back_populates="short_term_remediation_steps"
     )
 
 
 class LongTermPreventativeMeasure(BaseEntity, table=True):
+    __tablename__ = "long_term_preventative_measures"
 
     measure_description: Annotated[
         str,
@@ -318,29 +428,35 @@ class LongTermPreventativeMeasure(BaseEntity, table=True):
         )
     ]
     resolution_mitigation_id: Annotated[
-        UUID | None,
+        UUID,
         Field(
-            default=None,
-            foreign_key="resolutionmitigation.id"
+            foreign_key="resolution_mitigations.id"
         )
     ]
-
-    resolution_mitigation: Optional["ResolutionMitigation"] = Relationship(
+    resolution_mitigation_ref: Optional[
+        "ResolutionMitigation"
+    ] = Relationship(
         back_populates="long_term_preventative_measures"
     )
 
 
-class CommunicationLogEntry(BaseEntity, table=True):
+class CommunicationLog(BaseEntity, table=True):
+    __tablename__ = "communication_log_entries"
 
     time_utc: Annotated[
         datetime,
         Field(
-            description="Time of the communication in UTC"
+            description="Time of the communication in UTC",
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     channel: Annotated[
-        str, Field(
-            description="Communication channel, e.g., Slack, Email, Status Page"
+        str,
+        Field(
+            description="Communication channel",
+            max_length=100
         )
     ]
     message: Annotated[
@@ -353,31 +469,38 @@ class CommunicationLogEntry(BaseEntity, table=True):
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             index=True
         )
     ]
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="communication_log_entries"
     )
 
 
-class SignOffEntry(BaseEntity, table=True):
+class SignOff(BaseEntity, table=True):
+    __tablename__ = "sign_offs"
 
     role: Annotated[
         str,
         Field(
-            description="Role of the approver at the time of sign-off"
+            description="Role of the approver",
+            max_length=100
         )
     ]
     approver_user_id: Annotated[
         UUID,
         Field(
-            foreign_key="user.id",
+            foreign_key="users.id",
             index=True,
             nullable=False
         )
     ]
+    approver_user: "User" = Relationship(
+        back_populates="sign_offs"
+    )
     date_approved: Annotated[
         date,
         Field(
@@ -387,14 +510,12 @@ class SignOffEntry(BaseEntity, table=True):
     incident_id: Annotated[
         UUID,
         Field(
-            foreign_key="incident.id",
+            foreign_key="incidents.id",
             index=True
         )
     ]
-
-    approver_user: "User" = Relationship(
-        back_populates="sign_offs_made"
-    )
-    incident: Optional["Incident"] = Relationship(
+    incident_ref: Optional[
+        "Incident"
+    ] = Relationship(
         back_populates="sign_offs"
     )

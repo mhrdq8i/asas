@@ -1,65 +1,142 @@
 from uuid import UUID
 from datetime import datetime, date
-from typing import Annotated, Optional, List
+from typing import (
+    Annotated,
+    Optional,
+    List
+)
 
-from sqlmodel import Field, Relationship
+from sqlmodel import (
+    Field,
+    Relationship,
+    DateTime
+)
 from sqlalchemy import Column, Text
 
-from src.models.base import BaseEntity, ActionItemStatus
+from src.models.base import (
+    BaseEntity,
+    ActionItemStatusEnum,
+    PostMortemApproverRoleEnum
+)
+# from src.models.incident import Incident
+# from src.models.user import User
 
 
 class PostMortem(BaseEntity, table=True):
-    post_mortem_status: Annotated[
-        str,
+    __tablename__ = "postmortems"
+
+    incident_id: Annotated[
+        UUID,
         Field(
-            description="Status of the post-mortem, e.g., Completed"
+            foreign_key="incidents.id",
+            unique=True,
+            index=True,
+            nullable=False
         )
     ]
-    document_link: Annotated[
+    incident_ref: "Incident" = Relationship(
+        back_populates="postmortem"
+    )
+    metadata: Optional[
+        "PostMortemMetadata"
+    ] = Relationship(
+        back_populates="postmortem_ref",
+        sa_relationship_kwargs={
+            "uselist": False,
+            "cascade": "all, delete-orphan"
+        }
+    )
+    contributing_factors: List[
+        "ContributingFactor"
+    ] = Relationship(
+        back_populates="postmortem_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
+    lessons_learned: List[
+        "LessonLearned"
+    ] = Relationship(
+        back_populates="postmortem_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
+    action_items: List[
+        "ActionItem"
+    ] = Relationship(
+        back_populates="postmortem_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
+    approvals: List[
+        "PostMortemApproval"
+    ] = Relationship(
+        back_populates="postmortem_ref",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan"
+        }
+    )
+
+
+class PostMortemMetadata(BaseEntity, table=True):
+    __tablename__ = "postmortem_metadata"
+
+    id: Annotated[
+        UUID,
+        Field(
+            foreign_key="postmortems.id",
+            unique=True,
+            index=True,
+            nullable=False
+        )
+    ]
+    postmortem: "PostMortem" = Relationship(
+        back_populates="postmortem_metadata"
+    )
+    status: Annotated[
+        str,
+        Field(
+            description="Status of the post-mortem",
+            max_length=50
+        )
+    ]
+    links: Annotated[
         str | None,
         Field(
             default=None,
-            description="Link to the detailed post-mortem document if separate"
+            description="Link to the detailed postmortem document",
+            max_length=512
         )
     ]
-    deep_rca_detailed_technical_cause: Annotated[
-        str,
+    deep_rca: Annotated[
+        str | None,
         Field(
+            default=None,
             sa_column=Column(Text),
             description="In-depth technical cause from deep RCA"
         )
     ]
-    incident_id: Annotated[
-        UUID,
+    date_completed_utc: Annotated[
+        datetime | None,
         Field(
-            foreign_key="incident.id",
-            unique=True,
-            index=True
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
 
-    incident: Optional["Incident"] = Relationship(
-        back_populates="post_mortem"
-    )
-    contributing_factors: List["ContributingFactor"] = Relationship(
-        back_populates="post_mortem"
-    )
-    lessons_learned: List["LessonLearned"] = Relationship(
-        back_populates="post_mortem"
-    )
-    action_items: List["ActionItem"] = Relationship(
-        back_populates="post_mortem"
-    )
-    approvals: List["PostMortemApproval"] = Relationship(
-        back_populates="post_mortem"
-    )
-
 
 class ContributingFactor(BaseEntity, table=True):
+    __tablename__ = "contributing_factors"
+
     factor_type: Annotated[
         str,
         Field(
-            description="Type of factor, e.g., Process Gap, Tooling Gap"
+            description="Type of factor",
+            max_length=100
         )
     ]
     description: Annotated[
@@ -69,42 +146,46 @@ class ContributingFactor(BaseEntity, table=True):
             description="Description of the contributing factor"
         )
     ]
-    post_mortem_id: Annotated[
-        UUID | None,
+    postmortem_id: Annotated[
+        UUID,
         Field(
-            default=None,
-            foreign_key="postmortem.id"
+            foreign_key="postmortems.id"
         )
     ]
-
-    post_mortem: Optional["PostMortem"] = Relationship(
+    postmortem_ref: Optional[
+        "PostMortem"
+    ] = Relationship(
         back_populates="contributing_factors"
     )
 
 
 class LessonLearned(BaseEntity, table=True):
-    lesson_description: Annotated[
+    __tablename__ = "lessons_learned"
+
+    description: Annotated[
         str,
         Field(
             sa_column=Column(Text),
             description="Description of the lesson learned"
         )
     ]
-    post_mortem_id: Annotated[
-        UUID | None,
+    postmortem_id: Annotated[
+        UUID,
         Field(
-            default=None,
-            foreign_key="postmortem.id"
+            foreign_key="postmortems.id"
         )
     ]
-
-    post_mortem: Optional["PostMortem"] = Relationship(
+    postmortem_ref: Optional[
+        "PostMortem"
+    ] = Relationship(
         back_populates="lessons_learned"
     )
 
 
 class ActionItem(BaseEntity, table=True):
-    task_description: Annotated[
+    __tablename__ = "action_items"
+
+    description: Annotated[
         str,
         Field(
             sa_column=Column(Text),
@@ -115,10 +196,15 @@ class ActionItem(BaseEntity, table=True):
         UUID | None,
         Field(
             default=None,
-            foreign_key="user.id",
+            foreign_key="users.id",
             index=True
         )
     ]
+    owner_user: Optional[
+        "User"
+    ] = Relationship(
+        back_populates="action_items_owned"
+    )
     due_date: Annotated[
         date,
         Field(
@@ -126,60 +212,60 @@ class ActionItem(BaseEntity, table=True):
         )
     ]
     status: Annotated[
-        ActionItemStatus,
+        ActionItemStatusEnum,
         Field(
-            default=ActionItemStatus.OPEN,
+            default=ActionItemStatusEnum.OPEN,
             description="Status of the action item"
         )
     ]
-    post_mortem_id: Annotated[
-        UUID | None,
+    postmortem_id: Annotated[
+        UUID,
         Field(
-            default=None,
-            foreign_key="postmortem.id"
+            foreign_key="postmortems.id"
         )
     ]
-
-    post_mortem: Optional["PostMortem"] = Relationship(
+    postmortem_ref: Optional[
+        "PostMortem"
+    ] = Relationship(
         back_populates="action_items"
-    )
-    owner_user: Optional["User"] = Relationship(
-        back_populates="action_items_owned"
     )
 
 
 class PostMortemApproval(BaseEntity, table=True):
+    __tablename__ = "postmortem_approvals"
+
     role: Annotated[
-        str,
+        PostMortemApproverRoleEnum,
         Field(
-            description="Role of the approver at the time of approval"
+            description="Role of the approver",
+            default=PostMortemApproverRoleEnum.INCIDENT_LEAD
         )
     ]
     approver_user_id: Annotated[
         UUID,
         Field(
-            foreign_key="user.id",
+            foreign_key="users.id",
             index=True,
             nullable=False
         )
     ]
+    approver_user: "User" = Relationship(
+        back_populates="postmortem_approvals"
+    )
     approval_date: Annotated[
         date,
         Field(
             description="Date of approval"
         )
     ]
-    post_mortem_id: Annotated[
-        UUID | None,
+    postmortem_id: Annotated[
+        UUID,
         Field(
-            default=None,
-            foreign_key="postmortem.id"
+            foreign_key="postmortems.id"
         )
     ]
-
-    post_mortem: Optional["PostMortem"] = Relationship(
+    postmortem_ref: Optional[
+        "PostMortem"
+    ] = Relationship(
         back_populates="approvals"
-    )
-    approver_user: "User" = Relationship(
-        back_populates="post_mortem_approvals_made"
     )

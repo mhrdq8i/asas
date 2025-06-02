@@ -61,7 +61,7 @@ class User(BaseEntity, table=True):
     role: Annotated[
         UserRoleEnum,
         Field(
-            default=UserRoleEnum.viewer,
+            default=UserRoleEnum.VIEWER,
             nullable=False
         )
     ]
