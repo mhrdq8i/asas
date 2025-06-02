@@ -64,9 +64,14 @@ def create_access_token(
     Creates a new JWT access token.
 
     Args:
-        subject: The subject of the token (e.g., username or user ID).
-        expires_delta: Optional timedelta for token expiration. If None,
-                       uses default expiration from settings.
+
+        subject:
+            The subject of the token
+            (e.g., username or user ID).
+
+        expires_delta: Optional timedelta for token expiration.
+                        If None, uses default expiration
+                        from settings.
 
     Returns:
         The encoded JWT access token.
@@ -91,19 +96,25 @@ def create_access_token(
         SECRET_KEY,
         algorithm=ALGORITHM
     )
+
     return encoded_jwt
 
 
-def decode_token(token: str) -> dict | None:
+def decode_token(
+    token: str
+) -> dict | None:
     """
     Decodes a JWT token.
 
     Args:
+
         token: The JWT token string.
 
     Returns:
-        The decoded payload if the token is valid and not expired, otherwise None.
+        The decoded payload if the token is
+        valid and not expired, otherwise None.
     """
+
     try:
         payload = jwt.decode(
             token,
@@ -111,6 +122,7 @@ def decode_token(token: str) -> dict | None:
             algorithms=[ALGORITHM]
         )
         return payload
+
     except JWTError:
         # This could be due to token expiration or an invalid signature
         # You might want to log the specific JWTError here

@@ -1,9 +1,10 @@
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from enum import Enum
-
 from typing import Annotated
 
-from sqlmodel import SQLModel, Field
+from sqlmodel.sql import func
+from sqlmodel import SQLModel, Field, Column, DateTime
 
 
 class IncidentStatus(str, Enum):
@@ -34,12 +35,34 @@ class UserRoleEnum(str, Enum):
     sre = "sre"
 
 
-class BaseEntity(SQLModel, table=False):
+class BaseEntity(SQLModel):
     id: Annotated[
-        UUID, Field(
+        UUID,
+        Field(
             default_factory=uuid4,
             primary_key=True,
             index=True,
             nullable=False
         )
     ]
+    created_at: Annotated[
+        datetime,
+        Field(
+            default_factory=lambda: datetime.now(timezone.utc),
+            nullable=False,
+            sa_column=Column(
+                DateTime(timezone=True),
+                server_default=func.now()
+            )
+        )]
+    updated_at: Annotated[
+        datetime,
+        Field(
+            default_factory=lambda: datetime.now(timezone.utc),
+            nullable=False,
+            sa_column=Column(
+                DateTime(timezone=True),
+                server_default=func.now(),
+                onupdate=func.now()
+            )
+        )]

@@ -2,43 +2,46 @@ from datetime import datetime
 from typing import Annotated, List
 
 from pydantic import EmailStr
-from sqlmodel import Field, Relationship
-from sqlalchemy import Column, String, Text
+from sqlmodel import Field, Relationship, DateTime
+from sqlalchemy import Column, Text
 
 from src.models.base import UserRoleEnum
 from src.models.base import BaseEntity
 
 
 class User(BaseEntity, table=True):
+    __tablename__ = "users"
+
     username: Annotated[
         str,
         Field(
             index=True,
             unique=True,
-            nullable=False
+            nullable=False,
+            max_length=50
         )
     ]
     full_name: Annotated[
         str | None,
         Field(
-            default=None
+            default=None,
+            max_length=100
         )
     ]
     email: Annotated[
-        EmailStr,
-        Field(
+        EmailStr, Field(
             index=True,
             unique=True,
-            nullable=False
+            nullable=False,
+            max_length=255
         )
     ]
+    # SQLModel will use String(255)
     hashed_password: Annotated[
         str,
         Field(
-            sa_column=Column(
-                String,
-                nullable=False
-            )
+            nullable=False,
+            max_length=255
         )
     ]
     is_active: Annotated[
@@ -73,26 +76,34 @@ class User(BaseEntity, table=True):
         str | None,
         Field(
             default=None,
-            index=True
+            index=True,
+            max_length=255
         )
     ]
     email_verified_at: Annotated[
         datetime | None,
         Field(
-            default=None
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     reset_token: Annotated[
         str | None,
         Field(
             default=None,
-            index=True
+            index=True,
+            max_length=255
         )
     ]
     reset_token_expires: Annotated[
         datetime | None,
         Field(
-            default=None
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     is_deleted: Annotated[
@@ -106,15 +117,20 @@ class User(BaseEntity, table=True):
     deleted_at: Annotated[
         datetime | None,
         Field(
-            default=None
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
     avatar_url: Annotated[
         str | None,
         Field(
-            default=None
+            default=None,
+            max_length=512
         )
     ]
+    # Explicit Text for long bio
     bio: Annotated[
         str | None,
         Field(
@@ -125,30 +141,50 @@ class User(BaseEntity, table=True):
     timezone: Annotated[
         str | None,
         Field(
-            default=None
+            default=None,
+            max_length=50
         )
     ]
     last_login_at: Annotated[
         datetime | None,
-        Field(default=None)
+        Field(
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
+        )
     ]
     last_login_ip: Annotated[
         str | None,
-        Field(default=None)
+        Field(
+            default=None,
+            max_length=45
+        )
     ]
 
-    incidents_commanded: List["IncidentMetadata"] = Relationship(
+    # Relationships
+    incidents_commanded: List[
+        "IncidentMetadata"
+    ] = Relationship(
         back_populates="commander"
     )
-    timeline_events_owned: List["TimelineEvent"] = Relationship(
+    timeline_events_owned: List[
+        "TimelineEvent"
+    ] = Relationship(
         back_populates="owner_user"
     )
-    action_items_owned: List["ActionItem"] = Relationship(
+    action_items_owned: List[
+        "ActionItem"
+    ] = Relationship(
         back_populates="owner_user"
     )
-    sign_offs_made: List["SignOffEntry"] = Relationship(
+    sign_offs_made: List[
+        "SignOffEntry"
+    ] = Relationship(
         back_populates="approver_user"
     )
-    post_mortem_approvals_made: List["PostMortemApproval"] = Relationship(
+    post_mortem_approvals_made: List[
+        "PostMortemApproval"
+    ] = Relationship(
         back_populates="approver_user"
     )
