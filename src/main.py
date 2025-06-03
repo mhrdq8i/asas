@@ -1,14 +1,13 @@
-from contextlib import asynccontextmanager
+from contextlib import (
+    asynccontextmanager
+)
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
 from src.database.session import init_db
-# from src.database.session import engine
-
 from src.core.config import settings
 from src.core.error_handlers import register_error_handlers
-
 from src.api.v1.endpoints import auth as auth_router_v1
 from src.api.v1.endpoints import users as users_router_v1
 
@@ -23,17 +22,39 @@ async def lifespan(
     - On startup: create database tables.
     - On shutdown: (can add cleanup logic here if needed)
     """
-    print("Application Lifespan: Startup sequence initiated.")
-    print("Creating database tables if they don't exist...")
+
+    print(
+        "Application Lifespan: Startup sequence initiated."
+    )
+
+    print(
+        "Creating database tables if they don't exist..."
+    )
+
     await init_db()
-    print("Database tables check/creation complete.")
+
+    print(
+        "Database tables check/creation complete."
+    )
+
     yield
-    print("Application Lifespan: Shutdown sequence initiated.")
+
+    print(
+        "Application Lifespan: Shutdown sequence initiated."
+    )
 
 app = FastAPI(
-    title=getattr(settings, 'APP_NAME', "Incident Management System API"),
-    version=getattr(settings, 'APP_VERSION', "0.1.0"),
-    description="API for managing incidents, users, and related entities.",
+    title=getattr(
+        settings,
+        'APP_NAME',
+        "Incident Management System"
+    ),
+    version=getattr(
+        settings,
+        'APP_VERSION',
+        "0.1.0"
+    ),
+    description="Incidents management tracking.",
     lifespan=lifespan,
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/v1/docs",
@@ -42,7 +63,8 @@ app = FastAPI(
 
 register_error_handlers(app)
 print(
-    "Custom error handlers registered with the application."
+    "Custom error handlers registered "
+    "with the application."
 )
 
 # Authentication router
@@ -52,7 +74,7 @@ app.include_router(
     tags=["V1 - Authentication"]
 )
 print(
-    f"Included auth router with prefix /api/v1/auth"
+    "Included auth router with prefix /api/v1/auth"
 )
 
 # Users router
@@ -62,15 +84,8 @@ app.include_router(
     tags=["V1 - Users"]
 )
 print(
-    f"Included users router with prefix /api/v1/users"
+    "Included users router with prefix /api/v1/users"
 )
-
-
-# Example for an admin router (if you create one)
-# from src.dependencies.api_auth_deps import get_current_active_superuser # Example dependency
-# admin_api_router = APIRouter(dependencies=[Depends(get_current_active_superuser)])
-# admin_api_router.include_router(admin_generic_router.router, prefix="/admin-utils", tags=["Admin Utilities"])
-# app.include_router(admin_api_router, prefix="/api/v1/admin", tags=["V1 - Admin Area"])
 
 
 @app.get(
@@ -96,9 +111,6 @@ if __name__ == "__main__":
         "Starting Uvicorn server programmatically"
     )
 
-    # Use settings from config.py
-    # for host, port,
-    # log_level, and reload
     server_host = getattr(
         settings,
         'SERVER_HOST',
@@ -126,7 +138,9 @@ if __name__ == "__main__":
         "main:app",
         host=server_host,
         port=server_port,
-        reload=debug_mode,  # Enable reload if DEBUG_MODE is True
+        # Enable reload if DEBUG_MODE is True
+        reload=debug_mode,
         log_level=log_level,
-        # workers=1 # For development, 1 worker is usually fine
+        # For development, 1 worker is usually fine
+        # workers=1
     )
