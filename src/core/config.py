@@ -4,7 +4,9 @@ from pydantic_settings import (
 )
 from pydantic import (
     PostgresDsn,
-    model_validator
+    model_validator,
+    EmailStr,
+    SecretStr
 )
 from typing import Any, Dict
 
@@ -12,57 +14,74 @@ from typing import Any, Dict
 class Settings(BaseSettings):
     """
     Application settings are managed by this class.
-    Values MUST be provided via
-    environment variables or a .env file.
-    No default values are assumed in the
-    class definition itself for most fields.
+    Values MUST be provided via environment variables
+    or a .env file for required fields.
     """
+    # --- Database Settings ---
     POSTGRES_SCHEME: str | None = None
     POSTGRES_USER: str | None = None
-    POSTGRES_PASSWORD: str | None = None
+    POSTGRES_PASSWORD: SecretStr | None = None
     POSTGRES_SERVER: str | None = None
     POSTGRES_PORT: str | None = None
     POSTGRES_DB: str | None = None
 
     DATABASE_URL: PostgresDsn | str | None = None
-    # Must be in .env or environment
     DATABASE_ECHO: bool
 
-    # JWT settings - Must be in .env or environment
+    # --- JWT Settings ---
+    # This should ideally also be SecretStr
+    # for consistency if handled by Pydantic
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int
+    EMAIL_VERIFY_TOKEN_EXPIRE_MINUTES: int
+
+    # --- Email Settings ---
+    MAIL_SERVER: str
+    MAIL_PORT: int
+    MAIL_USERNAME: str | None = None
+    # Defined as SecretStr
+    MAIL_PASSWORD: SecretStr | None = None
+    MAIL_FROM_EMAIL: EmailStr
+    MAIL_FROM_NAME: str | None = None
+    MAIL_USE_TLS: bool
+    MAIL_USE_SSL: bool
+    MAIL_TIMEOUT: int = 60
+
+    # --- Frontend URL ---
+    FRONTEND_URL: str
+
+    # --- Application Metadata ---
+    APP_NAME: str = "Incident Management System API"
+    APP_VERSION: str = "0.1.0"
+    DEBUG_MODE: bool = False
+    SERVER_HOST: str = "0.0.0.0"
+    SERVER_PORT: int = 8000
+    LOG_LEVEL: str = "info"
 
     @model_validator(mode='before')
     @classmethod
-    def assemble_and_validate_db_connection(
+    def assemble_database_url(
         cls,
         values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Constructs DATABASE_URL if not provided,
         or validates it if provided.
-        Ensures all necessary DB components are present
-        if DATABASE_URL is to be constructed.
+        Ensures all necessary DB components are
+        present if DATABASE_URL is to be constructed.
         """
-
-        print(
-            f"--------------------------------------------------\n\
-DEBUG: Initial values received by validator: {values} \n\
---------------------------------------------------"
-        )
-
         db_url_provided = values.get('DATABASE_URL')
 
         if db_url_provided and isinstance(
             db_url_provided,
             str
-        ):
-            # If DATABASE_URL is fully provided,
-            # validate and normalize it
+        ) and db_url_provided.strip():
             if "sqlite" in db_url_provided:
-                values['DATABASE_URL'] = db_url_provided  # Allow sqlite
-
+                values[
+                    'DATABASE_URL'
+                ] = db_url_provided
             elif db_url_provided.startswith(
                 "postgresql://"
             ) or db_url_provided.startswith(
@@ -77,129 +96,167 @@ DEBUG: Initial values received by validator: {values} \n\
                     "postgres://",
                     "postgresql+asyncpg://"
                 )
-
             elif not db_url_provided.startswith(
                 "postgresql+asyncpg://"
             ):
-                raise ValueError(
-                    f"DATABASE_URL '{db_url_provided}' for PostgreSQL \
-                        must use 'postgresql+asyncpg://', "
-                    f"'postgresql://', or 'postgres://' scheme."
+                error_msg = (
+                    f"DATABASE_URL '{db_url_provided}'\
+                         for PostgreSQL must use "
+                    f"'postgresql+asyncpg://', 'postgresql://', or "
+                    f"'postgres://' scheme."
                 )
-
+                raise ValueError(error_msg)
             return values
 
-        elif db_url_provided is not None and not isinstance(
-                db_url_provided, str
-        ):
-            # If DATABASE_URL is provided but not a string
-            # (e.g. set to null in some env config)
+        elif db_url_provided is not None:
             raise ValueError(
-                f"DATABASE_URL must be a string if provided,\
-                      got: {type(db_url_provided)}"
+                f"DATABASE_URL must be a non-empty string if provided, "
+                f"got: '{db_url_provided}' (type: {type(db_url_provided)})"
             )
 
-        # If DATABASE_URL is not provided
-        # (i.e., db_url_provided is None),
-        # construct it from parts
-        # All parts now MUST be present in
-        # 'values' (from .env or environment)
         scheme = values.get('POSTGRES_SCHEME')
         user = values.get('POSTGRES_USER')
-        password = values.get('POSTGRES_PASSWORD')
+        # In 'before' mode validator,
+        # password_from_env
+        # is still a raw string or None
+        password_from_env = values.get('POSTGRES_PASSWORD')
         server = values.get('POSTGRES_SERVER')
         port_str = values.get('POSTGRES_PORT')
         db_name = values.get('POSTGRES_DB')
 
-        # Check if all necessary components for
-        # PostgreSQL construction are provided
-        # These are now effectively mandatory
-        # if DATABASE_URL is not set.
-        essential_parts = {
+        essential_db_parts = {
             "POSTGRES_SCHEME": scheme,
             "POSTGRES_USER": user,
-            "POSTGRES_PASSWORD": password,
+            "POSTGRES_PASSWORD": password_from_env,
             "POSTGRES_SERVER": server,
             "POSTGRES_PORT": port_str,
             "POSTGRES_DB": db_name,
         }
 
-        missing_params = [
-            key for key,
-            value in essential_parts.items() if value is None
-        ]
-
-        if missing_params:
-            raise ValueError(
-                f"Cannot construct DATABASE_URL.\
-                     DATABASE_URL is not set, and the following "
-                f"parameters required for its construction are missing:\
-                     {', '.join(missing_params)}. "
-                f"Please provide either a full DATABASE_URL or all of these: "
-                f"{', '.join(essential_parts.keys())} \
-                    in the environment or .env file."
+        missing_db_params = [
+            key for (
+                key, value
+            ) in essential_db_parts.items()
+            if value is None or (
+                isinstance(
+                    value, str
+                ) and not value.strip()
             )
+        ]
+        # If password_from_env was a string but empty,
+        # it's caught by `not value.strip()`
+
+        if missing_db_params:
+            error_message = (
+                "Cannot construct DATABASE_URL. "
+                "DATABASE_URL is not set or is empty, "
+                "and the following parameters required "
+                "for its construction are "
+                f"missing or empty: {', '.join(missing_db_params)}. \
+                    Please provide either a full "
+                "DATABASE_URL or all of these: "
+                "POSTGRES_SCHEME, POSTGRES_USER, "
+                "POSTGRES_PASSWORD, POSTGRES_SERVER, "
+                "POSTGRES_PORT, POSTGRES_DB "
+                "with non-empty values in the "
+                "environment or .env file."
+            )
+            raise ValueError(error_message)
+
+        # Should be true
+        assert (
+            scheme and
+            user and
+            password_from_env and
+            server and
+            port_str and
+            db_name
+        )
 
         try:
-            # Port can be None if not specified,
-            # PostgresDsn.build handles default
-            port: int | None = None
+            port = int(port_str)
+            # Use password_from_env
+            # directly as it's the plain string here
+            password_plain = str(password_from_env)
 
-            # Should not be None if missing_params is empty
-            if port_str is not None:
-                # Ensure port_str is treated
-                # as string before int conversion
-                port = int(str(port_str))
-
-            # Construct the DSN string
-            # Assert parts are not None
-            # due to the check above,
-            # help type checker
-            assert scheme is not None
-            assert user is not None
-            assert password is not None
-            assert server is not None
-            assert db_name is not None
-
-            constructed_url = f"{scheme}://{user}:{password}@{server}:{port}/{db_name}"
-
-            # Validate the constructed URL with PostgresDsn
-            # (or let it be a string if it's for sqlite)
-            if "sqlite" not in scheme:
-                # This will raise ValueError if invalid
-                PostgresDsn(constructed_url)
-
-            values[
-                'DATABASE_URL'
-            ] = constructed_url
-            print(
-                f"DEBUG: \Constructed DATABASE_URL: {constructed_url}"
+            constructed_url = (
+                f"{scheme}://"
+                f"{user}:{password_plain}@"
+                f"{server}:{port}/"
+                f"{db_name}"
             )
-        # Catches int() conversion or
-        # PostgresDsn validation error
+
+            if "sqlite" not in scheme:
+                PostgresDsn(
+                    constructed_url
+                )  # Validate the constructed DSN
+
+            values['DATABASE_URL'] = constructed_url
+
         except ValueError as e:
-            # Add more context to the error
             original_error_msg = str(e)
+            prefix = "Error constructing DATABASE_URL from parts. "
+            current_detailed_error: str
 
-            if "invalid port number" in \
-                original_error_msg.lower() or \
-                    "invalid literal \
-                        for int()" in original_error_msg.lower():
-
-                detailed_error = f"POSTGRES_PORT \
-                    ('{port_str}') must be a valid integer."
+            if "invalid port number" \
+                in original_error_msg.lower() or \
+               "invalid literal for int()" in \
+                    original_error_msg.lower():
+                current_detailed_error = (
+                    f"POSTGRES_PORT ('{port_str}')\
+                          must be a valid integer."
+                )
 
             else:
-                detailed_error = f"Ensure all parts \
-                      (USER, PASSWORD, SERVER, PORT, DB, SCHEME) \
-                          form a valid DSN. \
-                            Original Pydantic/validation\
-                                 error: {original_error_msg}"
 
+                msg_part1 = "Ensure all parts (USER, PASSWORD, SERVER, "
+                msg_part2 = "PORT, DB, SCHEME) form a valid DSN. "
+                msg_part3 = f"Original error: {original_error_msg}"
+
+                current_detailed_error = (
+                    msg_part1 + msg_part2 + msg_part3
+                )
             raise ValueError(
-                f"Error constructing DATABASE_URL \
-                    from parts. {detailed_error}")
+                f"{prefix}{current_detailed_error}"
+            )
 
+        return values
+
+    @model_validator(mode='before')
+    @classmethod
+    def validate_mail_credentials(
+        cls,
+        values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Validates that if MAIL_USERNAME is provided,
+        MAIL_PASSWORD is also provided and non-empty.
+        """
+        mail_user = values.get('MAIL_USERNAME')
+
+        # This is a raw string or None
+        mail_pass_from_env = values.get('MAIL_PASSWORD')
+
+        # If mail_user is provided (and not empty),
+        # mail_pass_from_env must also be
+        # provided (and not empty)
+        if mail_user and (
+                isinstance(
+                    mail_user,
+                    str
+                ) and mail_user.strip()
+        ):
+            if not mail_pass_from_env or (
+                    isinstance(
+                        mail_pass_from_env,
+                        str
+                    ) and not mail_pass_from_env.strip()
+            ):
+                raise ValueError(
+                    "If MAIL_USERNAME is provided and\
+                         non-empty, MAIL_PASSWORD must also be "
+                    "provided and non-empty in the .env file."
+                )
         return values
 
     model_config = SettingsConfigDict(
@@ -209,8 +266,4 @@ DEBUG: Initial values received by validator: {values} \n\
     )
 
 
-# Create an instance of the settings.
-# Pydantic will raise validation errors if
-# required fields are missing.
-# (those without defaults and not set by the validator)
 settings = Settings()
