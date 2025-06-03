@@ -17,8 +17,8 @@ from src.models.postmortem import PostMortem
 class Incident(BaseEntity, table=True):
     __tablename__ = "incidents"
 
-    incident_metadata: Optional[
-        "IncidentMetadata"
+    profile: Optional[
+        "IncidentProfile"
     ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
@@ -105,8 +105,8 @@ class Incident(BaseEntity, table=True):
     )
 
 
-class IncidentMetadata(BaseEntity, table=True):
-    __tablename__ = "incident_metadata"
+class IncidentProfile(BaseEntity, table=True):
+    __tablename__ = "incident_profile"
 
     incident_id: Annotated[
         UUID,
@@ -119,7 +119,7 @@ class IncidentMetadata(BaseEntity, table=True):
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
-        back_populates="incident_metadata"
+        back_populates="profile"
     )
 
     title: Annotated[
@@ -257,7 +257,6 @@ class Impacts(BaseEntity, table=True):
 
 class ShallowRCA(BaseEntity, table=True):
     __tablename__ = "shallow_rca"
-
     what_happened: Annotated[
         str,
         Field(
@@ -265,27 +264,27 @@ class ShallowRCA(BaseEntity, table=True):
             description="Description of what happened"
         )
     ]
-    # For List[str], SQLModel should default
-    # to JSON type on PostgreSQL.
-    # No need for sa_column=Column(Text).
     why_it_happened: Annotated[
         List[str],
         Field(
             default_factory=list,
+            sa_column=Column(Text),
             description="List of reasons why it happened"
         )
     ]
-    technical_cause: Annotated[
+    technical_causes: Annotated[
         List[str],
         Field(
             default_factory=list,
+            sa_column=Column(Text),
             description="List of technical causes of the incident"
         )
     ]
-    detection_mechanism: Annotated[
+    detection_mechanisms: Annotated[
         List[str],
         Field(
             default_factory=list,
+            sa_column=Column(Text),
             description="How the incident was detected"
         )
     ]
@@ -294,12 +293,11 @@ class ShallowRCA(BaseEntity, table=True):
         Field(
             foreign_key="incidents.id",
             unique=True,
-            index=True
+            index=True,
+            nullable=False
         )
     ]
-    incident_ref: Optional[
-        "Incident"
-    ] = Relationship(
+    incident_ref: Optional["Incident"] = Relationship(
         back_populates="shallow_rca"
     )
 
@@ -441,7 +439,7 @@ class LongTermPreventativeMeasure(BaseEntity, table=True):
 
 
 class CommunicationLog(BaseEntity, table=True):
-    __tablename__ = "communication_log_entries"
+    __tablename__ = "communication_logs"
 
     time_utc: Annotated[
         datetime,
@@ -476,7 +474,7 @@ class CommunicationLog(BaseEntity, table=True):
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
-        back_populates="communication_log_entries"
+        back_populates="communication_logs"
     )
 
 

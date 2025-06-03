@@ -37,8 +37,9 @@ class PostMortem(BaseEntity, table=True):
     incident_ref: "Incident" = Relationship(
         back_populates="postmortem"
     )
-    metadata: Optional[
-        "PostMortemMetadata"
+
+    profile: Optional[
+        "PostMortemProfile"
     ] = Relationship(
         back_populates="postmortem_ref",
         sa_relationship_kwargs={
@@ -80,21 +81,23 @@ class PostMortem(BaseEntity, table=True):
     )
 
 
-class PostMortemMetadata(BaseEntity, table=True):
-    __tablename__ = "postmortem_metadata"
+class PostMortemProfile(BaseEntity, table=True):
+    __tablename__ = "postmortem_profile"
 
-    id: Annotated[
+    postmortem_ref: "PostMortem" = Relationship(
+        back_populates="profile"
+    )
+    post_mortem_id: Annotated[
         UUID,
         Field(
             foreign_key="postmortems.id",
             unique=True,
             index=True,
-            nullable=False
+            nullable=False,
+            description="Foreign key to the main postmortems table,\
+             establishing a 1-to-1 link."
         )
     ]
-    postmortem: "PostMortem" = Relationship(
-        back_populates="postmortem_metadata"
-    )
     status: Annotated[
         str,
         Field(
@@ -250,7 +253,7 @@ class PostMortemApproval(BaseEntity, table=True):
         )
     ]
     approver_user: "User" = Relationship(
-        back_populates="postmortem_approvals"
+        back_populates="approvals"
     )
     approval_date: Annotated[
         date,

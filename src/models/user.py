@@ -36,7 +36,6 @@ class User(BaseEntity, table=True):
             max_length=255
         )
     ]
-    # SQLModel will use String(255)
     hashed_password: Annotated[
         str,
         Field(
@@ -130,7 +129,6 @@ class User(BaseEntity, table=True):
             max_length=512
         )
     ]
-    # Explicit Text for long bio
     bio: Annotated[
         str | None,
         Field(
@@ -163,8 +161,8 @@ class User(BaseEntity, table=True):
     ]
 
     # Relationships
-    incidents_commanded: List[
-        "IncidentMetadata"
+    incident_commander: List[
+        "IncidentProfile"
     ] = Relationship(
         back_populates="commander"
     )
@@ -178,12 +176,12 @@ class User(BaseEntity, table=True):
     ] = Relationship(
         back_populates="owner_user"
     )
-    sign_offs_made: List[
-        "SignOffEntry"
+    sign_offs: List[
+        "SignOff"
     ] = Relationship(
         back_populates="approver_user"
     )
-    post_mortem_approvals_made: List[
+    approvals: List[
         "PostMortemApproval"
     ] = Relationship(
         back_populates="approver_user"
