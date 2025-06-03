@@ -37,7 +37,9 @@ from src.exceptions.user_exceptions import (
 )
 
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/users"
+)
 
 
 @router.post(
