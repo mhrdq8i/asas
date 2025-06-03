@@ -28,12 +28,15 @@ AsyncSessionLocal = sessionmaker(
 
 
 async def init_db():
-    print("Creating database tables (async)...")
+    print(
+        "Creating database tables (async)..."
+    )
 
     try:
-        print(f"Models known by SQLModel.metadata before create_all:\
+        print(
+            f"Models known by SQLModel.metadata before create_all:\
                {list(SQLModel.metadata.tables.keys())}"
-              )
+        )
 
         if not SQLModel.metadata.tables:
             print(
@@ -43,7 +46,9 @@ async def init_db():
             )
 
         async with engine.begin() as conn:
-            await conn.run_sync(SQLModel.metadata.create_all)
+            await conn.run_sync(
+                SQLModel.metadata.create_all
+            )
 
         print("Database tables created successfully (async).")
 

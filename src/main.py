@@ -26,20 +26,29 @@ async def lifespan(
     Context manager to handle application
       startup and shutdown events.
     - On startup: create database tables.
-    - On shutdown: (can add cleanup logic here if needed, e.g.,
-        close DB engine for some drivers)
+    - On shutdown: (can add cleanup logic
+      here if needed, e.g.,
+      close DB engine for some drivers)
     """
 
-    print("Application Lifespan: Startup sequence initiated.")
-    print("Creating database tables if they don't exist...")
+    print(
+        "Application Lifespan: Startup sequence initiated."
+    )
+    print(
+        "Creating database tables if they don't exist..."
+    )
 
     await init_db()
 
-    print("Database tables check/creation complete.")
+    print(
+        "Database tables check/creation complete."
+    )
 
     yield
 
-    print("Application Lifespan: Shutdown sequence initiated.")
+    print(
+        "Application Lifespan: Shutdown sequence initiated."
+    )
 
 
 app = FastAPI(

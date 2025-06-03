@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import (
     List,
@@ -6,15 +7,14 @@ from typing import (
 
 from sqlmodel import (
     select,
-    func  # func for count
+    func
 )
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
-)  # type: ignore
+)
 
 from src.models.user import User
 
-# For creating user with hashed_password
 from src.api.v1.schemas.user_schemas import (
     UserCreateInternal
 )
@@ -44,7 +44,9 @@ class CRUDUser:
         statement = select(User).where(
             User.id == user_id
         )
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
 
         return result.first()
 
@@ -64,7 +66,9 @@ class CRUDUser:
                 username
             )
         )
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
 
         return result.first()
 
@@ -84,7 +88,9 @@ class CRUDUser:
                 email
             )
         )
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
 
         return result.first()
 
@@ -95,8 +101,10 @@ class CRUDUser:
         email: str | None = None
     ) -> Optional[User]:
         """
-        Retrieve a user by either username or email (case-insensitive).
-        Useful for checking if a user already exists during registration.
+        Retrieve a user by either
+        username or email (case-insensitive).
+        Useful for checking if a user already
+        exists during registration.
         """
         if not username and not email:
             return None
@@ -127,7 +135,9 @@ class CRUDUser:
                 *conditions
             )
         )
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
 
         return result.first()
 
@@ -138,7 +148,8 @@ class CRUDUser:
     ) -> User:
         """
         Create a new user in the database.
-        Expects user_in.hashed_password to be already hashed.
+        Expects user_in.hashed_password
+        to be already hashed.
         """
 
         db_user = User.model_validate(
@@ -147,7 +158,9 @@ class CRUDUser:
 
         self.db.add(db_user)
         await self.db.commit()
-        await self.db.refresh(db_user)
+        await self.db.refresh(
+            db_user
+        )
 
         return db_user
 
@@ -159,8 +172,10 @@ class CRUDUser:
     ) -> User:
         """
         Update an existing user's information.
-        'db_user_to_update' is the existing SQLAlchemy model instance.
-        'user_in_update_data' should be a dictionary of fields to update.
+        'db_user_to_update' is the existing
+        SQLAlchemy model instance.
+        'user_in_update_data' should be a
+        dictionary of fields to update.
         """
 
         for (
@@ -195,8 +210,14 @@ class CRUDUser:
         """
         statement = select(
             User
-        ).offset(skip).limit(limit)
-        result = await self.db.exec(statement)
+        ).offset(
+            skip
+        ).limit(
+            limit
+        )
+        result = await self.db.exec(
+            statement
+        )
         users = result.all()
 
         return list(users)
@@ -210,7 +231,9 @@ class CRUDUser:
                 User.id
             )
         )
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
         count = result.one_or_none()
 
         return count if count is not None else 0
@@ -222,7 +245,9 @@ class CRUDUser:
     ) -> Optional[User]:
 
         # No need to pass db
-        db_user = await self.get_user_by_id(user_id=user_id)
+        db_user = await self.get_user_by_id(
+            user_id=user_id
+        )
 
         if not db_user:
             return None
@@ -237,14 +262,14 @@ class CRUDUser:
                 "(missing 'is_deleted' or 'deleted_at' fields)."
             )
 
-        from datetime import datetime, timezone
-
         db_user.is_deleted = True
         db_user.deleted_at = datetime.now(
             timezone.utc
         )
         self.db.add(db_user)
         await self.db.commit()
-        await self.db.refresh(db_user)
+        await self.db.refresh(
+            db_user
+        )
 
         return db_user

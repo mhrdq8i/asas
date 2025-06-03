@@ -1,18 +1,13 @@
-from datetime import datetime, timedelta, timezone
+from datetime import (
+    datetime,
+    timedelta,
+    timezone
+)
 from typing import Any, Union
 from jose import jwt, JWTError
 from pwdlib import PasswordHash
 
 from src.core.config import settings
-
-
-# from passlib.context import CryptContext
-# Password Hashing Context
-# We use bcrypt as the hashing algorithm.
-# pwd_context = CryptContext(
-#     schemes=["bcrypt"],
-#     deprecated="auto"
-# )
 
 
 # This will typically use Argon2
@@ -21,7 +16,8 @@ password_hasher = PasswordHash.recommended()
 
 
 ALGORITHM = settings.ALGORITHM
-SECRET_KEY = settings.SECRET_KEY  # This should be a strong, random string
+# The SECRET_KEY should be a strong, random string
+SECRET_KEY = settings.SECRET_KEY
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
@@ -34,7 +30,8 @@ def verify_password(
      a hashed password using pwdlib.
     """
 
-    # pwdlib expects bytes for password, so we encode the plain password
+    # pwdlib expects bytes for password,
+    # so we encode the plain password
     return password_hasher.verify(
         plain_password.encode('utf-8'),
         hashed_password
@@ -48,7 +45,8 @@ def get_password_hash(
     Hashes a plain password using pwdlib.
     """
 
-    # pwdlib expects bytes for password, so we encode it
+    # pwdlib expects bytes for
+    # password, so we encode it
     # The hash produced will be a string
 
     return password_hasher.hash(
@@ -76,6 +74,7 @@ def create_access_token(
     Returns:
         The encoded JWT access token.
     """
+
     if expires_delta:
         expire = datetime.now(
             timezone.utc
@@ -91,6 +90,7 @@ def create_access_token(
         "exp": expire,
         "sub": str(subject)
     }
+
     encoded_jwt = jwt.encode(
         to_encode,
         SECRET_KEY,

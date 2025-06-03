@@ -30,17 +30,20 @@ oauth2_scheme = OAuth2PasswordBearer(
 async def get_current_user(
     token: Annotated[
         str,
-        Depends(oauth2_scheme)
+        Depends(
+            oauth2_scheme
+        )
     ],
     user_service: Annotated[
         UserService,
         Depends(
-        get_user_service
+            get_user_service
         )
     ]  # Inject UserService
 ) -> User:
     """
-    Dependency to get the current user from a JWT token.
+    Dependency to get the current
+    user from a JWT token.
     Decodes the token, validates it,
     and retrieves the user from the database.
     Raises HTTPException if authentication fails.
@@ -49,6 +52,7 @@ async def get_current_user(
         payload = security.decode_token(
             token
         )
+
         if payload is None:
             raise NotAuthenticatedException(
                 detail="Could not validate credentials -\
@@ -56,15 +60,13 @@ async def get_current_user(
             )
 
         token_sub = payload.get("sub")
+
         if token_sub is None:
             raise NotAuthenticatedException(
                 detail="Could not validate credentials -\
                     token subject missing"
             )
 
-        # Assuming 'sub' in the token is the username.
-        # If 'sub' is user_id (UUID), you'd parse it
-        # as UUID and use get_user_by_id.
         # For this example, let's assume 'sub' is username.
         # If you store user_id in 'sub', change this part:
         # try:
@@ -76,7 +78,8 @@ async def get_current_user(
         # user = await user_service.get_user_by_id(user_id=user_id)
 
         # If 'sub' is username:
-        # Accessing crud_user directly for this specific lookup
+        # Accessing crud_user directly
+        # for this specific lookup
         user = await user_service.crud_user.get_user_by_username(
             username=token_sub
         )
@@ -87,12 +90,16 @@ async def get_current_user(
         raise NotAuthenticatedException(
             detail="Could not validate credentials - JWT error"
         )
+
     except NotAuthenticatedException:  # Re-raise our custom exception
         raise
     # Catch any other unexpected errors during token processing
+
     except Exception as e:
         # Log error e
-        print(f"Unexpected error during token processing: {e}")
+        print(
+            f"Unexpected error during token processing: {e}"
+        )
         raise NotAuthenticatedException(
             detail="Could not validate credentials - unexpected error"
         )
@@ -108,7 +115,9 @@ async def get_current_user(
 async def get_current_active_user(
     current_user: Annotated[
         User,
-        Depends(get_current_user)
+        Depends(
+            get_current_user
+        )
     ]
 ) -> User:
     """
@@ -117,7 +126,8 @@ async def get_current_active_user(
     checks if the user is active.
     """
     if not current_user.is_active:
-        # You might want a more specific exception here
+        # You might want a more specific
+        # exception here
         # e.g., InactiveUserException
         raise InsufficientPermissionsException(
             detail="Inactive user"
@@ -129,7 +139,9 @@ async def get_current_active_user(
 async def get_current_active_superuser(
     current_user: Annotated[
         User,
-        Depends(get_current_active_user)
+        Depends(
+            get_current_active_user
+        )
     ]
 ) -> User:
     """

@@ -63,9 +63,14 @@ DEBUG: Initial values received by validator: {values} \n\
             if "sqlite" in db_url_provided:
                 values['DATABASE_URL'] = db_url_provided  # Allow sqlite
 
-            elif db_url_provided.startswith("postgresql://") or \
-                    db_url_provided.startswith("postgres://"):
-                values['DATABASE_URL'] = db_url_provided.replace(
+            elif db_url_provided.startswith(
+                "postgresql://"
+            ) or db_url_provided.startswith(
+                "postgres://"
+            ):
+                values[
+                    'DATABASE_URL'
+                ] = db_url_provided.replace(
                     "postgresql://",
                     "postgresql+asyncpg://"
                 ).replace(
@@ -73,12 +78,15 @@ DEBUG: Initial values received by validator: {values} \n\
                     "postgresql+asyncpg://"
                 )
 
-            elif not db_url_provided.startswith("postgresql+asyncpg://"):
+            elif not db_url_provided.startswith(
+                "postgresql+asyncpg://"
+            ):
                 raise ValueError(
                     f"DATABASE_URL '{db_url_provided}' for PostgreSQL \
                         must use 'postgresql+asyncpg://', "
                     f"'postgresql://', or 'postgres://' scheme."
                 )
+
             return values
 
         elif db_url_provided is not None and not isinstance(
@@ -88,7 +96,8 @@ DEBUG: Initial values received by validator: {values} \n\
             # (e.g. set to null in some env config)
             raise ValueError(
                 f"DATABASE_URL must be a string if provided,\
-                      got: {type(db_url_provided)}")
+                      got: {type(db_url_provided)}"
+            )
 
         # If DATABASE_URL is not provided
         # (i.e., db_url_provided is None),
@@ -135,6 +144,7 @@ DEBUG: Initial values received by validator: {values} \n\
             # Port can be None if not specified,
             # PostgresDsn.build handles default
             port: int | None = None
+
             # Should not be None if missing_params is empty
             if port_str is not None:
                 # Ensure port_str is treated
@@ -159,7 +169,9 @@ DEBUG: Initial values received by validator: {values} \n\
                 # This will raise ValueError if invalid
                 PostgresDsn(constructed_url)
 
-            values['DATABASE_URL'] = constructed_url
+            values[
+                'DATABASE_URL'
+            ] = constructed_url
             print(
                 f"DEBUG: \Constructed DATABASE_URL: {constructed_url}"
             )
@@ -176,6 +188,7 @@ DEBUG: Initial values received by validator: {values} \n\
 
                 detailed_error = f"POSTGRES_PORT \
                     ('{port_str}') must be a valid integer."
+
             else:
                 detailed_error = f"Ensure all parts \
                       (USER, PASSWORD, SERVER, PORT, DB, SCHEME) \

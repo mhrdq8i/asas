@@ -3,18 +3,26 @@ from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
 
-from src.database.session import get_async_session
+from src.database.session import (
+    get_async_session
+)
 
-from src.services.user_service import UserService
+from src.services.user_service import (
+    UserService
+)
 
 
 def get_user_service(
-    db_session: AsyncSession = Depends(get_async_session)
+    db_session: AsyncSession = Depends(
+        get_async_session
+    )
 ) -> UserService:
     """
     Dependency to get an instance of UserService.
-    It initializes the UserService with an active database session.
+    It initializes the UserService
+    with an active database session.
     """
+
     return UserService(
         db_session=db_session
     )

@@ -32,7 +32,8 @@ async def app_exception_handler(
     print(
         f"AppException Handler: {type(exc).__name__} -\
           Detail: {exc.detail},\
-          Status Code: {exc.status_code}")
+          Status Code: {exc.status_code}"
+    )
 
     return JSONResponse(
         status_code=exc.status_code,
@@ -45,7 +46,10 @@ async def user_not_found_exception_handler(
     exc: UserNotFoundException
 ):
 
-    print(f"UserNotFoundException Handler: {exc.detail}")
+    print(
+        f"UserNotFoundException Handler: {exc.detail}"
+    )
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -58,7 +62,7 @@ async def user_not_found_exception_handler(
 
 async def request_validation_exception_handler(
     request: Request,
-        exc: RequestValidationError
+    exc: RequestValidationError
 ):
     """
     Handles FastAPI's own request validation errors
@@ -77,7 +81,8 @@ async def request_validation_exception_handler(
 
     print(
         f"RequestValidationError Handler:\
-          Path={request.url.path}, Errors: {errors}")
+          Path={request.url.path}, Errors: {errors}"
+    )
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -105,9 +110,15 @@ async def pydantic_validation_error_handler(
         errors.append(
             {
                 # loc might not always be present
-                "loc": error.get("loc", ["unknown"]),
-                "msg": error.get("msg", "Unknown validation error"),
-                "type": error.get("type", "validation_error"),
+                "loc": error.get(
+                    "loc", ["unknown"]
+                ),
+                "msg": error.get(
+                    "msg", "Unknown validation error"
+                ),
+                "type": error.get(
+                    "type", "validation_error"
+                ),
             }
         )
     print(
@@ -131,17 +142,26 @@ async def generic_exception_handler(
 ):
     """
     Handles any other unhandled Python exceptions.
-    This should be the last handler registered to catch all fallbacks.
+    This should be the last handler registered
+    to catch all fallbacks.
     """
     print(
         f"GenericExceptionHandler: An unhandled exception occurred: \
-          {type(exc).__name__} - {str(exc)} for request: {request.url.path}")
+          {type(exc).__name__} - {str(exc)} for request: {request.url.path}"
+    )
 
-    # import traceback
-    # For detailed logging to console/logs during development
-    # traceback.print_exc()
-    # In production, log exc_info = True with your logger
-    # logger.error("Unhandled exception:", exc_info=True)
+    import traceback
+    from logging import logger
+    # For detailed logging to
+    # console/logs during development
+    traceback.print_exc()
+    # In production,
+    # log exc_info = True
+    # with your logger
+    logger.error(
+        "Unhandled exception:",
+        exc_info=True
+    )
 
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -54,7 +54,8 @@ async def login_for_access_token(
     ]
 ):
     """
-    OAuth2 compatible token login, get an access token for future requests.
+    OAuth2 compatible token login,
+    get an access token for future requests.
     Pass username and password as form data.
     """
     try:
@@ -62,11 +63,14 @@ async def login_for_access_token(
             username=form_data.username,
             password=form_data.password
         )
+
     except AuthenticationFailedException as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.detail,
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
         )
 
     # This check is technically redundant if
@@ -75,7 +79,9 @@ async def login_for_access_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer"
+            },
         )
 
     access_token = security.create_access_token(
@@ -101,11 +107,13 @@ async def request_password_recovery(
         UserService,
         Depends(get_user_service)
     ],
-    # background_tasks: BackgroundTasks # If email sending is a background task
+    # If email sending is a background task
+    # background_tasks: BackgroundTasks
 ):
     """
     Request a password recovery email.
-    An email will be (conceptually) sent to the user with a reset token.
+    An email will be (conceptually) sent
+    to the user with a reset token.
     """
     try:
         # The service method is designed to
@@ -120,6 +128,7 @@ async def request_password_recovery(
         # user_service.send_password_reset_email,
         # email_in.email, reset_token
         # )
+
         return Msg(
             message=response_message
         )
@@ -140,7 +149,8 @@ async def request_password_recovery(
             message="If your email is registered and active,\
                 you will receive a password reset link shortly."
         )
-    # Catch other app-specific errors from service
+    # Catch other app-specific
+    # errors from service
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -154,7 +164,8 @@ async def request_password_recovery(
     summary="Reset Password"
 )
 async def reset_password(
-    # Token can be sent as a query parameter or in the body
+    # Token can be sent as a
+    # query parameter or in the body
     token: str,
     new_password_data: PasswordResetConfirm,
     user_service: Annotated[
@@ -208,11 +219,15 @@ async def reset_password(
 async def request_email_verification_token_endpoint(
     current_user: Annotated[
         UserModel,
-        Depends(get_current_active_user)
+        Depends(
+            get_current_active_user
+        )
     ],
     user_service: Annotated[
         UserService,
-        Depends(get_user_service)
+        Depends(
+            get_user_service
+        )
     ],
     # background_tasks: BackgroundTasks
 ):
@@ -230,6 +245,7 @@ async def request_email_verification_token_endpoint(
         # user_service.send_verification_email,
         # current_user.email, verification_token
         # )
+
         return Msg(
             message=response_message
         )
@@ -259,7 +275,9 @@ async def verify_email_endpoint(
     token_data: EmailVerifyTokenSchema,
     user_service: Annotated[
         UserService,
-        Depends(get_user_service)
+        Depends(
+            get_user_service
+        )
     ]
 ):
     """
@@ -271,6 +289,7 @@ async def verify_email_endpoint(
         await user_service.confirm_email_verification(
             token_in=token_data.token
         )
+
         return Msg(
             message="Your email address has been successfully verified."
         )

@@ -13,7 +13,9 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-class TokenPayload(BaseModel):
+class TokenPayload(
+    BaseModel
+):
     """
     Schema for the data (payload) encoded within the JWT.
     'sub' (subject) typically holds the username or user ID.
@@ -32,14 +34,18 @@ class TokenPayload(BaseModel):
     exp: int | None = None
 
 
-class PasswordResetRequest(BaseModel):
+class PasswordResetRequest(
+    BaseModel
+):
     """
     Schema for requesting a password reset.
     """
     email: EmailStr
 
 
-class PasswordResetConfirm(BaseModel):
+class PasswordResetConfirm(
+    BaseModel
+):
     """
     Schema for confirming a password
     reset with a new password.
@@ -52,7 +58,9 @@ class PasswordResetConfirm(BaseModel):
     )
 
 
-class PasswordResetConfirmWithToken(PasswordResetConfirm):
+class PasswordResetConfirmWithToken(
+    PasswordResetConfirm
+):
     """
     Schema for confirming a password reset,
     including the token in the body.
@@ -64,7 +72,9 @@ class PasswordResetConfirmWithToken(PasswordResetConfirm):
     )
 
 
-class EmailVerificationRequest(BaseModel):
+class EmailVerificationRequest(
+    BaseModel
+):
     """
     Schema for requesting an email verification link.
     Typically, this would be for the currently logged-in user,
@@ -74,7 +84,9 @@ class EmailVerificationRequest(BaseModel):
     pass  # No fields needed, user is identified by auth token
 
 
-class EmailVerifyTokenSchema(BaseModel):
+class EmailVerifyTokenSchema(
+    BaseModel
+):
     """
     Schema for verifying an email using a token.
     The token is usually passed as a query parameter.
