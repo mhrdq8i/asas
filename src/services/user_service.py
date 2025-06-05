@@ -483,9 +483,9 @@ class UserService:
             "type"
         ) != "email_verification":
             raise InvalidInputException(
-                detail="Invalid or expired \
-                    email verification token\
-                          (type or payload error)."
+                detail="Invalid or expired "
+                "email verification token "
+                "(type or payload error)."
             )
 
         user_id_str = payload.get("sub")

@@ -1,129 +1,68 @@
-from datetime import (
-    datetime,
-    timedelta,
-    timezone
-)
+from datetime import datetime, timedelta, timezone
 from typing import Any, Union
-from jose import jwt, JWTError
+
+from jose import jwt, JWTError, ExpiredSignatureError
 from pwdlib import PasswordHash
 
-from src.core.config import settings
+from .config import settings
 
-
-# This will typically use Argon2
-# if installed with 'pwdlib[argon2]'
 password_hasher = PasswordHash.recommended()
 
-
-ALGORITHM = settings.ALGORITHM
-# The SECRET_KEY should be a strong, random string
-SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = str(settings.ALGORITHM)
+SECRET_KEY = str(settings.SECRET_KEY)
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
-def verify_password(
-    plain_password: str,
-    hashed_password: str
-) -> bool:
-    """
-    Verifies a plain password against
-     a hashed password using pwdlib.
-    """
-
-    # pwdlib expects bytes for password,
-    # so we encode the plain password
-    return password_hasher.verify(
-        plain_password.encode('utf-8'),
-        hashed_password
-    )
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return password_hasher.verify(plain_password.encode('utf-8'), hashed_password)
+    except Exception as e:
+        print(f"DEBUG: Password verification failed: {e}")
+        return False
 
 
-def get_password_hash(
-        password: str
-) -> str:
-    """
-    Hashes a plain password using pwdlib.
-    """
-
-    # pwdlib expects bytes for
-    # password, so we encode it
-    # The hash produced will be a string
-
-    return password_hasher.hash(
-        password.encode('utf-8')
-    )
+def get_password_hash(password: str) -> str:
+    return password_hasher.hash(password.encode('utf-8'))
 
 
 def create_access_token(
-    subject: Union[str, Any],
-    expires_delta: timedelta | None = None
+    subject: Union[str, Any], expires_delta: timedelta | None = None
 ) -> str:
-    """
-    Creates a new JWT access token.
-
-    Args:
-
-        subject:
-            The subject of the token
-            (e.g., username or user ID).
-
-        expires_delta: Optional timedelta for token expiration.
-                        If None, uses default expiration
-                        from settings.
-
-    Returns:
-        The encoded JWT access token.
-    """
-
     if expires_delta:
-        expire = datetime.now(
-            timezone.utc
-        ) + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(
-            timezone.utc
-        ) + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    to_encode = {
-        "exp": expire,
-        "sub": str(subject)
-    }
+    if isinstance(subject, dict):
+        to_encode = subject.copy()
+    else:
+        to_encode = {"sub": str(subject)}
 
-    encoded_jwt = jwt.encode(
-        to_encode,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
+    to_encode["exp"] = expire
 
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def decode_token(
-    token: str
-) -> dict | None:
+def decode_token(token: str) -> dict | None:
     """
-    Decodes a JWT token.
-
-    Args:
-
-        token: The JWT token string.
-
-    Returns:
-        The decoded payload if the token is
-        valid and not expired, otherwise None.
+    Decodes a JWT token, providing more specific error logging.
+    Catches general JWTError for signature/algorithm issues.
     """
-
     try:
-        payload = jwt.decode(
-            token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-
-    except JWTError:
-        # This could be due to token expiration or an invalid signature
-        # You might want to log the specific JWTError here
+    except ExpiredSignatureError:
+        print("ERROR decode_token: Token has expired.")
+        return None
+    # Catch other JWT errors like InvalidSignatureError, InvalidAlgorithmError etc.
+    except JWTError as e:
+        print(
+            f"ERROR decode_token: A JWTError occurred: {type(e).__name__} - {e}. This could be due to an invalid signature, algorithm mismatch, or a tampered token.")
+        return None
+    except Exception as e:  # Catch any other unexpected error during decoding
+        print(
+            f"ERROR decode_token: An unexpected error occurred during token decoding: {type(e).__name__} - {e}")
         return None
