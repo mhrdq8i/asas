@@ -1,68 +1,128 @@
-from datetime import datetime, timedelta, timezone
 from typing import Any, Union
-
-from jose import jwt, JWTError, ExpiredSignatureError
+from datetime import (
+    datetime,
+    timedelta,
+    timezone
+)
+from jose import (
+    jwt,
+    JWTError,
+    ExpiredSignatureError
+)
 from pwdlib import PasswordHash
 
-from .config import settings
+from src.core.config import settings
+
 
 password_hasher = PasswordHash.recommended()
 
 ALGORITHM = str(settings.ALGORITHM)
 SECRET_KEY = str(settings.SECRET_KEY)
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    settings.ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(
+        plain_password: str,
+        hashed_password: str
+) -> bool:
     try:
-        return password_hasher.verify(plain_password.encode('utf-8'), hashed_password)
+        return password_hasher.verify(
+            plain_password.encode('utf-8'),
+            hashed_password
+        )
+
     except Exception as e:
-        print(f"DEBUG: Password verification failed: {e}")
+        print(
+            "DEBUG: Password "
+            f"verification failed: {e}"
+        )
         return False
 
 
-def get_password_hash(password: str) -> str:
-    return password_hasher.hash(password.encode('utf-8'))
+def get_password_hash(
+        password: str
+) -> str:
+
+    return password_hasher.hash(
+        password.encode('utf-8')
+    )
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta | None = None
+    subject: Union[str, Any],
+    expires_delta: timedelta | None = None
 ) -> str:
+
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(
+            timezone.utc
+        ) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(
+            timezone.utc
+        ) + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
 
-    if isinstance(subject, dict):
+    if isinstance(
+        subject, dict
+    ):
         to_encode = subject.copy()
     else:
-        to_encode = {"sub": str(subject)}
+        to_encode = {
+            "sub": str(subject)
+        }
 
     to_encode["exp"] = expire
 
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode,
+        key=SECRET_KEY,
+        algorithm=ALGORITHM
+    )
     return encoded_jwt
 
 
-def decode_token(token: str) -> dict | None:
+def decode_token(
+        token: str
+) -> dict | None:
     """
-    Decodes a JWT token, providing more specific error logging.
-    Catches general JWTError for signature/algorithm issues.
+    Decodes a JWT token,
+    providing more specific error logging.
+    Catches general JWTError for
+    signature/algorithm issues.
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            key=SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
         return payload
+
     except ExpiredSignatureError:
-        print("ERROR decode_token: Token has expired.")
+        print(
+            "ERROR decode_token: "
+            "Token has expired."
+        )
         return None
-    # Catch other JWT errors like InvalidSignatureError, InvalidAlgorithmError etc.
+
     except JWTError as e:
         print(
-            f"ERROR decode_token: A JWTError occurred: {type(e).__name__} - {e}. This could be due to an invalid signature, algorithm mismatch, or a tampered token.")
+            "ERROR decode_token: A JWTError occurred: "
+            f"{type(e).__name__} - {e}. "
+            "This could be due to an invalid signature, "
+            "algorithm mismatch, or a tampered token."
+        )
         return None
-    except Exception as e:  # Catch any other unexpected error during decoding
+
+    except Exception as e:
         print(
-            f"ERROR decode_token: An unexpected error occurred during token decoding: {type(e).__name__} - {e}")
+            "ERROR decode_token: "
+            "An unexpected error occurred "
+            "during token decoding: "
+            f"{type(e).__name__} - {e}"
+        )
         return None
