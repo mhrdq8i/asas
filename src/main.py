@@ -73,18 +73,19 @@ app.include_router(
     prefix="/api/v1",
     tags=["V1 - Authentication"]
 )
-print(
-    "Included auth router with prefix /api/v1/auth"
-)
 
 # Users router
 app.include_router(
-    users_router_v1.router,
+    users_router_v1.user_router,
     prefix="/api/v1",
     tags=["V1 - Users"]
 )
-print(
-    "Included users router with prefix /api/v1/users"
+
+# Admins router
+app.include_router(
+    users_router_v1.admin_router,
+    prefix="/api/v1",
+    tags=["V1 - Admins"]
 )
 
 

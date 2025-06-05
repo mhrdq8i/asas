@@ -36,10 +36,10 @@ from src.exceptions.user_exceptions import (
 from src.core.config import settings
 # We won't call email utils directly from service,
 # endpoints will do that via BackgroundTasks
-# from src.core.email_utils import(
-#  send_email_verification_email,
-#  send_password_reset_email
-# )
+from src.core.email_utils import (
+    send_email_verification,
+    send_password_reset_email
+)
 
 
 class UserService:
@@ -462,6 +462,7 @@ class UserService:
         # {user_updated.email}: {email_verification_token}
         # (SERVICE LAYER)"
         # )
+
         message_to_client = "An email verification link\
               has been sent to your email address."
 
