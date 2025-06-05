@@ -1,6 +1,14 @@
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi import (
+    FastAPI,
+    Request,
+    status
+)
+from fastapi.responses import (
+    JSONResponse
+)
+from fastapi.exceptions import (
+    RequestValidationError
+)
 from pydantic import ValidationError
 
 from src.exceptions.base_exceptions import (
@@ -47,7 +55,8 @@ async def user_not_found_exception_handler(
 ):
 
     print(
-        f"UserNotFoundException Handler: {exc.detail}"
+        "UserNotFoundException "
+        f"Handler: {exc.detail}"
     )
 
     return JSONResponse(
@@ -80,8 +89,9 @@ async def request_validation_exception_handler(
         )
 
     print(
-        f"RequestValidationError Handler:\
-          Path={request.url.path}, Errors: {errors}"
+        "RequestValidationError Handler: "
+        f"Path={request.url.path}, "
+        f" Errors: {errors}"
     )
 
     return JSONResponse(
@@ -122,8 +132,9 @@ async def pydantic_validation_error_handler(
             }
         )
     print(
-        f"Pydantic ValidationError Handler(manual): \
-          Path={request.url.path}, Errors: {errors}"
+        "Pydantic ValidationError Handler(manual): "
+        f"Path={request.url.path}, "
+        f"Errors: {errors}"
     )
 
     return JSONResponse(
@@ -146,14 +157,14 @@ async def generic_exception_handler(
     to catch all fallbacks.
     """
     print(
-        f"GenericExceptionHandler: An unhandled exception occurred: \
-          {type(exc).__name__} - {str(exc)} for request: {request.url.path}"
+        "GenericExceptionHandler: "
+        "An unhandled exception occurred: "
+        f"{type(exc).__name__} - {str(exc)} "
+        f" for request: {request.url.path}"
     )
 
     import traceback
     from logging import logger
-    # For detailed logging to
-    # console/logs during development
     traceback.print_exc()
     # In production,
     # log exc_info = True
@@ -166,13 +177,15 @@ async def generic_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "detail": "An unexpected internal server error occurred.\
-              Please try again later."
+            "detail": "An unexpected internal server "
+            "error occurred. Please try again later."
         },
     )
 
 
-def register_error_handlers(app: FastAPI):
+def register_error_handlers(
+        app: FastAPI
+):
     """
     Registers all custom and default exception
     handlers with the FastAPI application.
@@ -181,20 +194,24 @@ def register_error_handlers(app: FastAPI):
     """
 
     # Specific custom exceptions
-    # (if they need handling different from AppException)
+    # (if they need handling
+    # different from AppException)
     app.add_exception_handler(
         UserNotFoundException,
         user_not_found_exception_handler
     )
 
-    # Will be caught by AppException if not specified
+    # Will be caught
+    # by AppException
+    # if not specified
     app.add_exception_handler(
         AuthenticationFailedException,
         app_exception_handler
     )
 
     # Base custom app exception
-    # (catches all its children if not handled more specifically)
+    # (catches all its children
+    # if not handled more specifically)
     app.add_exception_handler(
         AppException,
         app_exception_handler
@@ -211,10 +228,13 @@ def register_error_handlers(app: FastAPI):
         pydantic_validation_error_handler
     )
 
-    # Generic fallback handler (should be last)
+    # Generic fallback handler
+    # (should be last)
     app.add_exception_handler(
         Exception,
         generic_exception_handler
     )
 
-    print("Custom and default error handlers registered.")
+    print(
+        "Custom and default error handlers registered."
+    )
