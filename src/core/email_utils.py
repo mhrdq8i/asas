@@ -103,6 +103,14 @@ async def send_email_verification(
     verification_link = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
     token_expiry_hours = settings.EMAIL_VERIFY_TOKEN_EXPIRE_MINUTES // 60
 
+    print(
+        "*******************************\n"
+        "DEBUG !!!\n"
+        "Generated TOKEN IS:\n"
+        f"{verification_token}\n"
+        "*******************************"
+    )
+
     subject = f"Verify your email for {project_name}"
     html_content = f"""
     <html><body>
