@@ -214,6 +214,14 @@ async def send_password_reset_email(
         settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
     )
 
+    print(
+        "*******************************\n"
+        "DEBUG !!!\n"
+        "Generated TOKEN IS:\n"
+        f"{reset_token}\n"
+        "*******************************"
+    )
+
     subject = f"Password Reset Request for {project_name}"
     html_content = f"""
     <html><body>

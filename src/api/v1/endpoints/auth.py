@@ -102,7 +102,7 @@ async def login_for_access_token(
 
 
 @router.post(
-    "/request-password-recovery",
+    "/password-recovery",
     response_model=Msg,
     status_code=status.HTTP_200_OK,
     summary="Request Password Recovery"
@@ -166,8 +166,8 @@ async def password_recovery(
         ):
             # Log for server admin, but return generic message to client
             print(
-                f"Info: Password recovery for \
-                    non-existent/inactive user: {email_in.email}"
+                "Info: Password recovery for "
+                f"non-existent/inactive user: {email_in.email}"
             )
             return Msg(
                 message="If an account with this email exists and is active, "
@@ -198,7 +198,7 @@ async def password_recovery(
     response_model=Msg,
     summary="Reset Password"
 )
-async def reset_password_endpoint(
+async def reset_password(
     reset_data: PasswordResetConfirmWithToken,
     user_service: Annotated[
         UserService,
@@ -222,6 +222,7 @@ async def reset_password_endpoint(
             token_in=reset_data.token,
             new_password_in=new_password_schema
         )
+
         return Msg(
             message="Your password has been reset successfully."
         )

@@ -271,9 +271,11 @@ class UserService:
         user = await self.crud_user.get_user_by_email(
             email=email_in.email
         )
-        message_to_client = "If an account with this email\
-              exists and is active,\
-                 a password reset link has been sent."
+        message_to_client = (
+            "If an account with this email exists "
+            "and is active, "
+            "a password reset link has been sent."
+        )
 
         if not user or not user.is_active:
             print(
@@ -335,7 +337,6 @@ class UserService:
                 detail="Invalid or expired password \
                     reset token (type or payload error)."
             )
-
         user_id_str = payload.get("sub")
         token_email = payload.get("email")
 
