@@ -11,7 +11,7 @@ from src.models.base import (
     SeverityLevelEnum,
     ActionItemStatusEnum,
     UserRoleEnum,
-    PostMortemApproverRoleEnum,
+    RolesEnum,
     BaseEntity,
 )
 from src.models.user import User
@@ -78,7 +78,7 @@ __all__ = [
     "SeverityLevelEnum",
     "ActionItemStatusEnum",
     "UserRoleEnum",
-    "PostMortemApproverRoleEnum",
+    "RolesEnum",
 
     # User Models
     "User",

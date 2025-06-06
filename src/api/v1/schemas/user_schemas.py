@@ -20,7 +20,7 @@ class UserBase(BaseModel):
         min_length=3,
         max_length=50
     )
-    full_name: str | None = None
+    full_name: str
     # role is not in UserBase,
     # will be added in specific
     # schemas if needed or UserRead
@@ -54,7 +54,7 @@ class UserUpdate(BaseModel):
     All fields are optional.
     """
     email: EmailStr | None = None
-    full_name: str | None = None
+    full_name: str
     username: str | None = PydanticField(
         default=None,
         min_length=3,

@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Annotated
 
 from sqlalchemy.sql import func
-from sqlmodel import SQLModel, Field, Column, DateTime
+from sqlmodel import SQLModel, Field, DateTime
 
 
 class IncidentStatusEnum(str, Enum):
@@ -35,7 +35,7 @@ class UserRoleEnum(str, Enum):
     SRE = "sre"
 
 
-class PostMortemApproverRoleEnum(str, Enum):
+class RolesEnum(str, Enum):
     INCIDENT_LEAD = "Incident Lead"
     ENGINEERING_MANAGER = "Engineering Manager"
     PRODUCT_OWNER = "Product Owner"

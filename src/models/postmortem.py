@@ -17,7 +17,7 @@ from sqlmodel import (
 from src.models.base import (
     BaseEntity,
     ActionItemStatusEnum,
-    PostMortemApproverRoleEnum
+    RolesEnum
 )
 
 
@@ -261,10 +261,10 @@ class PostMortemApproval(BaseEntity, table=True):
     __tablename__ = "postmortem_approvals"
 
     role: Annotated[
-        PostMortemApproverRoleEnum,
+        RolesEnum,
         Field(
             default=(
-                PostMortemApproverRoleEnum.INCIDENT_LEAD
+                RolesEnum.INCIDENT_LEAD
             ),
             description=(
                 "Role of the approver"

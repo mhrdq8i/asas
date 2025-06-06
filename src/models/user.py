@@ -22,7 +22,7 @@ class User(BaseEntity, table=True):
         )
     ]
     full_name: Annotated[
-        str | None,
+        str,
         Field(
             default=None,
             max_length=100
