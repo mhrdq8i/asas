@@ -1,9 +1,26 @@
 from uuid import UUID
-from datetime import datetime, date
-from typing import Optional, List, Annotated
+from datetime import (
+    datetime,
+    date
+)
+from typing import (
+    Optional,
+    List,
+    Annotated
+)
 
-from sqlalchemy import Column, Text
-from sqlmodel import Relationship, Field, DateTime
+from sqlalchemy.dialects.postgresql import (
+    JSONB
+)
+from sqlalchemy import (
+    Column,
+    Text
+)
+from sqlmodel import (
+    Relationship,
+    Field,
+    DateTime
+)
 
 from src.models.base import (
     BaseEntity,
@@ -11,7 +28,9 @@ from src.models.base import (
     IncidentStatusEnum
 )
 from src.models.user import User
-from src.models.postmortem import PostMortem
+from src.models.postmortem import (
+    PostMortem
+)
 
 
 class Incident(BaseEntity, table=True):
@@ -125,22 +144,28 @@ class IncidentProfile(BaseEntity, table=True):
     title: Annotated[
         str,
         Field(
-            description="Main incident title",
-            max_length=255
+            max_length=255,
+            description=(
+                "Main incident title"
+            )
         )
     ]
     severity: Annotated[
         SeverityLevelEnum,
         Field(
-            description="Severity level of the incident"
+            description=(
+                "Severity level of the incident"
+            )
         )
     ]
     datetime_detected_utc: Annotated[
         datetime,
         Field(
-            description="Date/Time Detected (UTC)",
             sa_column=Column(
                 DateTime(timezone=True)
+            ),
+            description=(
+                "Date/Time Detected (UTC)"
             )
         )
     ]
@@ -148,8 +173,10 @@ class IncidentProfile(BaseEntity, table=True):
         str,
         Field(
             sa_column=Column(Text),
-            description="Source of detection, e.g.,\
-             Prometheus Alert or User ID"
+            description=(
+                "Source of detection, e.g., "
+                "Prometheus Alert or User ID"
+            )
         )
     ]
     commander_id: Annotated[
@@ -169,14 +196,18 @@ class IncidentProfile(BaseEntity, table=True):
         IncidentStatusEnum,
         Field(
             default=IncidentStatusEnum.OPEN,
-            description="Current status of the incident"
+            description=(
+                "Current status of the incident"
+            )
         )
     ]
     summary: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Short description of the incident"
+            sa_column=Column(JSONB),
+            description=(
+                "Short description of the incident"
+            )
         )
     ]
 
@@ -185,8 +216,10 @@ class AffectedItemBase(BaseEntity):
     name: Annotated[
         str,
         Field(
-            description="Name of the affected item",
-            max_length=255
+            max_length=255,
+            description=(
+                "Name of the affected item"
+            )
         )
     ]
     incident_id: Annotated[
@@ -228,16 +261,20 @@ class Impacts(BaseEntity, table=True):
     customer_impact: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Details of customer impact"
+            sa_column=Column(JSONB),
+            description=(
+                "Details of customer impact"
+            )
         )
     ]
     business_impact: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Details of business impact, e.g., \
-               estimated lost revenue"
+            sa_column=Column(JSONB),
+            description=(
+                "Details of business impact, e.g., "
+                "estimated lost revenue"
+            )
         )
     ]
     incident_id: Annotated[
@@ -257,27 +294,35 @@ class Impacts(BaseEntity, table=True):
 
 class ShallowRCA(BaseEntity, table=True):
     __tablename__ = "shallow_rca"
+
     what_happened: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of what happened"
+            sa_column=Column(JSONB),
+            description=(
+                "Description of what happened"
+            )
         )
     ]
     why_it_happened: Annotated[
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
-            description="List of reasons why it happened"
+            sa_column=Column(JSONB),
+            description=(
+                "List of reasons why it happened"
+            )
         )
     ]
     technical_causes: Annotated[
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
-            description="List of technical causes of the incident"
+            sa_column=Column(JSONB),
+            description=(
+                "List of technical "
+                "causes of the incident"
+            )
         )
     ]
     detection_mechanisms: Annotated[
@@ -285,7 +330,9 @@ class ShallowRCA(BaseEntity, table=True):
         Field(
             default_factory=list,
             sa_column=Column(Text),
-            description="How the incident was detected"
+            description=(
+                "How the incident was detected"
+            )
         )
     ]
     incident_id: Annotated[
@@ -308,17 +355,21 @@ class TimelineEvent(BaseEntity, table=True):
     time_utc: Annotated[
         datetime,
         Field(
-            description="Time of the event in UTC",
             sa_column=Column(
                 DateTime(timezone=True)
+            ),
+            description=(
+                "Time of the event in UTC"
             )
         )
     ]
     event_description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of the event"
+            sa_column=Column(JSONB),
+            description=(
+                "Description of the event"
+            )
         )
     ]
     owner_user_id: Annotated[
@@ -355,9 +406,12 @@ class ResolutionMitigation(BaseEntity, table=True):
         datetime | None,
         Field(
             default=None,
-            description="Time the incident was resolved in UTC",
             sa_column=Column(
                 DateTime(timezone=True)
+            ),
+            description=(
+                "Time the incident "
+                "was resolved in UTC"
             )
         )
     ]
@@ -398,8 +452,10 @@ class RemediationStep(BaseEntity, table=True):
     step_description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Remediation actions"
+            sa_column=Column(JSONB),
+            description=(
+                "Remediation actions"
+            )
         )
     ]
     resolution_mitigation_id: Annotated[
@@ -421,8 +477,12 @@ class LongTermPreventativeMeasure(BaseEntity, table=True):
     measure_description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of the long-term preventative measure"
+            sa_column=Column(JSONB),
+            description=(
+                "Description of the "
+                "long-term preventative "
+                "measure"
+            )
         )
     ]
     resolution_mitigation_id: Annotated[
@@ -444,9 +504,11 @@ class CommunicationLog(BaseEntity, table=True):
     time_utc: Annotated[
         datetime,
         Field(
-            description="Time of the communication in UTC",
             sa_column=Column(
                 DateTime(timezone=True)
+            ),
+            description=(
+                "Time of the communication in UTC"
             )
         )
     ]
@@ -460,8 +522,10 @@ class CommunicationLog(BaseEntity, table=True):
     message: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Content of the communication"
+            sa_column=Column(JSONB),
+            description=(
+                "Content of the communication"
+            )
         )
     ]
     incident_id: Annotated[

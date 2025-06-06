@@ -6,20 +6,19 @@ from typing import (
     List
 )
 
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import (
     Field,
     Relationship,
     DateTime
 )
-from sqlalchemy import Column, Text
 
 from src.models.base import (
     BaseEntity,
     ActionItemStatusEnum,
     PostMortemApproverRoleEnum
 )
-# from src.models.incident import Incident
-# from src.models.user import User
 
 
 class PostMortem(BaseEntity, table=True):
@@ -94,14 +93,19 @@ class PostMortemProfile(BaseEntity, table=True):
             unique=True,
             index=True,
             nullable=False,
-            description="Foreign key to the main postmortems table,\
-             establishing a 1-to-1 link."
+            description=(
+                "Foreign key to the main"
+                "postmortems table, "
+                "establishing a 1-to-1 link."
+            )
         )
     ]
     status: Annotated[
         str,
         Field(
-            description="Status of the post-mortem",
+            description=(
+                "Status of the post-mortem"
+            ),
             max_length=50
         )
     ]
@@ -109,7 +113,10 @@ class PostMortemProfile(BaseEntity, table=True):
         str | None,
         Field(
             default=None,
-            description="Link to the detailed postmortem document",
+            description=(
+                "Link to the detailed"
+                "postmortem document"
+            ),
             max_length=512
         )
     ]
@@ -117,8 +124,11 @@ class PostMortemProfile(BaseEntity, table=True):
         str | None,
         Field(
             default=None,
-            sa_column=Column(Text),
-            description="In-depth technical cause from deep RCA"
+            sa_column=Column(JSONB),
+            description=(
+                "In-depth technical "
+                "cause from deep RCA"
+            )
         )
     ]
     date_completed_utc: Annotated[
@@ -145,8 +155,10 @@ class ContributingFactor(BaseEntity, table=True):
     description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of the contributing factor"
+            sa_column=Column(JSONB),
+            description=(
+                "Contributing factors"
+            )
         )
     ]
     postmortem_id: Annotated[
@@ -168,8 +180,11 @@ class LessonLearned(BaseEntity, table=True):
     description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of the lesson learned"
+            sa_column=Column(JSONB),
+            description=(
+                "Lesson learned from"
+                "the incident"
+            )
         )
     ]
     postmortem_id: Annotated[
@@ -191,8 +206,10 @@ class ActionItem(BaseEntity, table=True):
     description: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
-            description="Description of the action item task"
+            sa_column=Column(JSONB),
+            description=(
+                "Action items"
+            )
         )
     ]
     owner_user_id: Annotated[
@@ -211,14 +228,20 @@ class ActionItem(BaseEntity, table=True):
     due_date: Annotated[
         date,
         Field(
-            description="Due date for the action item"
+            description=(
+                "Due date for the "
+                "action item"
+            )
         )
     ]
     status: Annotated[
         ActionItemStatusEnum,
         Field(
             default=ActionItemStatusEnum.OPEN,
-            description="Status of the action item"
+            description=(
+                "Status of the "
+                "action item"
+            )
         )
     ]
     postmortem_id: Annotated[
@@ -240,8 +263,12 @@ class PostMortemApproval(BaseEntity, table=True):
     role: Annotated[
         PostMortemApproverRoleEnum,
         Field(
-            description="Role of the approver",
-            default=PostMortemApproverRoleEnum.INCIDENT_LEAD
+            default=(
+                PostMortemApproverRoleEnum.INCIDENT_LEAD
+            ),
+            description=(
+                "Role of the approver"
+            )
         )
     ]
     approver_user_id: Annotated[
@@ -258,7 +285,9 @@ class PostMortemApproval(BaseEntity, table=True):
     approval_date: Annotated[
         date,
         Field(
-            description="Date of approval"
+            description=(
+                "Date of approval"
+            )
         )
     ]
     postmortem_id: Annotated[
