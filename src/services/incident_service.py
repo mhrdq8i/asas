@@ -166,7 +166,7 @@ class IncidentService:
             raise UserNotFoundException(
                 detail=(
                     "Commander with ID "
-                    f"{incident_in.profile.commander_id}"
+                    f"{incident_in.profile.commander_id} "
                     "not found or is inactive."
                 )
             )

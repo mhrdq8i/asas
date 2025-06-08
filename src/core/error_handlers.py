@@ -38,9 +38,7 @@ async def app_exception_handler(
     )
 
     print(
-        f"AppException Handler: {type(exc).__name__} -\
-          Detail: {exc.detail},\
-          Status Code: {exc.status_code}"
+        f"AppException Handler: {type(exc).__name__} - Detail: {exc.detail}, Status Code: {exc.status_code}"
     )
 
     return JSONResponse(
@@ -164,7 +162,10 @@ async def generic_exception_handler(
     )
 
     import traceback
-    from logging import logger
+    # FIX: Correctly import the logging module and get a logger instance.
+    import logging
+    logger = logging.getLogger(__name__)
+
     traceback.print_exc()
     # In production,
     # log exc_info = True
