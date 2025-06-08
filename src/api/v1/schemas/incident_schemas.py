@@ -225,7 +225,7 @@ class ResolutionMitigationRead(BaseModel):
         from_attributes = True
 
 
-class IncidentSignOffRead(BaseModel):
+class SignOffRead(BaseModel):
 
     id: UUID
     role: RolesEnum
@@ -282,14 +282,14 @@ class IncidentRead(BaseModel):
     ] = []
 
     sign_offs: List[
-        IncidentSignOffRead
+        SignOffRead
     ] = []
 
     class Config:
         from_attributes = True
 
 
-class IncidentUpdateProfile(BaseModel):
+class IncidentProfileUpdate(BaseModel):
     """
     Schema for updating an incident's profile.
     All fields are optional.
@@ -314,7 +314,7 @@ class IncidentUpdateProfile(BaseModel):
     ] = None
 
 
-class IncidentUpdateImpacts(BaseModel):
+class ImpactsUpdate(BaseModel):
     """
     Schema for updating an incident's impacts.
     All fields are optional.
@@ -327,7 +327,7 @@ class IncidentUpdateImpacts(BaseModel):
     ] = None
 
 
-class IncidentUpdateShallowRCA(BaseModel):
+class ShallowRCAUpdate(BaseModel):
     """
     Schema for updating an incident's shallow RCA.
     All fields are optional.

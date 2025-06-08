@@ -139,7 +139,7 @@ class CrudIncident:
         )
         return list(result.all())
 
-    async def create_new_incident(
+    async def create_incident(
         self,
         *,
         incident_in: IncidentCreate
