@@ -25,13 +25,14 @@ from src.api.v1.schemas.incident_schemas import (
     TimelineEventCreate,
     CommunicationLogCreate,
 )
-from src.exceptions.common_exceptions import (
-    ResourceNotFoundException,
-    InvalidOperationException,
-)
 from src.exceptions.user_exceptions import (
     InsufficientPermissionsException,
     UserNotFoundException,
+)
+from src.exceptions.incident_exceptions import (
+    IncidentNotFoundException,
+    IncidentAlreadyResolvedException,
+    InvalidStatusTransitionException,
 )
 
 
@@ -95,14 +96,12 @@ class IncidentService:
         Raises an exception if
         the incident is not found.
         """
-
         incident = await self.crud_incident.get_incident_by_id(
             incident_id=incident_id
         )
 
         if not incident:
-            raise ResourceNotFoundException(
-                resource_name="Incident",
+            raise IncidentNotFoundException(
                 identifier=str(
                     incident_id
                 )
@@ -196,8 +195,8 @@ class IncidentService:
         self,
         *,
         incident_id: UUID,
-        current_user: User,
-        update_data: IncidentProfileUpdate
+        update_data: IncidentProfileUpdate,
+        current_user: User
     ) -> Incident:
         """
         Updates an incident's profile
@@ -215,14 +214,39 @@ class IncidentService:
             exclude_unset=True
         )
 
-        if 'status' in update_dict and incident.profile:
-            if incident.profile.status == \
-                IncidentStatusEnum.RESOLVED \
-                    and update_dict[
-                        'status'
-                    ] != IncidentStatusEnum.RESOLVED:
-                raise InvalidOperationException(
-                    "Cannot change status of a resolved incident."
+        if not incident.profile:
+            return await self.crud_incident.update_incident_profile(
+                db_incident=incident,
+                update_data=update_dict
+            )
+
+        old_status = incident.profile.status
+        new_status = update_dict.get('status')
+
+        # Business Rule:
+        # If the incident is already resolved...
+        if old_status == IncidentStatusEnum.RESOLVED:
+            # And the user tries to change the
+            # status to something else, raise an error.
+            if new_status \
+                and new_status \
+                    != IncidentStatusEnum.RESOLVED:
+                raise InvalidStatusTransitionException(
+                    from_status=old_status,
+                    to_status=new_status
+                )
+            # Or tries to change any other field
+            # (except status to resolved
+            #  again which is redundant)
+            elif len(
+                update_dict
+            ) > 1 or (
+                    len(
+                        update_dict
+                    ) == 1 and 'status' not in update_dict
+            ):
+                raise IncidentAlreadyResolvedException(
+                    "Cannot update profile details of a resolved incident."
                 )
 
         return await self.crud_incident.update_incident_profile(
@@ -248,10 +272,17 @@ class IncidentService:
             incident=incident,
             user=current_user
         )
+
+        if incident.profile \
+            and incident.profile.status \
+                == IncidentStatusEnum.RESOLVED:
+            raise IncidentAlreadyResolvedException(
+                "Cannot update impacts of a resolved incident."
+            )
+
         update_dict = update_data.model_dump(
             exclude_unset=True
         )
-
         return await self.crud_incident.update_incident_impacts(
             db_incident=incident,
             impacts_data=update_dict
@@ -275,10 +306,17 @@ class IncidentService:
             incident=incident,
             user=current_user
         )
+
+        if incident.profile \
+            and incident.profile.status \
+                == IncidentStatusEnum.RESOLVED:
+            raise IncidentAlreadyResolvedException(
+                "Cannot update RCA of a resolved incident."
+            )
+
         update_dict = update_data.model_dump(
             exclude_unset=True
         )
-
         return await self.crud_incident.update_shallow_rca(
             db_incident=incident,
             rca_data=update_dict
