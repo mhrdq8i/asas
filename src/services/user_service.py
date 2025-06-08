@@ -5,7 +5,9 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
+
 from src.crud.crud_user import CRUDUser
+from src.crud.crud_incident import CrudIncident
 from src.models.user import User
 from src.api.v1.schemas.user_schemas import (
     UserCreate,
@@ -32,6 +34,8 @@ from src.exceptions.user_exceptions import (
     AuthenticationFailedException,
     UserNotFoundException,
     InsufficientPermissionsException,
+    UserAlreadyDeletedException,
+    CannotDeleteActiveCommanderException
 )
 from src.core.config import settings
 
@@ -43,6 +47,9 @@ class UserService:
     ):
         self.db_session: AsyncSession = db_session
         self.crud_user = CRUDUser(
+            db_session=self.db_session
+        )
+        self.crud_incident = CrudIncident(
             db_session=self.db_session
         )
 
@@ -611,9 +618,7 @@ class UserService:
             raise InsufficientPermissionsException()
 
         if user_to_delete.is_deleted:
-            raise InvalidOperationException(
-                detail="User is already soft-deleted."
-            )
+            raise UserAlreadyDeletedException()
 
         print(
             "Placeholder: Check if user "
@@ -621,13 +626,12 @@ class UserService:
             "active incident commander "
             "would happen here."
         )
-        # is_commander = await \
-        # self.crud_incident.is_user_active_commander\
-        # (user_id=user_to_delete.id)
-        # if is_commander:
-        #     raise InvalidOperationException(
-        # detail="User is an active incident commander and cannot be deleted."
-        # )
+
+        is_commander = await self.crud_incident.is_user_active_commander(
+            user_id=user_to_delete.id
+        )
+        if is_commander:
+            raise CannotDeleteActiveCommanderException()
 
         update_data = {
             "is_deleted": True,

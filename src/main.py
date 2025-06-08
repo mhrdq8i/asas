@@ -7,9 +7,18 @@ from fastapi import FastAPI
 
 from src.database.session import init_db
 from src.core.config import settings
-from src.core.error_handlers import register_error_handlers
-from src.api.v1.endpoints import auth as auth_router_v1
-from src.api.v1.endpoints import users as users_router_v1
+from src.core.error_handlers import (
+    register_error_handlers
+)
+from src.api.v1.endpoints import (
+    auth as auth_router_v1
+)
+from src.api.v1.endpoints import (
+    users as users_router_v1
+)
+from src.api.v1.endpoints import (
+    incidents as incident_router_v1
+)
 
 
 @asynccontextmanager
@@ -40,7 +49,8 @@ async def lifespan(
     yield
 
     print(
-        "Application Lifespan: Shutdown sequence initiated."
+        "Application Lifespan: "
+        "Shutdown sequence initiated."
     )
 
 app = FastAPI(
@@ -54,7 +64,7 @@ app = FastAPI(
         'APP_VERSION',
         "0.1.0"
     ),
-    description="Incidents management tracking.",
+    description="Incidents management system.",
     lifespan=lifespan,
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/v1/docs",
@@ -69,23 +79,38 @@ print(
 
 # Authentication router
 app.include_router(
-    auth_router_v1.router,
+    router=(
+        auth_router_v1.router
+    ),
     prefix="/api/v1",
     tags=["V1 - Authentication"]
 )
 
 # Users router
 app.include_router(
-    users_router_v1.user_router,
+    router=(
+        users_router_v1.user_router
+    ),
     prefix="/api/v1",
     tags=["V1 - Users"]
 )
 
 # Admins router
 app.include_router(
-    users_router_v1.admin_router,
+    router=(
+        users_router_v1.admin_router
+    ),
     prefix="/api/v1",
     tags=["V1 - Admins"]
+)
+
+# Incidents router
+app.include_router(
+    router=(
+        incident_router_v1.incidents_router
+    ),
+    prefix="/api/v1",
+    tags=["V1 - Incidents"],
 )
 
 

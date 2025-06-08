@@ -6,7 +6,8 @@ from src.exceptions.base_exceptions import (
     AppException
 )
 from src.exceptions.common_exceptions import (
-    ResourceNotFoundException
+    ResourceNotFoundException,
+    InvalidOperationException
 )
 
 
@@ -78,3 +79,39 @@ class UserNotFoundException(
             resource_name="User",
             identifier=identifier
         )
+
+
+class UserAlreadyDeletedException(
+    InvalidOperationException
+):
+    """
+    Raised when an operation is
+    attempted on an already
+    soft-deleted user.
+    """
+
+    def __init__(
+            self,
+            detail: str = "User is already soft-deleted."
+    ):
+        super().__init__(
+            detail=detail
+        )
+
+
+class CannotDeleteActiveCommanderException(
+    InvalidOperationException
+):
+    """
+    Raised when attempting to delete a
+    user who is an active incident commander.
+    """
+
+    def __init__(
+            self,
+            detail: str = (
+                "User is an active incident "
+                "commander and cannot be deleted."
+            )
+    ):
+        super().__init__(detail=detail)
