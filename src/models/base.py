@@ -14,11 +14,11 @@ class IncidentStatusEnum(str, Enum):
 
 
 class SeverityLevelEnum(str, Enum):
-    CRITICAL = "Sev-1 - Critical"
-    HIGH = "Sev-2 - High"
-    MEDIUM = "Sev-3 - Medium"
-    LOW = "Sev-4 - Low"
-    INFORMATIONAL = "Sev-5 - Informational"
+    CRITICAL = "Sev1-Critical"
+    HIGH = "Sev2-High"
+    MEDIUM = "Sev3-Medium"
+    LOW = "Sev4-Low"
+    INFORMATIONAL = "Sev5-Informational"
 
 
 class ActionItemStatusEnum(str, Enum):
