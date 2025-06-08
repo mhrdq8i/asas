@@ -287,3 +287,60 @@ class IncidentRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class IncidentUpdateProfile(BaseModel):
+    """
+    Schema for updating an incident's profile.
+    All fields are optional.
+    """
+    title: Optional[
+        str
+    ] = PydanticField(
+        default=None,
+        max_length=255
+    )
+    severity: Optional[
+        SeverityLevelEnum
+    ] = None
+    commander_id: Optional[
+        UUID
+    ] = None
+    status: Optional[
+        IncidentStatusEnum
+    ] = None
+    summary: Optional[
+        str
+    ] = None
+
+
+class IncidentUpdateImpacts(BaseModel):
+    """
+    Schema for updating an incident's impacts.
+    All fields are optional.
+    """
+    customer_impact: Optional[
+        str
+    ] = None
+    business_impact: Optional[
+        str
+    ] = None
+
+
+class IncidentUpdateShallowRCA(BaseModel):
+    """
+    Schema for updating an incident's shallow RCA.
+    All fields are optional.
+    """
+    what_happened: Optional[
+        List[str]
+    ] = None
+    why_it_happened: Optional[
+        List[str]
+    ] = None
+    technical_causes: Optional[
+        List[str]
+    ] = None
+    detection_mechanisms: Optional[
+        List[str]
+    ] = None
