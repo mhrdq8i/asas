@@ -14,29 +14,17 @@ from src.api.v1.schemas.user_schemas import (
     UserRead,
     UserUpdate
 )
-from src.dependencies.service_deps import (
-    get_user_service
-)
+from src.core.email_utils import send_email_verification
+from src.dependencies.service_deps import get_user_service
 from src.dependencies.api_auth_deps import (
     get_current_active_user,
     get_current_active_superuser
 )
 from src.services.user_service import UserService
 from src.models.user import User as UserModel
-from src.exceptions.base_exceptions import (
-    AppException
-)
+from src.exceptions.base_exceptions import AppException
 from src.exceptions.common_exceptions import (
-    DuplicateResourceException,
     InvalidOperationException
-)
-from src.exceptions.user_exceptions import (
-    UserNotFoundException,
-    InsufficientPermissionsException
-)
-
-from src.core.email_utils import (
-    send_email_verification
 )
 
 
@@ -47,8 +35,7 @@ user_router = APIRouter(
 
 admin_router = APIRouter(
     prefix="/admin",
-    # Protect all routes
-    # in this router
+    # Protect all routes in this router
     dependencies=[
         Depends(
             get_current_active_superuser
@@ -62,16 +49,16 @@ admin_router = APIRouter(
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
     summary="Register New User",
-    description="Create a new user account. "
-    "Username and email must be unique. "
-    "An email verification link will be sent."
+    description=(
+        "Create a new user account. "
+        "Username and email must be unique."
+    )
 )
 async def register_new_user(
     user_in: UserCreate,
     user_service: Annotated[
-        UserService, Depends(
-        get_user_service
-        )
+        UserService,
+        Depends(get_user_service)
     ],
     background_tasks: BackgroundTasks
 ):
@@ -87,6 +74,8 @@ async def register_new_user(
             user_in=user_in
         )
 
+        # Attempt to send verification
+        # email in the background
         try:
             (
                 updated_user_for_email,
@@ -102,55 +91,43 @@ async def register_new_user(
                     username=updated_user_for_email.username,
                     verification_token=verification_token
                 )
-                print(
-                    "Email verification task added "
-                    "to background for new user: "
-                    f"{updated_user_for_email.email}"
-                )
-            else:
-                print(
-                    "WARNING: Verification token was not "
-                    "generated for new user: "
-                    f"{created_user.email}"
-                )
-
         except InvalidOperationException as e_verify:
+            # Log this internally,
+            # but don't fail the
+            # user registration
             print(
                 "Could not schedule email verification "
-                "for new user "
-                f"{created_user.email}: {e_verify.detail}"
+                f"for new user {created_user.email}: "
+                f"{e_verify.detail}"
             )
-
         except Exception as e_task:
             print(
-                "Error preparing or adding "
-                "email verification task for "
-                f"{created_user.email}: {e_task}"
+                "Error preparing email verification task "
+                f"for {created_user.email}: {e_task}"
             )
 
         return created_user
 
-    except DuplicateResourceException as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=e.detail,
-        )
-
     except AppException as e:
+        # Catch all custom application
+        # exceptions and convert
+        # them to HTTPException
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
         )
-
     except Exception as e:
+        # Catch any unexpected errors
         print(
             "Unexpected error during "
             f"user registration: {e}"
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred "
-            "during user registration."
+            detail=(
+                "An unexpected error occurred "
+                "during user registration."
+            )
         )
 
 
@@ -158,14 +135,15 @@ async def register_new_user(
     "/me",
     response_model=UserRead,
     summary="Get Current User",
-    description="Get all information about "
-    "the currently authenticated user."
+    description=(
+        "Get all information about "
+        "the currently authenticated user."
+    )
 )
 async def read_current_user_me(
     current_user: Annotated[
-        UserModel, Depends(
-            get_current_active_user
-        )
+        UserModel,
+        Depends(get_current_active_user)
     ]
 ):
     return current_user
@@ -175,22 +153,20 @@ async def read_current_user_me(
     "/me",
     response_model=UserRead,
     summary="Update Current User Profile",
-    description="Update the profile information "
-    "for the currently authenticated user."
+    description=(
+        "Update the profile information for "
+        "the currently authenticated user."
+    )
 )
 async def update_current_user_me(
     user_update_in: UserUpdate,
     current_user: Annotated[
         UserModel,
-        Depends(
-            get_current_active_user
-        )
+        Depends(get_current_active_user)
     ],
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ],
 ):
     try:
@@ -200,33 +176,10 @@ async def update_current_user_me(
         )
         return updated_user
 
-    except DuplicateResourceException as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=e.detail
-        )
-
-    except UserNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.detail
-        )
-
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
-        )
-
-    except Exception as e:
-        print(
-            "Unexpected error during "
-            f"user profile update: {e}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred "
-            "while updating the profile.",
         )
 
 
@@ -236,14 +189,15 @@ async def update_current_user_me(
     "/",
     response_model=List[UserRead],
     summary="List Users (Admin)",
-    description="Get a list of all users. "
-    "Requires superuser privileges."
+    description=(
+        "Get a list of all users. "
+        "Requires superuser privileges."
+    )
 )
 async def read_all_users_admin(
     user_service: Annotated[
-        UserService, Depends(
-            get_user_service
-        )
+        UserService,
+        Depends(get_user_service)
     ],
     skip: int = 0,
     limit: int = 100
@@ -252,7 +206,6 @@ async def read_all_users_admin(
         skip=skip,
         limit=limit
     )
-
     return users
 
 
@@ -260,15 +213,16 @@ async def read_all_users_admin(
     "/{user_id_to_get}",
     response_model=UserRead,
     summary="Get User by ID (Admin)",
-    description="Get a specific user by their ID. "
-    "Requires superuser privileges."
+    description=(
+        "Get a specific user by their ID. "
+        "Requires superuser privileges."
+    )
 )
 async def read_user_by_id_admin(
     user_id_to_get: uuid.UUID,
     user_service: Annotated[
-        UserService, Depends(
-            get_user_service
-        )
+        UserService,
+        Depends(get_user_service)
     ]
 ):
     try:
@@ -276,12 +230,6 @@ async def read_user_by_id_admin(
             user_id=user_id_to_get
         )
         return user
-
-    except UserNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.detail
-        )
 
     except AppException as e:
         raise HTTPException(
@@ -294,23 +242,21 @@ async def read_user_by_id_admin(
     "/{user_id_to_delete}/soft-delete",
     response_model=UserRead,
     summary="Soft Delete User (Admin)",
-    description="Soft delete a user. "
-    "Requires superuser privileges. "
-    "Cannot delete active incident commanders."
+    description=(
+        "Soft delete a user. "
+        "Requires superuser privileges. "
+        "Cannot delete active incident commanders."
+    )
 )
 async def soft_delete_user_by_admin(
     user_id_to_delete: uuid.UUID,
     performing_admin_user: Annotated[
         UserModel,
-        Depends(
-            get_current_active_superuser
-        )
+        Depends(get_current_active_superuser)
     ],
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ]
 ):
     try:
@@ -320,39 +266,8 @@ async def soft_delete_user_by_admin(
         )
         return deleted_user
 
-    except UserNotFoundException as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.detail
-        )
-
-    except InvalidOperationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.detail
-        )
-
-    except InsufficientPermissionsException as e:
-        # This specific exception might be redundant
-        # if router-level dependency catches it first
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.detail
-        )
-
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
-        )
-
-    except Exception as e:
-        print(
-            "Unexpected error during "
-            f" admin soft delete user: {e}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred "
-            "during soft delete operation."
         )
