@@ -22,19 +22,9 @@ from src.api.v1.schemas.auth_schemas import (
     Msg,
     EmailVerifyTokenSchema
 )
-from src.dependencies.service_deps import (
-    get_user_service
-)
-from src.dependencies.api_auth_deps import (
-    get_current_active_user
-)
-from src.exceptions.base_exceptions import (
-    AppException
-)
-from src.exceptions.common_exceptions import (
-    InvalidInputException,
-    InvalidOperationException,
-)
+from src.dependencies.service_deps import get_user_service
+from src.dependencies.api_auth_deps import get_current_active_user
+from src.exceptions.base_exceptions import AppException
 from src.exceptions.user_exceptions import (
     AuthenticationFailedException,
     UserNotFoundException,
@@ -46,14 +36,14 @@ from src.core.email_utils import (
 )
 
 router = APIRouter(
-    prefix="/auth"
+    prefix="/auth",
+    tags=["V1 - Authentication"]
 )
 
 
 @router.post(
     "/token",
-    response_model=Token,
-    summary="Login for Access Token"
+    response_model=Token
 )
 async def login_for_access_token(
     request: Request,
@@ -63,16 +53,12 @@ async def login_for_access_token(
     ],
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ]
 ):
     """
     OAuth2 compatible token login,
     get an access token for future requests.
-    Pass username and password as form data.
-    Email must be verified to login.
     """
     client_ip = request.client.host if request.client else None
     try:
@@ -81,8 +67,18 @@ async def login_for_access_token(
             password=form_data.password,
             client_ip=client_ip
         )
+        access_token = security.create_access_token(
+            subject=user.username
+        )
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
 
     except AuthenticationFailedException as e:
+        # Special handling for login to
+        # include the WWW-Authenticate header
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=e.detail,
@@ -91,37 +87,28 @@ async def login_for_access_token(
             },
         )
 
-    access_token = security.create_access_token(
-        subject=user.username
-    )
-
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    except AppException as e:
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
 @router.post(
     "/password-recovery",
     response_model=Msg,
-    status_code=status.HTTP_200_OK,
-    summary="Request Password Recovery"
+    status_code=status.HTTP_200_OK
 )
 async def password_recovery(
     email_in: PasswordResetRequest,
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ],
     background_tasks: BackgroundTasks
 ):
     """
     Request a password recovery email.
-    An email will be sent to the user
-    with a reset token if the user
-    exists and is active.
     """
     try:
         (
@@ -131,7 +118,6 @@ async def password_recovery(
         ) = await user_service.prepare_password_reset_data(
             email_in=email_in
         )
-
         if user and reset_token:
             background_tasks.add_task(
                 send_password_reset_email,
@@ -139,82 +125,40 @@ async def password_recovery(
                 username=user.username,
                 reset_token=reset_token
             )
-            # Server-side log for successful token
-            # generation and email task scheduling
-            print(
-                f"Password reset email task added for {user.email}"
-            )
-
         return Msg(message=msg_to_client)
 
     except AppException as e:
-        # This handles specific AppExceptions if
-        # prepare_password_reset_data raises them
-        # beyond the controlled (None, None, message)
-        # return for user not found/inactive.
-        # For security, it's often better to
-        # return a generic success-like message
-        # for password recovery requests to
-        # prevent email enumeration.
-        # The service layer is designed to
-        # return a generic message for UserNotFound/Inactive.
-        # So, this HTTPException might
-        # be for other unexpected AppExceptions.
-        if isinstance(
-            e,
-            UserNotFoundException
-        ):
-            # Log for server admin, but return generic message to client
-            print(
-                "Info: Password recovery for "
-                f"non-existent/inactive user: {email_in.email}"
-            )
-            return Msg(
-                message="If an account with this email exists and is active, "
-                        "a password reset link has been sent."
-            )
-        # For other AppExceptions,
-        # re-raise as HTTPException
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
-
-    except Exception as e:
-        # Catch-all for unexpected errors
+        # For security, always return a
+        # generic success message for this endpoint
+        # to prevent email enumeration.
+        # The actual error can be logged internally.
         print(
-            f"Unexpected error in password recovery for {email_in.email}: {e}"
+            f"Error during password recovery request: {e.detail}"
         )
-        # Return a generic message
-        # to avoid leaking information
         return Msg(
-            message="An error occurred. If your email is registered, "
-                    "you might receive a password reset link."
+            message=(
+                "If an account with this email exists, "
+                "a password reset link has been sent."
+            )
         )
 
 
 @router.post(
     "/reset-password",
-    response_model=Msg,
-    summary="Reset Password"
+    response_model=Msg
 )
 async def reset_password(
     reset_data: PasswordResetConfirmWithToken,
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ]
 ):
     """
-    Reset password using a token and
-    new password provided in the request body.
+    Reset password using a
+    token and new password.
     """
     try:
-        # The service method confirm_password_reset
-        # expects new_password_data
-        # (PasswordResetConfirm) and token_in separately.
         new_password_schema = PasswordResetConfirm(
             new_password=reset_data.new_password
         )
@@ -222,34 +166,25 @@ async def reset_password(
             token_in=reset_data.token,
             new_password_in=new_password_schema
         )
-
         return Msg(
-            message="Your password has been reset successfully."
+            message=(
+                "Your password has been "
+                "reset successfully."
+            )
         )
-
-    except InvalidInputException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.detail
-        )
-
-    except UserNotFoundException:
-        # Masking UserNotFound to a
-        # more generic invalid token message
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired password reset token."
-        )
-
-    except AuthenticationFailedException as e:
-        # If token verification fails
-        # within the service for other reasons
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.detail
-        )
-
     except AppException as e:
+        # To prevent user enumeration,
+        # we mask UserNotFoundException.
+        if isinstance(
+            e, UserNotFoundException
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Invalid or expired "
+                    "password reset token."
+                )
+            )
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
@@ -259,40 +194,31 @@ async def reset_password(
 @router.post(
     "/request-email-verification",
     response_model=Msg,
-    status_code=status.HTTP_200_OK,
-    summary="Request Email Verification Token"
+    status_code=status.HTTP_200_OK
 )
-async def email_verification_token(
+async def request_email_verification(
     current_user: Annotated[
         UserModel,
-        Depends(
-            get_current_active_user
-        )
+        Depends(get_current_active_user)
     ],
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ],
     background_tasks: BackgroundTasks
 ):
     """
-    Requests a new email verification token
-    for the currently authenticated user.
-    Sends an email with the verification link.
+    Requests a new email verification
+    token for the current user.
     """
     try:
         (
             user,
             verification_token,
             msg_to_client
-        ) = (
-            await user_service.prepare_email_verification_data(
-                current_user=current_user
-            )
+        ) = await user_service.prepare_email_verification_data(
+            current_user=current_user
         )
-
         if user and verification_token:
             background_tasks.add_task(
                 send_email_verification,
@@ -300,17 +226,8 @@ async def email_verification_token(
                 username=user.username,
                 verification_token=verification_token
             )
-            # Server-side log
-            print(
-                f"Email verification task added for {user.email}"
-            )
-
-        return Msg(message=msg_to_client)
-
-    except InvalidOperationException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.detail
+        return Msg(
+            message=msg_to_client
         )
 
     except AppException as e:
@@ -322,45 +239,42 @@ async def email_verification_token(
 
 @router.post(
     "/verify-email",
-    response_model=Msg,
-    summary="Verify Email Address"
+    response_model=Msg
 )
 async def verify_email(
     token_data: EmailVerifyTokenSchema,
     user_service: Annotated[
         UserService,
-        Depends(
-            get_user_service
-        )
+        Depends(get_user_service)
     ]
 ):
     """
-    Verify user's email address using
-    the provided token in the request body.
+    Verify user's email address
+    using the provided token.
     """
     try:
         await user_service.confirm_email_verification(
             token_in=token_data.token
         )
         return Msg(
-            message="Your email address has been successfully verified."
+            message=(
+                "Your email address has been "
+                "successfully verified."
+            )
         )
-
-    except InvalidInputException as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=e.detail
-        )
-
-    except UserNotFoundException:
-        # Masking UserNotFound to a
-        # more generic invalid token message
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired email verification token."
-        )
-
     except AppException as e:
+        # To prevent user enumeration,
+        # we mask UserNotFoundException.
+        if isinstance(
+            e, UserNotFoundException
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Invalid or expired "
+                    "email verification token."
+                )
+            )
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
