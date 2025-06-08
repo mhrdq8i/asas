@@ -94,7 +94,7 @@ __all__ = [
     "ResolutionMitigation",
     "RemediationStep",
     "LongTermPreventativeMeasure",
-    "CommunicationLogEntry",
+    "CommunicationLog",
     "SignOff",
 
     # PostMortem Models

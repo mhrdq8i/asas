@@ -55,16 +55,22 @@ async def get_current_user(
 
         if payload is None:
             raise NotAuthenticatedException(
-                detail="Could not validate credentials -\
-                    token invalid or expired"
+                detail=(
+                    "Could not validate credentials "
+                    "-"
+                    " token invalid or expired"
+                )
             )
 
         token_sub = payload.get("sub")
 
         if token_sub is None:
             raise NotAuthenticatedException(
-                detail="Could not validate credentials -\
-                    token subject missing"
+                detail=(
+                    "Could not validate credentials "
+                    "-"
+                    " token subject missing"
+                )
             )
 
         # For this example, let's assume 'sub' is username.
@@ -88,7 +94,11 @@ async def get_current_user(
     except JWTError:
         # Log the specific JWTError for debugging if needed
         raise NotAuthenticatedException(
-            detail="Could not validate credentials - JWT error"
+            detail=(
+                "Could not validate credentials "
+                "-"
+                " JWT error"
+            )
         )
 
     except NotAuthenticatedException:  # Re-raise our custom exception
@@ -101,12 +111,20 @@ async def get_current_user(
             f"Unexpected error during token processing: {e}"
         )
         raise NotAuthenticatedException(
-            detail="Could not validate credentials - unexpected error"
+            detail=(
+                "Could not validate credentials "
+                "-"
+                " unexpected error"
+            )
         )
 
     if user is None:
         raise NotAuthenticatedException(
-            detail="User not found or credentials invalid"
+            detail=(
+                "User not found "
+                "or "
+                "credentials invalid"
+            )
         )
 
     return user
@@ -151,8 +169,11 @@ async def get_current_active_superuser(
     """
     if not current_user.is_superuser:
         raise InsufficientPermissionsException(
-            detail="The user doesn't have enough\
-                privileges (not a superuser)."
+            detail=(
+                "The user doesn't have "
+                "enough privileges "
+                "(not a superuser)."
+            )
         )
 
     return current_user

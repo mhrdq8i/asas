@@ -127,14 +127,13 @@ class Incident(BaseEntity, table=True):
 class IncidentProfile(BaseEntity, table=True):
     __tablename__ = "incident_profile"
 
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            unique=True,
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        unique=True,
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -277,14 +276,13 @@ class Impacts(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            unique=True,
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        unique=True,
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -335,15 +333,14 @@ class ShallowRCA(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            unique=True,
-            index=True,
-            nullable=False
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        unique=True,
+        index=True,
+        nullable=False
+    )
     incident_ref: Optional["Incident"] = Relationship(
         back_populates="shallow_rca"
     )
@@ -385,13 +382,12 @@ class TimelineEvent(BaseEntity, table=True):
     ] = Relationship(
         back_populates="timeline_events_owned"
     )
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -415,14 +411,13 @@ class ResolutionMitigation(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            unique=True,
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        unique=True,
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -528,13 +523,12 @@ class CommunicationLog(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -569,13 +563,12 @@ class SignOff(BaseEntity, table=True):
             description="Date of approval"
         )
     ]
-    incident_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="incidents.id",
-            index=True
-        )
-    ]
+    incident_id: Optional[
+        UUID
+    ] = Field(
+        foreign_key="incidents.id",
+        index=True
+    )
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
