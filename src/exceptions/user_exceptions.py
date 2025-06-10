@@ -16,7 +16,10 @@ class AuthenticationFailedException(AppException):
     """
 
     def __init__(self, detail: str = "Incorrect username or password"):
-        super().__init__(detail=detail, status_code=status.HTTP_401_UNAUTHORIZED)
+        super().__init__(
+            detail=detail,
+            status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 class NotAuthenticatedException(AppException):
