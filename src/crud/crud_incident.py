@@ -328,32 +328,61 @@ class CrudIncident:
         severities: Optional[
             List[SeverityLevelEnum]
         ] = None,
-        commander_id: Optional[
-            UUID
-        ] = None,
-        start_date: Optional[
-            datetime
-        ] = None,
-        end_date: Optional[
-            datetime
-        ] = None,
+        commander_id: Optional[UUID] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[Incident]:
         """
         Searches for incidents based on
         various filter criteria with pagination.
+        Eagerly loads ALL required relationships
+        to prevent lazy loading during
+        response serialization.
         """
-        # Eager load profile for results
         statement = (
             select(
                 Incident
             ).join(
-                IncidentProfile
-            )
-            .options(
+                IncidentProfile,
+                # Use isouter=True if
+                # profile might not exist
+                isouter=True
+            ).options(
                 selectinload(
                     Incident.profile
+                ).selectinload(
+                    IncidentProfile.commander
+                ),
+                selectinload(
+                    Incident.impacts
+                ),
+                selectinload(
+                    Incident.shallow_rca
+                ),
+                selectinload(
+                    Incident.postmortem
+                ),
+                selectinload(
+                    Incident.resolution_mitigation
+                ),
+                selectinload(
+                    Incident.affected_services
+                ),
+                selectinload(
+                    Incident.affected_regions
+                ),
+                selectinload(
+                    Incident.timeline_events
+                ).selectinload(
+                    TimelineEvent.owner_user
+                ),
+                selectinload(Incident.communication_logs),
+                selectinload(
+                    Incident.sign_offs
+                ).selectinload(
+                    SignOff.approver_user
                 )
             )
         )
@@ -361,15 +390,11 @@ class CrudIncident:
         conditions = []
         if statuses:
             conditions.append(
-                IncidentProfile.status.in_(
-                    statuses
-                )
+                IncidentProfile.status.in_(statuses)
             )
         if severities:
             conditions.append(
-                IncidentProfile.severity.in_(
-                    severities
-                )
+                IncidentProfile.severity.in_(severities)
             )
         if commander_id:
             conditions.append(
@@ -393,9 +418,8 @@ class CrudIncident:
             Incident.created_at.desc()
         ).offset(skip).limit(limit)
 
-        result = await self.db.exec(
-            statement
-        )
+        result = await self.db.exec(statement)
+
         return list(result.all())
 
     async def delete_incident(
