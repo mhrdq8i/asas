@@ -145,37 +145,58 @@ class CrudIncident:
         incident_in: IncidentCreate
     ) -> Incident:
         """
-        Create a new incident along with all its related components in a single transaction.
-        FIX: This method now explicitly creates child model instances before assigning them
-        to the parent Incident's relationships. This is the correct and robust pattern.
+        Create a new incident along with all its
+        related components in a single transaction.
+        This method explicitly creates child model
+        instances before assigning them
+        to the parent Incident's relationships.
+        This is the correct and robust pattern.
         """
-        # Create an empty parent Incident object. We will attach children to it.
+        # Create an empty parent Incident object.
+        # We will attach children to it.
         db_incident = Incident()
 
         # Create child model instances from the input schemas
         db_incident.profile = IncidentProfile(
-            **incident_in.profile.model_dump())
+            **incident_in.profile.model_dump()
+        )
 
         # Handle one-to-one relationships that might be in a list
         if incident_in.impacts:
             db_incident.impacts = Impacts(
-                **incident_in.impacts[0].model_dump())
+                **incident_in.impacts[0].model_dump()
+            )
         if incident_in.shallow_rca:
             db_incident.shallow_rca = ShallowRCA(
-                **incident_in.shallow_rca[0].model_dump())
+                **incident_in.shallow_rca[0].model_dump()
+            )
 
-        # Handle one-to-many relationships by creating a list of model instances
-        db_incident.affected_services = [AffectedService(
-            **s.model_dump()) for s in incident_in.affected_services]
-        db_incident.affected_regions = [AffectedRegion(
-            **r.model_dump()) for r in incident_in.affected_regions]
-        db_incident.timeline_events = [TimelineEvent(
-            **t.model_dump()) for t in incident_in.timeline_events]
-        db_incident.communication_logs = [CommunicationLog(
-            **c.model_dump()) for c in incident_in.communication_logs]
+        # Handle one-to-many relationships
+        # by creating a list of model instances
+        db_incident.affected_services = [
+            AffectedService(
+                **s.model_dump()
+            ) for s in incident_in.affected_services
+        ]
+        db_incident.affected_regions = [
+            AffectedRegion(
+                **r.model_dump()
+            ) for r in incident_in.affected_regions
+        ]
+        db_incident.timeline_events = [
+            TimelineEvent(
+                **t.model_dump()
+            ) for t in incident_in.timeline_events
+        ]
+        db_incident.communication_logs = [
+            CommunicationLog(
+                **c.model_dump()
+            ) for c in incident_in.communication_logs
+        ]
 
         # Add the fully constructed parent object to the session.
-        # SQLAlchemy's relationship magic will handle setting the foreign keys.
+        # SQLAlchemy's relationship magic
+        # will handle setting the foreign keys.
         self.db.add(db_incident)
         await self.db.commit()
         await self.db.refresh(db_incident)
