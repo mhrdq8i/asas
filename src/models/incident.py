@@ -9,12 +9,9 @@ from typing import (
     Annotated
 )
 
+from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import (
     JSONB
-)
-from sqlalchemy import (
-    Column,
-    Text
 )
 from sqlmodel import (
     Relationship,
@@ -171,7 +168,7 @@ class IncidentProfile(BaseEntity, table=True):
     detected_by: Annotated[
         str,
         Field(
-            sa_column=Column(Text),
+            sa_column=Column(JSONB),
             description=(
                 "Source of detection, e.g., "
                 "Prometheus Alert or User ID"
@@ -327,7 +324,7 @@ class ShallowRCA(BaseEntity, table=True):
         List[str],
         Field(
             default_factory=list,
-            sa_column=Column(Text),
+            sa_column=Column(JSONB),
             description=(
                 "How the incident was detected"
             )

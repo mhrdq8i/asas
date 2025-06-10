@@ -145,95 +145,41 @@ class CrudIncident:
         incident_in: IncidentCreate
     ) -> Incident:
         """
-        Create a new incident along with all its
-        related components in a single transaction.
-        Handles both one-to-one and one-to-many
-        relationships from the input schema.
+        Create a new incident along with all its related components in a single transaction.
+        FIX: This method now explicitly creates child model instances before assigning them
+        to the parent Incident's relationships. This is the correct and robust pattern.
         """
+        # Create an empty parent Incident object. We will attach children to it.
+        db_incident = Incident()
 
-        # --- Handle One-to-One relationships ---
+        # Create child model instances from the input schemas
+        db_incident.profile = IncidentProfile(
+            **incident_in.profile.model_dump())
 
-        # Profile is mandatory and is an object
-        profile_data = IncidentProfile.model_validate(
-            incident_in.profile
-        )
-
-        # Impacts and ShallowRCA might be
-        # passed as a list with one element
-
-        # Impacts
-        impacts_data = None
+        # Handle one-to-one relationships that might be in a list
         if incident_in.impacts:
-            # Take the first element if it's a list
-            impact_input = incident_in.impacts[
-                0
-            ] if isinstance(
-                incident_in.impacts,
-                list
-            ) else incident_in.impacts
-            impacts_data = Impacts.model_validate(
-                impact_input
-            )
-
-        # ShallowRCA
-        shallow_rca_data = None
+            db_incident.impacts = Impacts(
+                **incident_in.impacts[0].model_dump())
         if incident_in.shallow_rca:
-            rca_input = incident_in.shallow_rca[
-                0
-            ] if isinstance(
-                incident_in.shallow_rca,
-                list
-            ) else incident_in.shallow_rca
-            shallow_rca_data = ShallowRCA.model_validate(
-                rca_input
-            )
+            db_incident.shallow_rca = ShallowRCA(
+                **incident_in.shallow_rca[0].model_dump())
 
-        # --- Handle One-to-Many relationships ---
+        # Handle one-to-many relationships by creating a list of model instances
+        db_incident.affected_services = [AffectedService(
+            **s.model_dump()) for s in incident_in.affected_services]
+        db_incident.affected_regions = [AffectedRegion(
+            **r.model_dump()) for r in incident_in.affected_regions]
+        db_incident.timeline_events = [TimelineEvent(
+            **t.model_dump()) for t in incident_in.timeline_events]
+        db_incident.communication_logs = [CommunicationLog(
+            **c.model_dump()) for c in incident_in.communication_logs]
 
-        affected_services_data = [
-            AffectedService.model_validate(
-                s
-            ) for s in incident_in.affected_services
-        ]
-
-        affected_regions_data = [
-            AffectedRegion.model_validate(
-                r
-            ) for r in incident_in.affected_regions
-        ]
-
-        timeline_events_data = [
-            TimelineEvent.model_validate(
-                t
-            ) for t in incident_in.timeline_events
-        ]
-
-        communication_logs_data = [
-            CommunicationLog.model_validate(
-                c
-            ) for c in incident_in.communication_logs
-        ]
-
-        # Create the main Incident object
-        # and link all child objects to it.
-        db_incident = Incident(
-            profile=profile_data,
-            impacts=impacts_data,
-            shallow_rca=shallow_rca_data,
-            affected_services=affected_services_data,
-            affected_regions=affected_regions_data,
-            timeline_events=timeline_events_data,
-            communication_logs=communication_logs_data
-        )
-
-        # Add the main incident object.
-        # `cascade="all, delete-orphan"`
-        # handles child objects.
+        # Add the fully constructed parent object to the session.
+        # SQLAlchemy's relationship magic will handle setting the foreign keys.
         self.db.add(db_incident)
         await self.db.commit()
-        await self.db.refresh(
-            db_incident
-        )
+        await self.db.refresh(db_incident)
+
         return db_incident
 
     async def update_incident_profile(

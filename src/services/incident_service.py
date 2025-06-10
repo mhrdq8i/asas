@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import List, Optional
 
@@ -148,16 +149,19 @@ class IncidentService:
         return incidents
 
     async def create_incident(
-        self,
-        *,
-        incident_in: IncidentCreate,
-        current_user: User
+            self,
+            *,
+            incident_in: IncidentCreate,
+            current_user: User
     ) -> Incident:
         """
         Creates a new incident.
         Business logic:
         1. Ensures the assigned commander
-           exists and is active.
+        exists and is active.
+        2. Adds the initial timeline event
+        to the creation schema itself
+        to avoid lazy loading issues.
         """
         commander = await self.crud_user.get_user_by_id(
             user_id=incident_in.profile.commander_id
@@ -171,22 +175,30 @@ class IncidentService:
                 )
             )
 
-        new_incident = await self.crud_incident.create_incident(
-            incident_in=incident_in
-        )
-
-        creation_event = TimelineEvent(
+        # Create the initial timeline event data
+        creation_event_data = TimelineEventCreate(
+            time_utc=datetime.now(
+                timezone.utc
+            ),
             event_description=(
                 "Incident created by "
                 f"{current_user.username}"
             ),
-            owner_user_id=current_user.id,
-            incident_id=new_incident.id
+            owner_user_id=current_user.id
         )
 
-        await self.crud_incident.add_timeline_event(
-            incident=new_incident,
-            new_event=creation_event
+        # Add the event to the list of timeline
+        # events in the main creation schema
+        if incident_in.timeline_events is None:
+            incident_in.timeline_events = []
+        incident_in.timeline_events.append(
+            creation_event_data
+        )
+
+        # Now, call the CRUD method with
+        # the fully prepared data.
+        new_incident = await self.crud_incident.create_incident(
+            incident_in=incident_in
         )
 
         return new_incident
