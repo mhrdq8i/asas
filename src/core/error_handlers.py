@@ -38,7 +38,10 @@ async def app_exception_handler(
     )
 
     print(
-        f"AppException Handler: {type(exc).__name__} - Detail: {exc.detail}, Status Code: {exc.status_code}"
+        "AppException Handler: "
+        f"{type(exc).__name__} "
+        f"Detail: {exc.detail}, "
+        f"Status Code: {exc.status_code}"
     )
 
     return JSONResponse(

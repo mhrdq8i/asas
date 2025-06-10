@@ -106,7 +106,10 @@ class IncidentService:
         # with the correct data type (a list).
         creation_event_data = TimelineEventCreate(
             time_utc=datetime.now(timezone.utc),
-            event_description=[f"Incident created by {current_user.username}"],
+            event_description=[(
+                "Incident created by "
+                f"{current_user.username}"
+            )],
             owner_user_id=current_user.id
         )
 

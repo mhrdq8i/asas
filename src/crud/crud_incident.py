@@ -9,7 +9,6 @@ from sqlalchemy.orm import selectinload
 from src.models.incident import (
     Incident,
     IncidentProfile,
-    ResolutionMitigation,
     TimelineEvent,
     SignOff,
     Impacts,
@@ -48,66 +47,35 @@ class CrudIncident:
             incident_id: UUID
     ) -> Optional[Incident]:
         """
-        Retrieve a single incident by its ID
-        with all its related data preloaded.
-        This is optimized for a detailed
-        view of a single incident.
+        Retrieve a single incident by its ID with all its related data preloaded.
+        FIX: Removed the explicit join to rely solely on the options, which is a more
+        robust pattern for complex eager loading.
         """
         statement = (
-            select(Incident).where(
-                Incident.id == incident_id
-            ).options(
-                # Preload the main profile and its commander (User)
-                selectinload(
-                    Incident.profile
-                ).selectinload(
-                    IncidentProfile.commander
-                ),
-
-                # Preload one-to-one relationships
+            select(Incident)
+            .where(Incident.id == incident_id)
+            .options(
+                # Eager load all relationships needed for
+                # serialization or other operations
+                selectinload(Incident.profile).selectinload(
+                    IncidentProfile.commander),
                 selectinload(Incident.impacts),
                 selectinload(Incident.shallow_rca),
                 selectinload(Incident.postmortem),
-
-                # Preload one-to-one relationship and its nested lists
-                selectinload(
-                    Incident.resolution_mitigation
-                ).options(
-                    selectinload(
-                        ResolutionMitigation.short_term_remediation_steps
-                    ),
-                    selectinload(
-                        ResolutionMitigation.long_term_preventative_measures
-                    )
-                ),
-
-                # Preload one-to-many relationships
-                selectinload(
-                    Incident.affected_services
-                ),
-                selectinload(
-                    Incident.affected_regions
-                ),
-                selectinload(
-                    Incident.timeline_events
-                ).selectinload(
-                    TimelineEvent.owner_user
-                ),
-                selectinload(
-                    Incident.communication_logs
-                ),
-                selectinload(
-                    Incident.sign_offs
-                ).selectinload(
-                    SignOff.approver_user
-                )
+                selectinload(Incident.resolution_mitigation),
+                selectinload(Incident.affected_services),
+                selectinload(Incident.affected_regions),
+                selectinload(Incident.timeline_events).selectinload(
+                    TimelineEvent.owner_user),
+                selectinload(Incident.communication_logs),
+                selectinload(Incident.sign_offs).selectinload(
+                    SignOff.approver_user)
             )
         )
-
-        result = await self.db.exec(
-            statement
-        )
-        return result.first()
+        result = await self.db.exec(statement)
+        # Use .unique() to handle potential
+        # duplicate rows from one-to-many loads
+        return result.unique().first()
 
     async def get_incidents(
         self,
