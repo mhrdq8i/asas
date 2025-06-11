@@ -33,27 +33,24 @@ from src.models.postmortem import (
 class Incident(BaseEntity, table=True):
     __tablename__ = "incidents"
 
-    profile: Optional[
-        "IncidentProfile"
-    ] = Relationship(
+    # Each Incident MUST have a profile.
+    profile: "IncidentProfile" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "uselist": False,
             "cascade": "all, delete-orphan"
         }
     )
-    impacts: Optional[
-        "Impacts"
-    ] = Relationship(
+
+    impacts: "Impacts" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "uselist": False,
             "cascade": "all, delete-orphan"
         }
     )
-    shallow_rca: Optional[
-        "ShallowRCA"
-    ] = Relationship(
+
+    shallow_rca: "ShallowRCA" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "uselist": False,
@@ -69,6 +66,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     postmortem: Optional[
         "PostMortem"
     ] = Relationship(
@@ -87,6 +85,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     affected_regions: List[
         "AffectedRegion"
     ] = Relationship(
@@ -95,6 +94,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     timeline_events: List[
         "TimelineEvent"
     ] = Relationship(
@@ -103,6 +103,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     communication_logs: List[
         "CommunicationLog"
     ] = Relationship(
@@ -111,6 +112,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     sign_offs: List[
         "SignOff"
     ] = Relationship(
@@ -124,16 +126,16 @@ class Incident(BaseEntity, table=True):
 class IncidentProfile(BaseEntity, table=True):
     __tablename__ = "incident_profile"
 
-    incident_id: Optional[
-        UUID
-    ] = Field(
+    # This foreign key must always
+    # exist and point to an incident.
+    incident_id: UUID = Field(
         foreign_key="incidents.id",
         unique=True,
-        index=True
+        index=True,
+        nullable=False
     )
-    incident_ref: Optional[
-        "Incident"
-    ] = Relationship(
+
+    incident_ref: "Incident" = Relationship(
         back_populates="profile"
     )
 
@@ -146,6 +148,7 @@ class IncidentProfile(BaseEntity, table=True):
             )
         )
     ]
+
     severity: Annotated[
         SeverityLevelEnum,
         Field(
@@ -154,6 +157,7 @@ class IncidentProfile(BaseEntity, table=True):
             )
         )
     ]
+
     datetime_detected_utc: Annotated[
         datetime,
         Field(
@@ -165,6 +169,7 @@ class IncidentProfile(BaseEntity, table=True):
             )
         )
     ]
+
     detected_by: Annotated[
         str,
         Field(
@@ -175,6 +180,7 @@ class IncidentProfile(BaseEntity, table=True):
             )
         )
     ]
+
     commander_id: Annotated[
         UUID | None,
         Field(
@@ -183,11 +189,13 @@ class IncidentProfile(BaseEntity, table=True):
             index=True
         )
     ]
+
     commander: Optional[
         "User"
     ] = Relationship(
         back_populates="incident_commander"
     )
+
     status: Annotated[
         IncidentStatusEnum,
         Field(
@@ -197,6 +205,7 @@ class IncidentProfile(BaseEntity, table=True):
             )
         )
     ]
+
     summary: Annotated[
         str,
         Field(
@@ -209,6 +218,7 @@ class IncidentProfile(BaseEntity, table=True):
 
 
 class AffectedItemBase(BaseEntity):
+
     name: Annotated[
         str,
         Field(
@@ -218,6 +228,7 @@ class AffectedItemBase(BaseEntity):
             )
         )
     ]
+
     incident_id: Annotated[
         UUID,
         Field(
@@ -263,6 +274,7 @@ class Impacts(BaseEntity, table=True):
             )
         )
     ]
+
     business_impact: Annotated[
         str,
         Field(
@@ -273,16 +285,15 @@ class Impacts(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Optional[
-        UUID
-    ] = Field(
+
+    incident_id: UUID = Field(
         foreign_key="incidents.id",
         unique=True,
-        index=True
+        index=True,
+        nullable=False
     )
-    incident_ref: Optional[
-        "Incident"
-    ] = Relationship(
+
+    incident_ref: "Incident" = Relationship(
         back_populates="impacts"
     )
 
@@ -299,6 +310,7 @@ class ShallowRCA(BaseEntity, table=True):
             )
         )
     ]
+
     why_it_happened: Annotated[
         List[str],
         Field(
@@ -309,6 +321,7 @@ class ShallowRCA(BaseEntity, table=True):
             )
         )
     ]
+
     technical_causes: Annotated[
         List[str],
         Field(
@@ -320,6 +333,7 @@ class ShallowRCA(BaseEntity, table=True):
             )
         )
     ]
+
     detection_mechanisms: Annotated[
         List[str],
         Field(
@@ -330,15 +344,15 @@ class ShallowRCA(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Optional[
-        UUID
-    ] = Field(
+
+    incident_id: UUID = Field(
         foreign_key="incidents.id",
         unique=True,
         index=True,
         nullable=False
     )
-    incident_ref: Optional["Incident"] = Relationship(
+
+    incident_ref: "Incident" = Relationship(
         back_populates="shallow_rca"
     )
 
@@ -357,6 +371,7 @@ class TimelineEvent(BaseEntity, table=True):
             )
         )
     ]
+
     event_description: Annotated[
         str,
         Field(
@@ -366,6 +381,7 @@ class TimelineEvent(BaseEntity, table=True):
             )
         )
     ]
+
     owner_user_id: Annotated[
         UUID | None,
         Field(
@@ -374,17 +390,20 @@ class TimelineEvent(BaseEntity, table=True):
             index=True
         )
     ]
+
     owner_user: Optional[
         "User"
     ] = Relationship(
         back_populates="timeline_events_owned"
     )
+
     incident_id: Optional[
         UUID
     ] = Field(
         foreign_key="incidents.id",
         index=True
     )
+
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -408,18 +427,18 @@ class ResolutionMitigation(BaseEntity, table=True):
             )
         )
     ]
-    incident_id: Optional[
-        UUID
-    ] = Field(
+
+    incident_id: UUID = Field(
         foreign_key="incidents.id",
         unique=True,
-        index=True
+        index=True,
+        nullable=False
     )
-    incident_ref: Optional[
-        "Incident"
-    ] = Relationship(
+
+    incident_ref: "Incident" = Relationship(
         back_populates="resolution_mitigation"
     )
+
     short_term_remediation_steps: List[
         "RemediationStep"
     ] = Relationship(
@@ -428,6 +447,7 @@ class ResolutionMitigation(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     long_term_preventative_measures: List[
         "LongTermPreventativeMeasure"
     ] = Relationship(
@@ -450,12 +470,14 @@ class RemediationStep(BaseEntity, table=True):
             )
         )
     ]
+
     resolution_mitigation_id: Annotated[
         UUID,
         Field(
             foreign_key="resolution_mitigations.id"
         )
     ]
+
     resolution_mitigation_ref: Optional[
         "ResolutionMitigation"
     ] = Relationship(
@@ -477,12 +499,14 @@ class LongTermPreventativeMeasure(BaseEntity, table=True):
             )
         )
     ]
+
     resolution_mitigation_id: Annotated[
         UUID,
         Field(
             foreign_key="resolution_mitigations.id"
         )
     ]
+
     resolution_mitigation_ref: Optional[
         "ResolutionMitigation"
     ] = Relationship(
@@ -504,6 +528,7 @@ class CommunicationLog(BaseEntity, table=True):
             )
         )
     ]
+
     channel: Annotated[
         str,
         Field(
@@ -511,6 +536,7 @@ class CommunicationLog(BaseEntity, table=True):
             max_length=100
         )
     ]
+
     message: Annotated[
         str,
         Field(
@@ -520,12 +546,14 @@ class CommunicationLog(BaseEntity, table=True):
             )
         )
     ]
+
     incident_id: Optional[
         UUID
     ] = Field(
         foreign_key="incidents.id",
         index=True
     )
+
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
@@ -543,6 +571,7 @@ class SignOff(BaseEntity, table=True):
             max_length=100
         )
     ]
+
     approver_user_id: Annotated[
         UUID,
         Field(
@@ -551,21 +580,25 @@ class SignOff(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     approver_user: "User" = Relationship(
         back_populates="sign_offs"
     )
+
     date_approved: Annotated[
         date,
         Field(
             description="Date of approval"
         )
     ]
+
     incident_id: Optional[
         UUID
     ] = Field(
         foreign_key="incidents.id",
         index=True
     )
+
     incident_ref: Optional[
         "Incident"
     ] = Relationship(
