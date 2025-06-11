@@ -11,13 +11,13 @@ from src.core.error_handlers import (
     register_error_handlers
 )
 from src.api.v1.endpoints import (
-    auth as auth_router_v1
+    auth_routes as auth_router_v1
 )
 from src.api.v1.endpoints import (
-    users as users_router_v1
+    users_routes as users_router_v1
 )
 from src.api.v1.endpoints import (
-    incidents as incident_router_v1
+    incidents_routes as incident_router_v1
 )
 
 

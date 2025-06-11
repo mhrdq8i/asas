@@ -47,8 +47,10 @@ class CrudIncident:
             incident_id: UUID
     ) -> Optional[Incident]:
         """
-        Retrieve a single incident by its ID with all its related data preloaded.
-        FIX: Removed the explicit join to rely solely on the options, which is a more
+        Retrieve a single incident by its ID
+        with all its related data preloaded.
+        Removed the explicit join to rely
+        solely on the options, which is a more
         robust pattern for complex eager loading.
         """
         statement = (
@@ -129,15 +131,13 @@ class CrudIncident:
             **incident_in.profile.model_dump()
         )
 
-        # Handle one-to-one relationships that might be in a list
-        if incident_in.impacts:
-            db_incident.impacts = Impacts(
-                **incident_in.impacts[0].model_dump()
-            )
-        if incident_in.shallow_rca:
-            db_incident.shallow_rca = ShallowRCA(
-                **incident_in.shallow_rca[0].model_dump()
-            )
+        # Create required one-to-one relationships
+        db_incident.impacts = Impacts(
+            **incident_in.impacts.model_dump()
+        )
+        db_incident.shallow_rca = ShallowRCA(
+            **incident_in.shallow_rca.model_dump()
+        )
 
         # Handle one-to-many relationships
         # by creating a list of model instances
@@ -211,28 +211,23 @@ class CrudIncident:
         """
         Updates the fields of the
         related Impacts object.
+        Impacts is a required field so
+        it will always exist.
         """
-        if db_incident.impacts:
-            for (
-                field, value
-            ) in impacts_data.items():
-                if hasattr(
+        for field, value in impacts_data.items():
+            if hasattr(
+                db_incident.impacts,
+                field
+            ):
+                setattr(
                     db_incident.impacts,
-                    field
-                ):
-                    setattr(
-                        db_incident.impacts,
-                        field,
-                        value
-                    )
+                    field,
+                    value
+                )
 
-            self.db.add(
-                db_incident.impacts
-            )
-            await self.db.commit()
-            await self.db.refresh(
-                db_incident.impacts
-            )
+        self.db.add(db_incident.impacts)
+        await self.db.commit()
+        await self.db.refresh(db_incident.impacts)
         return db_incident
 
     async def update_shallow_rca(
@@ -244,28 +239,23 @@ class CrudIncident:
         """
         Updates the fields of the
         related ShallowRCA object.
+        ShallowRCA is a required field so
+        it will always exist.
         """
-        if db_incident.shallow_rca:
-            for (
-                field, value
-            ) in rca_data.items():
-                if hasattr(
+        for field, value in rca_data.items():
+            if hasattr(
+                db_incident.shallow_rca,
+                field
+            ):
+                setattr(
                     db_incident.shallow_rca,
-                    field
-                ):
-                    setattr(
-                        db_incident.shallow_rca,
-                        field,
-                        value
-                    )
+                    field,
+                    value
+                )
 
-            self.db.add(
-                db_incident.shallow_rca
-            )
-            await self.db.commit()
-            await self.db.refresh(
-                db_incident.shallow_rca
-            )
+        self.db.add(db_incident.shallow_rca)
+        await self.db.commit()
+        await self.db.refresh(db_incident.shallow_rca)
         return db_incident
 
     async def add_timeline_event(

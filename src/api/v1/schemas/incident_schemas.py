@@ -82,8 +82,8 @@ class CommunicationLogCreate(BaseModel):
 # Main Schema for Creating a Full Incident
 class IncidentCreate(BaseModel):
     profile: IncidentProfileCreate
-    impacts: List[ImpactsCreate]
-    shallow_rca: List[ShallowRCACreate]
+    impacts: ImpactsCreate
+    shallow_rca: ShallowRCACreate
     affected_services: List[AffectedServiceCreate] = []
     affected_regions: List[AffectedRegionCreate] = []
     timeline_events: List[TimelineEventCreate] = []

@@ -6,8 +6,8 @@ from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
 
-from src.crud.crud_user import CRUDUser
-from src.crud.crud_incident import CrudIncident
+from src.crud.user_crud import CRUDUser
+from src.crud.incident_crud import CrudIncident
 from src.models.user import User
 from src.api.v1.schemas.user_schemas import (
     UserCreate,

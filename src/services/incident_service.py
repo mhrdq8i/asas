@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.crud.crud_user import CRUDUser
-from src.crud.crud_incident import CrudIncident
+from src.crud.user_crud import CRUDUser
+from src.crud.incident_crud import CrudIncident
 from src.models.user import User
 from src.models.incident import (
     Incident,
@@ -21,6 +21,9 @@ from src.api.v1.schemas.incident_schemas import (
     ShallowRCAUpdate,
     TimelineEventCreate,
     CommunicationLogCreate,
+)
+from src.exceptions.common_exceptions import (
+    InvalidOperationException
 )
 from src.exceptions.incident_exceptions import (
     IncidentNotFoundException,
@@ -336,7 +339,14 @@ class IncidentService:
         incident_id: UUID,
         current_user: User
     ) -> None:
-        """Deletes an incident."""
+        """
+        Deletes an incident.
+        Business logic:
+        1. Only a superuser can
+        delete an incident.
+        2. An incident can only be
+        deleted if its status is 'Resolved'.
+        """
         if not current_user.is_superuser:
             raise InsufficientPermissionsException(
                 "Only an admin can delete an incident."
@@ -345,7 +355,27 @@ class IncidentService:
         incident_to_delete = await self.get_incident_by_id(
             incident_id=incident_id
         )
+
+        # Check if the incident's status is
+        # 'Resolved' before allowing deletion
+        if not incident_to_delete.profile \
+            or incident_to_delete.profile.status \
+                != IncidentStatusEnum.RESOLVED:
+            if incident_to_delete.profile:
+                current_status = (
+                    incident_to_delete.profile.status.value
+                )
+            else:
+                current_status = "N/A"
+
+            raise InvalidOperationException(
+                "Cannot delete an incident that "
+                "is not in 'Resolved' status. "
+                f"Current status is '{current_status}'."
+            )
+
         await self.crud_incident.delete_incident(
             incident=incident_to_delete
         )
+
         return
