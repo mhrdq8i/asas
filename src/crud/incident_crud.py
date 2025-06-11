@@ -180,6 +180,54 @@ class CrudIncident:
 
         return list(result.unique().all())
 
+    async def count_incidents(
+        self,
+        *,
+        statuses: Optional[
+            List[IncidentStatusEnum]
+        ] = None,
+        severities: Optional[
+            List[SeverityLevelEnum]
+        ] = None,
+        commander_id: Optional[UUID] = None
+    ) -> int:
+        """
+        Counts the total number of incidents
+        matching the filter criteria.
+        """
+
+        statement = select(
+            func.count(Incident.id)
+        ).join(IncidentProfile)
+
+        conditions = []
+
+        if statuses:
+            conditions.append(
+                IncidentProfile.status.in_(statuses)
+            )
+
+        if severities:
+            conditions.append(
+                IncidentProfile.severity.in_(severities)
+            )
+
+        if commander_id:
+            conditions.append(
+                IncidentProfile.commander_id == commander_id
+            )
+
+        if conditions:
+            statement = statement.where(and_(*conditions))
+
+        # select a column from the joined table to count
+        statement = statement.select_from(Incident)
+
+        result = await self.db.exec(statement)
+        count = result.one_or_none()
+
+        return count if count is not None else 0
+
     async def update_incident_profile(
         self,
         *,

@@ -27,6 +27,9 @@ from src.models.incident import (
     IncidentStatusEnum,
     SeverityLevelEnum
 )
+from src.api.v1.schemas.common_schemas import (
+    PaginatedResponse
+)
 from src.api.v1.schemas.incident_schemas import (
     IncidentRead,
     IncidentCreate,
@@ -99,14 +102,12 @@ async def create_incident(
 
 @incidents_router.get(
     "/",
-    response_model=List[IncidentRead]
+    response_model=PaginatedResponse[IncidentRead]
 )
 async def search_incidents(
     incident_service: Annotated[
         IncidentService,
-        Depends(
-            get_incident_service
-        )
+        Depends(get_incident_service)
     ],
     statuses: Optional[
         List[IncidentStatusEnum]
@@ -114,11 +115,23 @@ async def search_incidents(
     severities: Optional[
         List[SeverityLevelEnum]
     ] = Query(None),
-    commander_id: Optional[
-        UUID
-    ] = Query(None),
-    skip: int = 0,
-    limit: int = 100,
+    commander_id: Optional[UUID] = Query(None),
+    start_date: Optional[str] = Query(
+        None,
+        description=(
+            "Start date in ISO format, "
+            "e.g., 2023-01-01T00:00:00"
+        )
+    ),
+    end_date: Optional[str] = Query(
+        None,
+        description=(
+            "End date in ISO format, "
+            "e.g., 2023-01-31T23:59:59"
+        )
+    ),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
 ):
     """
     Search for incidents with

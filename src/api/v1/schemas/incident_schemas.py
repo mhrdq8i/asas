@@ -17,40 +17,24 @@ from pydantic import (
 from src.models.base import (
     SeverityLevelEnum,
     IncidentStatusEnum,
+    RolesEnum,
+    AffectedItemEnum
 )
 from src.api.v1.schemas.user_schemas import (
     UserRead
 )
-from src.models.base import (
-    RolesEnum
-)
 
 
-# Schemas for Incident Components
+# --- CREATE Schemas (Request) ---
+
 class IncidentProfileCreate(BaseModel):
-    title: str = PydanticField(
-        max_length=255
-    )
+    title: str = PydanticField(max_length=255)
     severity: SeverityLevelEnum
     datetime_detected_utc: datetime
     detected_by: str
     commander_id: UUID
-    status: IncidentStatusEnum = (
-        IncidentStatusEnum.OPEN
-    )
     summary: str
-
-
-class AffectedServiceCreate(BaseModel):
-    name: str = PydanticField(
-        max_length=255
-    )
-
-
-class AffectedRegionCreate(BaseModel):
-    name: str = PydanticField(
-        max_length=255
-    )
+    status: IncidentStatusEnum = IncidentStatusEnum.OPEN
 
 
 class ImpactsCreate(BaseModel):
@@ -59,38 +43,42 @@ class ImpactsCreate(BaseModel):
 
 
 class ShallowRCACreate(BaseModel):
-    what_happened: List[str] = []
-    why_it_happened: List[str] = []
-    technical_causes: List[str] = []
-    detection_mechanisms: List[str] = []
+    what_happened: str
+    why_it_happened: str
+    technical_causes: str
+    detection_mechanisms: str
+
+
+class AffectedItemCreate(BaseModel):
+    item_type: AffectedItemEnum
+    description: Optional[str] = None
 
 
 class TimelineEventCreate(BaseModel):
     time_utc: datetime
-    owner_user_id: UUID
-    event_description: List[str] = []
+    owner_user_id: Optional[UUID] = None
+    event_description: str
 
 
 class CommunicationLogCreate(BaseModel):
     time_utc: datetime
-    message: List[str] = []
+    message: str
     channel: str = PydanticField(
         max_length=100
     )
 
 
-# Main Schema for Creating a Full Incident
 class IncidentCreate(BaseModel):
     profile: IncidentProfileCreate
     impacts: ImpactsCreate
     shallow_rca: ShallowRCACreate
-    affected_services: List[AffectedServiceCreate] = []
-    affected_regions: List[AffectedRegionCreate] = []
+    affected_items: List[AffectedItemCreate] = []
     timeline_events: List[TimelineEventCreate] = []
     communication_logs: List[CommunicationLogCreate] = []
 
 
-# Schemas for Updating Incident Components
+# --- Update Schemas (Request) ---
+
 class IncidentProfileUpdate(BaseModel):
     title: Optional[str] = PydanticField(
         default=None,
@@ -108,16 +96,23 @@ class ImpactsUpdate(BaseModel):
 
 
 class ShallowRCAUpdate(BaseModel):
-    what_happened: Optional[List[str]] = None
-    why_it_happened: Optional[List[str]] = None
-    technical_causes: Optional[List[str]] = None
-    detection_mechanisms: Optional[List[str]] = None
+    what_happened: Optional[str] = None
+    why_it_happened: Optional[str] = None
+    technical_causes: Optional[str] = None
+    detection_mechanisms: Optional[str] = None
 
 
-# Schemas for Reading Incident Data (API Response)
+class ResolutionMitigationCreate(BaseModel):
+    resolution_time_utc: Optional[datetime] = None
+    short_term_remediation_steps: List[str] = []
+    long_term_preventative_measures: List[str] = []
+
+
+# --- Read Schemas  (Response) ---
+
 class IncidentProfileRead(IncidentProfileCreate):
     id: UUID
-    commander: UserRead
+    commander: Optional[UserRead] = None
     created_at: datetime
     updated_at: datetime
 
@@ -125,14 +120,7 @@ class IncidentProfileRead(IncidentProfileCreate):
         from_attributes = True
 
 
-class AffectedServiceRead(AffectedServiceCreate):
-    id: UUID
-
-    class Config:
-        from_attributes = True
-
-
-class AffectedRegionRead(AffectedRegionCreate):
+class AffectedItemRead(AffectedItemCreate):
     id: UUID
 
     class Config:
@@ -155,7 +143,7 @@ class ShallowRCARead(ShallowRCACreate):
 
 class TimelineEventRead(TimelineEventCreate):
     id: UUID
-    owner_user: UserRead
+    owner_user: Optional[UserRead] = None
 
     class Config:
         from_attributes = True
@@ -168,9 +156,8 @@ class CommunicationLogRead(CommunicationLogCreate):
         from_attributes = True
 
 
-class ResolutionMitigationRead(BaseModel):
+class ResolutionMitigationRead(ResolutionMitigationCreate):
     id: UUID
-    resolution_time_utc: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -186,7 +173,6 @@ class SignOffRead(BaseModel):
         from_attributes = True
 
 
-# Main Schema for Reading a Full Incident
 class IncidentRead(BaseModel):
     id: UUID
     created_at: datetime
@@ -197,11 +183,10 @@ class IncidentRead(BaseModel):
     resolution_mitigation: Optional[
         ResolutionMitigationRead
     ] = None
-    postmortem: Optional[Any] = None
-    affected_services: List[AffectedServiceRead] = []
-    affected_regions: List[AffectedRegionRead] = []
+    affected_items: List[AffectedItemRead] = []
     timeline_events: List[TimelineEventRead] = []
     communication_logs: List[CommunicationLogRead] = []
+    postmortem: Optional[Any] = None
     sign_offs: List[SignOffRead] = []
 
     class Config:

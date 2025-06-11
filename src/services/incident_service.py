@@ -1,6 +1,7 @@
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime, timezone
+import logging
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -12,7 +13,7 @@ from src.models.incident import (
     TimelineEvent,
     CommunicationLog,
     IncidentStatusEnum,
-    SeverityLevelEnum
+    SeverityLevelEnum,
 )
 from src.api.v1.schemas.incident_schemas import (
     IncidentCreate,
@@ -21,9 +22,11 @@ from src.api.v1.schemas.incident_schemas import (
     ShallowRCAUpdate,
     TimelineEventCreate,
     CommunicationLogCreate,
+    ResolutionMitigationCreate,
 )
+from src.api.v1.schemas.common_schemas import PaginatedResponse
 from src.exceptions.common_exceptions import (
-    InvalidOperationException
+    InvalidOperationException,
 )
 from src.exceptions.incident_exceptions import (
     IncidentNotFoundException,
@@ -34,6 +37,8 @@ from src.exceptions.user_exceptions import (
     InsufficientPermissionsException,
     UserNotFoundException,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class IncidentService:
@@ -48,31 +53,73 @@ class IncidentService:
         self.crud_user = CRUDUser(self.db_session)
         self.crud_incident = CrudIncident(self.db_session)
 
-    async def get_incident_by_id(self, *, incident_id: UUID) -> Incident:
+    async def _check_permission(
+        self,
+        *,
+        incident: Incident,
+        user: User,
+        allow_viewer: bool = False
+    ):
+        """
+        A helper method to standardize permission checks.
+        - Superusers can do anything.
+        - Commanders can edit their own incidents.
+        - Any authenticated user can view or add
+        timeline/logs if `allow_viewer` is True.
+        """
+
+        is_commander = incident.profile.commander_id == user.id
+        is_superuser = user.is_superuser
+
+        if is_superuser or is_commander:
+            return
+
+        if allow_viewer:
+            return
+
+        raise InsufficientPermissionsException(
+            "You do not have permission to perform this action."
+        )
+
+    async def get_incident_by_id(
+            self,
+            *,
+            incident_id: UUID
+    ) -> Incident:
         """
         Retrieves an incident by its ID.
         Raises an exception if the incident is not found.
         """
+
         incident = await self.crud_incident.get_incident_by_id(
-            incident_id=incident_id)
+            incident_id=incident_id
+        )
+
         if not incident:
-            raise IncidentNotFoundException(identifier=str(incident_id))
+            raise IncidentNotFoundException(
+                identifier=str(incident_id)
+            )
+
         return incident
 
     async def get_incidents_list(
         self,
         *,
-        statuses: Optional[List[IncidentStatusEnum]] = None,
+        statuses: Optional[
+            List[IncidentStatusEnum]
+        ] = None,
         severities: Optional[List[SeverityLevelEnum]] = None,
         commander_id: Optional[UUID] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
         skip: int = 0,
         limit: int = 100,
-    ) -> List[Incident]:
+    ) -> PaginatedResponse[Incident]:
         """
-        Searches and retrieves a list of incidents based on filter criteria.
+        Searches and retrieves a paginated list
+        of incidents based on filter criteria.
         """
+
         incidents = await self.crud_incident.search_incidents(
             statuses=statuses,
             severities=severities,
@@ -82,79 +129,78 @@ class IncidentService:
             skip=skip,
             limit=limit,
         )
-        return incidents
+
+        total_count = await self.crud_incident.count_incidents(
+            statuses=statuses,
+            severities=severities,
+            commander_id=commander_id,
+        )
+
+        return PaginatedResponse(
+            items=incidents,
+            total=total_count,
+            skip=skip,
+            limit=limit
+        )
 
     async def create_incident(
-            self, *, incident_in: IncidentCreate, current_user: User
+        self,
+        *,
+        incident_in: IncidentCreate,
+        current_user: User
     ) -> Incident:
-        """
-        Creates a new incident.
-        Business logic:
-        1. Ensures the assigned commander exists and is active.
-        2. Adds the initial timeline event to the
-        creation schema itself to avoid lazy loading issues.
-        """
-        commander = await self.crud_user.get_user_by_id(
-            user_id=incident_in.profile.commander_id)
-        if not commander or not commander.is_active:
-            raise UserNotFoundException(
-                detail=(
-                    "Commander with ID "
-                    f"{incident_in.profile.commander_id} "
-                    "not found or is inactive."
+
+        async with self.db_session.begin():
+            logger.info(
+                "Creating incident with title "
+                f"'{incident_in.profile.title}' "
+                f"by user '{current_user.username}'"
+            )
+            """
+            Creates a new incident.
+            Business logic:
+            - Ensures the assigned commander
+              exists and is active.
+            - Adds the initial timeline event
+              to the creation schema itself.
+            """
+
+            commander_id = incident_in.profile.commander_id
+
+            if commander_id:
+                commander = await self.crud_user.get_user_by_id(
+                    user_id=commander_id
                 )
+
+                if not commander or not commander.is_active:
+                    raise UserNotFoundException(
+                        detail=(
+                            "Commander with ID "
+                            f"{commander_id} not "
+                            "found or is inactive."
+                        )
+                    )
+
+            # Automatically create the first timeline event
+            creation_event = TimelineEventCreate(
+                time_utc=datetime.now(
+                    timezone.utc
+                ),
+                event_description=(
+                    "Incident created by "
+                    f"{current_user.username}"
+                ),
+                owner_user_id=current_user.id,
+            )
+            incident_in.timeline_events.insert(
+                0, creation_event
             )
 
-        # FIX: Create the initial timeline event
-        # with the correct data type (a list).
-        creation_event_data = TimelineEventCreate(
-            time_utc=datetime.now(timezone.utc),
-            event_description=[(
-                "Incident created by "
-                f"{current_user.username}"
-            )],
-            owner_user_id=current_user.id
-        )
+            new_incident = await self.crud_incident.create_incident(
+                incident_in=incident_in
+            )
 
-        # Add the event to the list of timeline
-        # events in the main creation schema
-        if incident_in.timeline_events is None:
-            incident_in.timeline_events = []
-        incident_in.timeline_events.append(
-            creation_event_data
-        )
-
-        # Now, call the CRUD method with
-        # the fully prepared data.
-        new_incident = await self.crud_incident.create_incident(
-            incident_in=incident_in
-        )
-
-        return new_incident
-
-    async def _check_permission(
-            self,
-            *,
-            incident: Incident,
-            user: User,
-            allow_viewer: bool = False
-    ):
-        """A helper method to standardize permission checks."""
-        is_commander = incident.profile \
-            and incident.profile.commander_id == user.id
-        is_superuser = user.is_superuser
-
-        # Permission granted
-        if is_commander or is_superuser:
-            return
-
-        # For read-only operations
-        if allow_viewer:
-            return
-
-        raise InsufficientPermissionsException(
-            "You do not have permission to perform this action."
-        )
+            return new_incident
 
     async def update_incident_profile(
         self,
@@ -179,31 +225,21 @@ class IncidentService:
             exclude_unset=True
         )
 
-        if not incident.profile:
-            return await self.crud_incident.update_incident_profile(
-                db_incident=incident,
-                update_data=update_dict
-            )
-
+        # Business logic for status transitions
         old_status = incident.profile.status
-        new_status = update_dict.get('status')
-
-        if old_status == IncidentStatusEnum.RESOLVED:
-            if new_status and new_status != IncidentStatusEnum.RESOLVED:
+        if 'status' in update_dict and old_status != update_dict['status']:
+            if old_status == IncidentStatusEnum.RESOLVED:
                 raise InvalidStatusTransitionException(
                     from_status=old_status,
-                    to_status=new_status
+                    to_status=update_dict['status']
                 )
-            elif len(
-                update_dict
-            ) > 1 or (
-                    len(
-                        update_dict
-                    ) == 1 and 'status' not in update_dict
-            ):
-                raise IncidentAlreadyResolvedException(
-                    "Cannot update profile details of a resolved incident."
-                )
+
+        elif old_status == IncidentStatusEnum.RESOLVED and len(
+            update_dict
+        ) > 0:
+            raise IncidentAlreadyResolvedException(
+                "Cannot update profile details of a resolved incident."
+            )
 
         return await self.crud_incident.update_incident_profile(
             db_incident=incident,
@@ -211,23 +247,23 @@ class IncidentService:
         )
 
     async def update_incident_impacts(
-        self, *, incident_id: UUID,
+        self,
+        *,
+        incident_id: UUID,
         update_data: ImpactsUpdate,
         current_user: User
     ) -> Incident:
-        """
-        Updates the impacts section of an incident.
-        """
+
         incident = await self.get_incident_by_id(
             incident_id=incident_id
         )
+
         await self._check_permission(
             incident=incident,
             user=current_user
         )
 
-        if incident.profile and incident.profile.status \
-                == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
                 "Cannot update impacts of a resolved incident."
             )
@@ -248,19 +284,10 @@ class IncidentService:
         update_data: ShallowRCAUpdate,
         current_user: User
     ) -> Incident:
-        """
-        Updates the shallow root cause analysis section of an incident.
-        """
-        incident = await self.get_incident_by_id(
-            incident_id=incident_id
-        )
-        await self._check_permission(
-            incident=incident,
-            user=current_user
-        )
+        incident = await self.get_incident_by_id(incident_id=incident_id)
+        await self._check_permission(incident=incident, user=current_user)
 
-        if incident.profile and incident.profile.status \
-                == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
                 "Cannot update RCA of a resolved incident."
             )
@@ -272,7 +299,6 @@ class IncidentService:
         return await self.crud_incident.update_shallow_rca(
             db_incident=incident,
             rca_data=update_dict
-
         )
 
     async def add_timeline_event(
@@ -282,9 +308,7 @@ class IncidentService:
         event_in: TimelineEventCreate,
         current_user: User
     ) -> Incident:
-        """
-        Adds a new event to the incident's timeline.
-        """
+
         incident = await self.get_incident_by_id(
             incident_id=incident_id
         )
@@ -294,12 +318,14 @@ class IncidentService:
             allow_viewer=True
         )
 
-        new_event = TimelineEvent.model_validate(
-            event_in,
-            update={
-                'owner_user_id': current_user.id
-            }
-        )
+        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+            raise IncidentAlreadyResolvedException(
+                "Cannot add timeline events to a resolved incident."
+            )
+
+        # Ensure the owner is set to the current user
+        event_in.owner_user_id = current_user.id
+        new_event = TimelineEvent.model_validate(event_in)
 
         return await self.crud_incident.add_timeline_event(
             incident=incident,
@@ -313,40 +339,64 @@ class IncidentService:
         log_in: CommunicationLogCreate,
         current_user: User
     ) -> Incident:
-        """
-        Adds a new communication log to the incident.
-        """
+
         incident = await self.get_incident_by_id(
             incident_id=incident_id
         )
+
         await self._check_permission(
             incident=incident,
             user=current_user,
             allow_viewer=True
         )
 
-        new_log = CommunicationLog.model_validate(
-            log_in
-        )
+        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+            raise IncidentAlreadyResolvedException(
+                "Cannot add communication logs to a resolved incident."
+            )
+
+        new_log = CommunicationLog.model_validate(log_in)
+
         return await self.crud_incident.add_communication_log(
             incident=incident,
             new_log=new_log
         )
 
-    async def delete_incident(
+    async def update_resolution(
         self,
         *,
         incident_id: UUID,
+        resolution_in: ResolutionMitigationCreate,
         current_user: User
+    ) -> Incident:
+
+        incident = await self.get_incident_by_id(
+            incident_id=incident_id
+        )
+
+        await self._check_permission(
+            incident=incident,
+            user=current_user
+        )
+
+        if incident.profile.status == IncidentStatusEnum.RESOLVED \
+                and not incident.resolution_mitigation:
+            raise InvalidOperationException(
+                "Cannot add resolution to an already resolved incident without one."
+            )
+
+        return await self.crud_incident.update_resolution(
+            db_incident=incident,
+            resolution_data=resolution_in
+        )
+
+    async def delete_incident(
+            self,
+            *,
+            incident_id: UUID,
+            current_user: User
     ) -> None:
-        """
-        Deletes an incident.
-        Business logic:
-        1. Only a superuser can
-        delete an incident.
-        2. An incident can only be
-        deleted if its status is 'Resolved'.
-        """
+
         if not current_user.is_superuser:
             raise InsufficientPermissionsException(
                 "Only an admin can delete an incident."
@@ -356,22 +406,12 @@ class IncidentService:
             incident_id=incident_id
         )
 
-        # Check if the incident's status is
-        # 'Resolved' before allowing deletion
-        if not incident_to_delete.profile \
-            or incident_to_delete.profile.status \
-                != IncidentStatusEnum.RESOLVED:
-            if incident_to_delete.profile:
-                current_status = (
-                    incident_to_delete.profile.status.value
-                )
-            else:
-                current_status = "N/A"
-
+        if incident_to_delete.profile.status != IncidentStatusEnum.RESOLVED:
             raise InvalidOperationException(
                 "Cannot delete an incident that "
                 "is not in 'Resolved' status. "
-                f"Current status is '{current_status}'."
+                f"Current status is "
+                f"'{incident_to_delete.profile.status.value}'."
             )
 
         await self.crud_incident.delete_incident(
