@@ -5,10 +5,14 @@ from datetime import (
 )
 from typing import (
     Optional,
-    List
+    List,
+    TypeAlias
 )
 
-from sqlalchemy import Column
+from sqlalchemy import (
+    Column,
+    Text
+)
 from sqlalchemy.dialects.postgresql import (
     JSONB
 )
@@ -20,20 +24,24 @@ from sqlmodel import (
 
 from src.models.base import (
     BaseEntity,
+    RolesEnum,
     SeverityLevelEnum,
-    IncidentStatusEnum
+    IncidentStatusEnum,
+    AffectedItemEnum
 )
 from src.models.user import User
 from src.models.postmortem import (
     PostMortem
 )
 
+IncidentID: TypeAlias = UUID
+
 
 class Incident(BaseEntity, table=True):
     __tablename__ = "incidents"
 
     # --- Mandatory Relationships ---
-    # An Incident MUST have these components upon creation.
+
     profile: "IncidentProfile" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
@@ -41,6 +49,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     impacts: "Impacts" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
@@ -48,6 +57,7 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     shallow_rca: "ShallowRCA" = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
@@ -57,7 +67,7 @@ class Incident(BaseEntity, table=True):
     )
 
     # --- Optional Relationships ---
-    # These can be added later in the incident's lifecycle.
+
     resolution_mitigation: Optional[
         "ResolutionMitigation"
     ] = Relationship(
@@ -67,7 +77,10 @@ class Incident(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
-    postmortem: Optional["PostMortem"] = Relationship(
+
+    postmortem: Optional[
+        "PostMortem"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "uselist": False,
@@ -76,76 +89,145 @@ class Incident(BaseEntity, table=True):
     )
 
     # --- List-based Relationships ---
-    affected_services: List["AffectedService"] = Relationship(
+
+    affected_services: List[
+        "AffectedService"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
     )
-    affected_regions: List["AffectedRegion"] = Relationship(
+
+    affected_regions: List[
+        "AffectedRegion"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
     )
-    timeline_events: List["TimelineEvent"] = Relationship(
+
+    timeline_events: List[
+        "TimelineEvent"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
     )
-    communication_logs: List["CommunicationLog"] = Relationship(
+
+    communication_logs: List[
+        "CommunicationLog"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
     )
-    sign_offs: List["SignOff"] = Relationship(
+
+    sign_offs: List[
+        "SignOff"
+    ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
             "cascade": "all, delete-orphan"
         }
     )
+
+    @property
+    def is_resolved(self) -> bool:
+        return self.resolution_mitigation is not None
+
+    @property
+    def has_postmortem(self) -> bool:
+        return self.postmortem is not None
+
+    @property
+    def status(self) -> IncidentStatusEnum:
+        return self.profile.status
+
+    @property
+    def is_critical(self) -> bool:
+        return self.profile.severity == SeverityLevelEnum.CRITICAL
+
+    class Config:
+        """
+        arbitrary_types_allowed = True:
+
+        - By default, Pydantic only allows certain
+        basic types (str, int, float, etc.)
+        - Setting this to True allows the model
+        to work with custom Python types
+        - This is particularly useful when
+        working with types like SQLAlchemy
+        models or custom classes.
+
+
+        json_encoders = {...}
+
+        - This dictionary defines how to serialize
+        specific Python types to JSON
+        - It's needed because some Python types
+        don't have a direct JSON representation
+        """
+        arbitrary_types_allowed = True
+        json_encoders = {
+            UUID: str,
+            datetime: lambda v: v.isoformat()
+        }
 
 
 # --- Incident Profile ---
+
 
 class IncidentProfile(BaseEntity, table=True):
     __tablename__ = "incident_profile"
 
     # One-to-One relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         unique=True,
         index=True,
         nullable=False
     )
+
     incident_ref: "Incident" = Relationship(
         back_populates="profile"
     )
 
     # --- Fields ---
-    title: str = Field(max_length=255)
+
     status: IncidentStatusEnum = Field(
         default=IncidentStatusEnum.OPEN
     )
+
+    title: str = Field(max_length=255)
+
     severity: SeverityLevelEnum
+
+    is_auto_detected: bool = Field(
+        default=False
+    )
+
     datetime_detected_utc: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True)
         )
     )
-    detected_by: str = Field(
-        sa_column=Column(JSONB)
-    )
+
     summary: str = Field(
-        sa_column=Column(JSONB)
+        default="",
+        sa_column=Column(Text)
     )
+
     commander_id: UUID = Field(
+        foreign_key="users.id",
         default=None,
-        index=True,
-        foreign_key="users.id"
+        index=True
     )
+
     commander: "User" = Relationship(
         back_populates="incident_commander"
     )
@@ -153,47 +235,43 @@ class IncidentProfile(BaseEntity, table=True):
 
 # --- Affects ---
 
-class AffectedService(BaseEntity, table=True):
-    __tablename__ = "affected_services"
+class AffectedItem(BaseEntity, table=True):
+    __tablename__ = "affected_items"
 
-    # One-to-Many relationship definition
-    incident_id: UUID = Field(
+    # One-to-Many relationship
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         index=True,
         nullable=False
     )
     incident_ref: "Incident" = Relationship(
-        back_populates="affected_services"
+        back_populates="affected_items"
     )
 
-    # --- Fields ---
-    name: str = Field(max_length=255)
+    # Fields to define the item itself
 
-
-class AffectedRegion(BaseEntity, table=True):
-    __tablename__ = "affected_regions"
-
-    # One-to-Many relationship definition
-    incident_id: UUID = Field(
-        foreign_key="incidents.id",
-        index=True,
-        nullable=False
-    )
-    incident_ref: "Incident" = Relationship(
-        back_populates="affected_regions"
+    item_type: AffectedItemEnum = Field(
+        description=(
+            "The type of the affected item "
+            "(e.g., Service, Region, Network)."
+        )
     )
 
-    # --- Fields ---
-    name: str = Field(max_length=255)
+    description: str = Field(
+        default="",
+        sa_column=Column(Text),
+    )
+
 
 # --- Resolution & Mitigation ---
-
 
 class ResolutionMitigation(BaseEntity, table=True):
     __tablename__ = "resolution_mitigations"
 
     # One-to-One relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         unique=True,
         index=True,
@@ -205,7 +283,8 @@ class ResolutionMitigation(BaseEntity, table=True):
     )
 
     # --- Fields ---
-    resolution_time_utc: Optional[datetime] = Field(
+
+    resolution_time_utc: datetime = Field(
         default=None,
         sa_column=Column(
             DateTime(timezone=True)
@@ -213,53 +292,17 @@ class ResolutionMitigation(BaseEntity, table=True):
     )
 
     short_term_remediation_steps: List[
-        "RemediationStep"
-    ] = Relationship(
-        back_populates="resolution_mitigation_ref",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan"
-        }
+        str
+    ] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB),
     )
 
     long_term_preventative_measures: List[
-        "LongTermPreventativeMeasure"
-    ] = Relationship(
-        back_populates="resolution_mitigation_ref",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan"
-        }
-    )
-
-
-class RemediationStep(BaseEntity, table=True):
-    __tablename__ = "remediation_steps"
-
-    step_description: str = Field(
-        sa_column=Column(JSONB)
-    )
-
-    resolution_mitigation_id: UUID = Field(
-        foreign_key="resolution_mitigations.id"
-    )
-
-    resolution_mitigation_ref: "ResolutionMitigation" = Relationship(
-        back_populates="short_term_remediation_steps"
-    )
-
-
-class LongTermPreventativeMeasure(BaseEntity, table=True):
-    __tablename__ = "long_term_preventative_measures"
-
-    measure_description: str = Field(
-        sa_column=Column(JSONB)
-    )
-
-    resolution_mitigation_id: UUID = Field(
-        foreign_key="resolution_mitigations.id"
-    )
-
-    resolution_mitigation_ref: "ResolutionMitigation" = Relationship(
-        back_populates="long_term_preventative_measures"
+        str
+    ] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB),
     )
 
 
@@ -269,22 +312,28 @@ class Impacts(BaseEntity, table=True):
     __tablename__ = "impacts"
 
     # One-to-One relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         unique=True,
         index=True,
         nullable=False
     )
+
     incident_ref: "Incident" = Relationship(
         back_populates="impacts"
     )
 
     # --- Fields ---
-    customer_impact: str = Field(
-        sa_column=Column(JSONB)
+
+    customer_impact: List[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB),
     )
-    business_impact: str = Field(
-        sa_column=Column(JSONB)
+
+    business_impact: List[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB),
     )
 
 
@@ -294,34 +343,34 @@ class ShallowRCA(BaseEntity, table=True):
     __tablename__ = "shallow_rca"
 
     # One-to-One relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         unique=True,
         index=True,
         nullable=False
     )
+
     incident_ref: "Incident" = Relationship(
         back_populates="shallow_rca"
     )
 
     # --- Fields ---
+
     what_happened: str = Field(
-        sa_column=Column(JSONB)
+        sa_column=Column(Text)
     )
 
-    why_it_happened: List[str] = Field(
-        default_factory=list,
-        sa_column=Column(JSONB)
+    why_it_happened: str = Field(
+        sa_column=Column(Text)
     )
 
-    technical_causes: List[str] = Field(
-        default_factory=list,
-        sa_column=Column(JSONB)
+    technical_causes: str = Field(
+        sa_column=Column(Text)
     )
 
-    detection_mechanisms: List[str] = Field(
-        default_factory=list,
-        sa_column=Column(JSONB)
+    detection_mechanisms: str = Field(
+        sa_column=Column(Text)
     )
 
 
@@ -331,7 +380,8 @@ class CommunicationLog(BaseEntity, table=True):
     __tablename__ = "communication_logs"
 
     # One-to-Many relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         index=True,
         nullable=False
@@ -342,9 +392,18 @@ class CommunicationLog(BaseEntity, table=True):
     )
 
     # --- Fields ---
-    time_utc: datetime = Field(sa_column=Column(DateTime(timezone=True)))
+
+    time_utc: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True)
+        )
+    )
+
     channel: str = Field(max_length=100)
-    message: str = Field(sa_column=Column(JSONB))
+
+    message: str = Field(
+        sa_column=Column(Text)
+    )
 
 
 # --- Timeline of Events (Chronological Updates) ---
@@ -353,7 +412,8 @@ class TimelineEvent(BaseEntity, table=True):
     __tablename__ = "timeline_events"
 
     # One-to-Many relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         index=True,
         nullable=False
@@ -364,6 +424,7 @@ class TimelineEvent(BaseEntity, table=True):
     )
 
     # --- Fields ---
+
     time_utc: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True)
@@ -371,17 +432,18 @@ class TimelineEvent(BaseEntity, table=True):
     )
 
     event_description: str = Field(
-        sa_column=Column(JSONB)
+        sa_column=Column(Text)
     )
 
     owner_user_id: UUID = Field(
-        default=None,
         foreign_key="users.id",
+        default=None,
         index=True
     )
 
     owner_user: "User" = Relationship(
-        back_populates="timeline_events_owned")
+        back_populates="timeline_events_owned"
+    )
 
 
 # --- Sign‑Off ---
@@ -390,7 +452,8 @@ class SignOff(BaseEntity, table=True):
     __tablename__ = "sign_offs"
 
     # One-to-Many relationship definition
-    incident_id: UUID = Field(
+
+    incident_id: IncidentID = Field(
         foreign_key="incidents.id",
         index=True,
         nullable=False
@@ -401,7 +464,10 @@ class SignOff(BaseEntity, table=True):
     )
 
     # --- Fields ---
-    role: str = Field(max_length=100)
+
+    role: RolesEnum = Field(
+        nullable=False
+    )
 
     date_approved: date
 
@@ -410,6 +476,7 @@ class SignOff(BaseEntity, table=True):
         index=True,
         nullable=False
     )
+
     approver_user: "User" = Relationship(
         back_populates="sign_offs"
     )
