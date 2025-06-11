@@ -18,14 +18,11 @@ from src.models.user import User
 from src.models.incident import (
     Incident,
     IncidentProfile,
-    AffectedService,
-    AffectedRegion,
+    AffectedItem,
     Impacts,
     ShallowRCA,
     TimelineEvent,
     ResolutionMitigation,
-    RemediationStep,
-    LongTermPreventativeMeasure,
     CommunicationLog,
     SignOff
 )
@@ -42,14 +39,11 @@ from src.models.postmortem import (
 User.model_rebuild()
 Incident.model_rebuild()
 IncidentProfile.model_rebuild()
-AffectedService.model_rebuild()
-AffectedRegion.model_rebuild()
+AffectedItem.model_rebuild()
 Impacts.model_rebuild()
 ShallowRCA.model_rebuild()
 TimelineEvent.model_rebuild()
 ResolutionMitigation.model_rebuild()
-RemediationStep.model_rebuild()
-LongTermPreventativeMeasure.model_rebuild()
 CommunicationLog.model_rebuild()
 SignOff.model_rebuild()
 PostMortem.model_rebuild()
@@ -85,14 +79,11 @@ __all__ = [
     # Incident Models
     "Incident",
     "IncidentProfile",
-    "AffectedService",
-    "AffectedRegion",
+    "AffectedItems",
     "Impacts",
     "ShallowRCA",
     "TimelineEvent",
     "ResolutionMitigation",
-    "RemediationStep",
-    "LongTermPreventativeMeasure",
     "CommunicationLog",
     "SignOff",
 

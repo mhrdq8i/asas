@@ -31,7 +31,7 @@ class IncidentProfileCreate(BaseModel):
     title: str = PydanticField(max_length=255)
     severity: SeverityLevelEnum
     datetime_detected_utc: datetime
-    detected_by: str
+    is_auto_detected: bool = PydanticField(default=False)
     commander_id: UUID
     summary: str
     status: IncidentStatusEnum = IncidentStatusEnum.OPEN

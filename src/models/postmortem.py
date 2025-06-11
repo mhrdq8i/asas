@@ -264,7 +264,7 @@ class PostMortemApproval(BaseEntity, table=True):
         RolesEnum,
         Field(
             default=(
-                RolesEnum.INCIDENT_LEAD
+                RolesEnum.SRE_LEAD
             ),
             description=(
                 "Role of the approver"

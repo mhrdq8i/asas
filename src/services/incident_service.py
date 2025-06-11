@@ -150,57 +150,55 @@ class IncidentService:
         current_user: User
     ) -> Incident:
 
-        async with self.db_session.begin():
-            logger.info(
-                "Creating incident with title "
-                f"'{incident_in.profile.title}' "
-                f"by user '{current_user.username}'"
+        logger.info(
+            "Creating incident "
+            f"'{incident_in.profile.title}' "
+            " by user "
+            f"'{current_user.username}'"
+        )
+
+        commander_id = incident_in.profile.commander_id
+
+        if commander_id:
+            commander = await self.crud_user.get_user_by_id(
+                user_id=commander_id
             )
-            """
-            Creates a new incident.
-            Business logic:
-            - Ensures the assigned commander
-              exists and is active.
-            - Adds the initial timeline event
-              to the creation schema itself.
-            """
 
-            commander_id = incident_in.profile.commander_id
-
-            if commander_id:
-                commander = await self.crud_user.get_user_by_id(
-                    user_id=commander_id
+            if not commander or not commander.is_active:
+                raise UserNotFoundException(
+                    detail=(
+                        "Commander with ID "
+                        f"{commander_id} "
+                        "not found or is inactive."
+                    )
                 )
 
-                if not commander or not commander.is_active:
-                    raise UserNotFoundException(
-                        detail=(
-                            "Commander with ID "
-                            f"{commander_id} not "
-                            "found or is inactive."
-                        )
-                    )
+        creation_event = TimelineEventCreate(
+            time_utc=datetime.now(timezone.utc),
+            event_description=(
+                "Incident created by "
+                f"{current_user.username}"
+            ),
+            owner_user_id=current_user.id,
+        )
+        incident_in.timeline_events.insert(
+            0, creation_event
+        )
 
-            # Automatically create the first timeline event
-            creation_event = TimelineEventCreate(
-                time_utc=datetime.now(
-                    timezone.utc
-                ),
-                event_description=(
-                    "Incident created by "
-                    f"{current_user.username}"
-                ),
-                owner_user_id=current_user.id,
-            )
-            incident_in.timeline_events.insert(
-                0, creation_event
-            )
+        new_incident = await self.crud_incident.create_incident(
+            incident_in=incident_in
+        )
 
-            new_incident = await self.crud_incident.create_incident(
-                incident_in=incident_in
-            )
+        # Commit the transaction at the end of the service method.
+        await self.db_session.commit()
+        await self.db_session.refresh(new_incident)
 
-            return new_incident
+        logger.info(
+            "Successfully created incident with ID: "
+            f"{new_incident.id}"
+        )
+
+        return new_incident
 
     async def update_incident_profile(
         self,

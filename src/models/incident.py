@@ -90,17 +90,8 @@ class Incident(BaseEntity, table=True):
 
     # --- List-based Relationships ---
 
-    affected_services: List[
-        "AffectedService"
-    ] = Relationship(
-        back_populates="incident_ref",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan"
-        }
-    )
-
-    affected_regions: List[
-        "AffectedRegion"
+    affected_items: List[
+        "AffectedItem"
     ] = Relationship(
         back_populates="incident_ref",
         sa_relationship_kwargs={
