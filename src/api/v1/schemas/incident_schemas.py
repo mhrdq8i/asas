@@ -194,7 +194,9 @@ class IncidentRead(BaseModel):
     profile: IncidentProfileRead
     impacts: ImpactsRead
     shallow_rca: ShallowRCARead
-    resolution_mitigation: Optional[ResolutionMitigationRead] = None
+    resolution_mitigation: Optional[
+        ResolutionMitigationRead
+    ] = None
     postmortem: Optional[Any] = None
     affected_services: List[AffectedServiceRead] = []
     affected_regions: List[AffectedRegionRead] = []

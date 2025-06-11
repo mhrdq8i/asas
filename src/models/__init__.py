@@ -18,7 +18,6 @@ from src.models.user import User
 from src.models.incident import (
     Incident,
     IncidentProfile,
-    AffectedItemBase,
     AffectedService,
     AffectedRegion,
     Impacts,

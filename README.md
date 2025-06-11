@@ -1,6 +1,6 @@
 # Incident Template
 
-## Incident Metadata
+## Incident Profile
 
 - **Incident ID:** UUID
 - **Title:** Main incident title
@@ -22,6 +22,27 @@
 ### Regions/Networks Affected
 
 Southeast Asia (Philippines, Indonesia), Fiber Backbone Route SEA-07
+
+## Resolution & Mitigation
+
+### Resolution Time (UTC)
+
+2023-05-15 10:00
+
+### Short‑Term Remediation (Mitigation Steps)
+
+1. **Rollback:** Reverted SBC config to pre‑change version (v3.4.7).
+2. **Traffic Shift:** Diverted 30 % of EU SIP traffic to DR proxy cluster.
+3. **Alert Adjustment:** Raised threshold for CDR lag alerts to prevent noise.
+4. **Restarted unhealthy** Cassandra nodes.
+
+### Long‑Term Preventative Measures
+
+- **Automated SIP Tests:** Add CI jobs validating header‑rewrite rules against live‑like SIP traffic.
+- **Staging Expansion:** Mirror full SBC+Media Gateway topology for EU in staging.
+- **Runbook Enhancements:**
+  - Include explicit traffic‑shift steps.
+  - Add quick‑verify tests post‑rollback.
 
 ## Impacts
 
@@ -55,6 +76,15 @@ Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
 - Automated Prometheus alert on “SIP 5xx error rate”
 - Elevated customer support tickets in Germany and France
 
+## Communications Log
+
+| Time (UTC) | Channel            | Message                                                           |
+| ---------- | ------------------ | ----------------------------------------------------------------- |
+| 07:47      | #sre-ops (Slack)   | “High SIP 5xx error rate detected in EU. Investigating.”          |
+| 07:58      | Status Page (Web)  | “Partial voice service degradation in Europe. Working on fix.”    |
+| 08:10      | #all-hands (Email) | “Incident update: rollback in progress; partial traffic shifted.” |
+| 08:55      | Status Page (Web)  | “Full service restored. Monitoring continues.”                    |
+
 ## Timeline of Events (Chronological Updates)
 
 | Time (UTC) | Event                                             | Owner/Team      |
@@ -68,36 +98,6 @@ Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
 | 08:35      | Full traffic shifted to standby cluster           | Networking SRE  |
 | 08:50      | Metrics returned to baseline; incident resolved   | Maria Schuster  |
 | 09:00      | Post‑incident monitoring started                  | Monitoring Team |
-
-## Resolution & Mitigation
-
-### Short‑Term Remediation (Mitigation Steps)
-
-1. **Rollback:** Reverted SBC config to pre‑change version (v3.4.7).
-2. **Traffic Shift:** Diverted 30 % of EU SIP traffic to DR proxy cluster.
-3. **Alert Adjustment:** Raised threshold for CDR lag alerts to prevent noise.
-4. **Restarted unhealthy** Cassandra nodes.
-
-### Resolution Time (UTC)
-
-2023-05-15 10:00
-
-### Long‑Term Preventative Measures
-
-- **Automated SIP Tests:** Add CI jobs validating header‑rewrite rules against live‑like SIP traffic.
-- **Staging Expansion:** Mirror full SBC+Media Gateway topology for EU in staging.
-- **Runbook Enhancements:**
-  - Include explicit traffic‑shift steps.
-  - Add quick‑verify tests post‑rollback.
-
-## Communications Log
-
-| Time (UTC) | Channel            | Message                                                           |
-| ---------- | ------------------ | ----------------------------------------------------------------- |
-| 07:47      | #sre-ops (Slack)   | “High SIP 5xx error rate detected in EU. Investigating.”          |
-| 07:58      | Status Page (Web)  | “Partial voice service degradation in Europe. Working on fix.”    |
-| 08:10      | #all-hands (Email) | “Incident update: rollback in progress; partial traffic shifted.” |
-| 08:55      | Status Page (Web)  | “Full service restored. Monitoring continues.”                    |
 
 ## Sign‑Off
 
