@@ -91,6 +91,12 @@ class UserRead(UserBase):
         from_attributes = True
 
 
+class MinimalUserRead(BaseModel):
+    username: str
+    full_name: str
+    role: UserRoleEnum
+
+
 class UserCreateInternal(UserBase):
     """
     Internal schema for creating a user,

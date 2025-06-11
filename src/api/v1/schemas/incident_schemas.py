@@ -21,7 +21,8 @@ from src.models.base import (
     AffectedItemEnum
 )
 from src.api.v1.schemas.user_schemas import (
-    UserRead
+    UserRead,
+    MinimalUserRead
 )
 
 
@@ -111,60 +112,53 @@ class ResolutionMitigationCreate(BaseModel):
 # --- Read Schemas  (Response) ---
 
 class IncidentProfileRead(IncidentProfileCreate):
-    id: UUID
-    commander: Optional[UserRead] = None
-    created_at: datetime
-    updated_at: datetime
+
+    commander: Optional[MinimalUserRead] = None
 
     class Config:
         from_attributes = True
 
 
 class AffectedItemRead(AffectedItemCreate):
-    id: UUID
 
     class Config:
         from_attributes = True
 
 
 class ImpactsRead(ImpactsCreate):
-    id: UUID
 
     class Config:
         from_attributes = True
 
 
 class ShallowRCARead(ShallowRCACreate):
-    id: UUID
 
     class Config:
         from_attributes = True
 
 
 class TimelineEventRead(TimelineEventCreate):
-    id: UUID
-    owner_user: Optional[UserRead] = None
+
+    owner_user: Optional[MinimalUserRead] = None
 
     class Config:
         from_attributes = True
 
 
 class CommunicationLogRead(CommunicationLogCreate):
-    id: UUID
 
     class Config:
         from_attributes = True
 
 
 class ResolutionMitigationRead(ResolutionMitigationCreate):
-    id: UUID
 
     class Config:
         from_attributes = True
 
 
 class SignOffRead(BaseModel):
-    id: UUID
+
     role: RolesEnum
     date_approved: date
     approver_user: UserRead

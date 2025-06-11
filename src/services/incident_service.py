@@ -310,6 +310,7 @@ class IncidentService:
         incident = await self.get_incident_by_id(
             incident_id=incident_id
         )
+
         await self._check_permission(
             incident=incident,
             user=current_user,
@@ -321,14 +322,23 @@ class IncidentService:
                 "Cannot add timeline events to a resolved incident."
             )
 
-        # Ensure the owner is set to the current user
         event_in.owner_user_id = current_user.id
-        new_event = TimelineEvent.model_validate(event_in)
 
-        return await self.crud_incident.add_timeline_event(
+        # Pass the incident_id from the path
+        # to create a valid TimelineEvent model.
+        new_event = TimelineEvent.model_validate(
+            event_in,
+            update={'incident_id': incident_id}
+        )
+
+        updated_incident = await self.crud_incident.add_timeline_event(
             incident=incident,
             new_event=new_event
         )
+
+        await self.db_session.commit()
+
+        return updated_incident
 
     async def add_communication_log(
         self,
@@ -353,12 +363,17 @@ class IncidentService:
                 "Cannot add communication logs to a resolved incident."
             )
 
-        new_log = CommunicationLog.model_validate(log_in)
+        new_log = CommunicationLog.model_validate(
+            log_in,
+            update={'incident_id': incident_id}
+        )
 
-        return await self.crud_incident.add_communication_log(
+        updated_incident = await self.crud_incident.add_communication_log(
             incident=incident,
             new_log=new_log
         )
+
+        return updated_incident
 
     async def update_resolution(
         self,
@@ -380,7 +395,8 @@ class IncidentService:
         if incident.profile.status == IncidentStatusEnum.RESOLVED \
                 and not incident.resolution_mitigation:
             raise InvalidOperationException(
-                "Cannot add resolution to an already resolved incident without one."
+                "Cannot add resolution to an already "
+                "resolved incident without one."
             )
 
         return await self.crud_incident.update_resolution(
