@@ -11,6 +11,7 @@ class IncidentStatusEnum(str, Enum):
     OPEN = "Open"
     DOING = "Doing"
     RESOLVED = "Resolved"
+    UNKNOWN = "Unknown"
 
 
 class SeverityLevelEnum(str, Enum):
@@ -28,20 +29,33 @@ class ActionItemStatusEnum(str, Enum):
 
 
 class UserRoleEnum(str, Enum):
+    SRE = "sre"
     VIEWER = "viewer"
     EDITOR = "editor"
     ADMIN = "admin"
     INCIDENT_COMMANDER = "incident_commander"
-    SRE = "sre"
 
 
 class RolesEnum(str, Enum):
-    INCIDENT_LEAD = "Incident Lead"
-    ENGINEERING_MANAGER = "Engineering Manager"
-    PRODUCT_OWNER = "Product Owner"
-    SRE_LEAD = "SRE Lead"
     QA_LEAD = "QA Lead"
+    SRE_LEAD = "SRE Lead"
+    BE_LEAD = "Back-end Lead"
+    FE_LEAD = "Front-end Lead"
+    DEVOPS_LEAD = "DevOps Lead"
+    PRODUCT_OWNER = "Product Owner"
     DEPARTMENT_HEAD = "Department Head"
+    ENGINEERING_MANAGER = "Engineering Manager"
+
+
+class AffectedItemEnum(str, Enum):
+    API = "API"
+    DATABASE = "Database"
+    INFRASTRUCTURE = "Infrastructure"
+    NETWORK = "Network"
+    APPLICATION = "Application"
+    CUSTOMER_DATA = "Customer Data"
+    SECURITY = "Security"
+    EXTERNAL_SERVICE = "External Service"
 
 
 class BaseEntity(SQLModel):
