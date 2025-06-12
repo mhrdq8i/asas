@@ -23,7 +23,9 @@ from sqlmodel import (
 )
 
 from src.models.base import (
-    BaseEntity,
+    BaseEntity
+)
+from src.models.enums import (
     RolesEnum,
     SeverityLevelEnum,
     IncidentStatusEnum,
@@ -224,38 +226,8 @@ class IncidentProfile(BaseEntity, table=True):
     )
 
 
-# --- Affects ---
-
-class AffectedItem(BaseEntity, table=True):
-    __tablename__ = "affected_items"
-
-    # One-to-Many relationship
-
-    incident_id: IncidentID = Field(
-        foreign_key="incidents.id",
-        index=True,
-        nullable=False
-    )
-    incident_ref: "Incident" = Relationship(
-        back_populates="affected_items"
-    )
-
-    # Fields to define the item itself
-
-    item_type: AffectedItemEnum = Field(
-        description=(
-            "The type of the affected item "
-            "(e.g., Service, Region, Network)."
-        )
-    )
-
-    description: str = Field(
-        default="",
-        sa_column=Column(Text),
-    )
-
-
 # --- Resolution & Mitigation ---
+
 
 class ResolutionMitigation(BaseEntity, table=True):
     __tablename__ = "resolution_mitigations"
@@ -289,20 +261,44 @@ class ResolutionMitigation(BaseEntity, table=True):
         sa_column=Column(JSONB),
     )
 
-    long_term_preventative_measures: List[
-        str
-    ] = Field(
-        default_factory=list,
-        sa_column=Column(JSONB),
+
+# --- Affects ---
+
+class AffectedItem(BaseEntity, table=True):
+    __tablename__ = "affected_items"
+
+    # Many-to-One relationship definition
+
+    incident_id: IncidentID = Field(
+        foreign_key="incidents.id",
+        index=True,
+        nullable=False
+    )
+    incident_ref: "Incident" = Relationship(
+        back_populates="affected_items"
     )
 
+    # Fields to define the item itself
+
+    item_type: AffectedItemEnum = Field(
+        description=(
+            "The type of the affected item "
+            "(e.g., Service, Region, Network)."
+        )
+    )
+
+    description: str = Field(
+        default="",
+        sa_column=Column(Text),
+    )
 
 # --- Impacts ---
+
 
 class Impacts(BaseEntity, table=True):
     __tablename__ = "impacts"
 
-    # One-to-One relationship definition
+    # Many-to-One relationship definition
 
     incident_id: IncidentID = Field(
         foreign_key="incidents.id",
@@ -333,7 +329,7 @@ class Impacts(BaseEntity, table=True):
 class ShallowRCA(BaseEntity, table=True):
     __tablename__ = "shallow_rca"
 
-    # One-to-One relationship definition
+    # Many-to-One relationship definition
 
     incident_id: IncidentID = Field(
         foreign_key="incidents.id",
@@ -370,7 +366,7 @@ class ShallowRCA(BaseEntity, table=True):
 class CommunicationLog(BaseEntity, table=True):
     __tablename__ = "communication_logs"
 
-    # One-to-Many relationship definition
+    # Many-to-One relationship definition
 
     incident_id: IncidentID = Field(
         foreign_key="incidents.id",
@@ -402,7 +398,7 @@ class CommunicationLog(BaseEntity, table=True):
 class TimelineEvent(BaseEntity, table=True):
     __tablename__ = "timeline_events"
 
-    # One-to-Many relationship definition
+    # Many-to-One relationship definition
 
     incident_id: IncidentID = Field(
         foreign_key="incidents.id",
@@ -442,7 +438,7 @@ class TimelineEvent(BaseEntity, table=True):
 class SignOff(BaseEntity, table=True):
     __tablename__ = "sign_offs"
 
-    # One-to-Many relationship definition
+    # Many-to-One relationship definition
 
     incident_id: IncidentID = Field(
         foreign_key="incidents.id",

@@ -3,10 +3,10 @@ from datetime import datetime, date
 from typing import (
     Annotated,
     Optional,
-    List
+    List,
 )
 
-from sqlalchemy import Column
+from sqlalchemy import Column, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import (
     Field,
@@ -14,15 +14,85 @@ from sqlmodel import (
     DateTime
 )
 
-from src.models.base import (
-    BaseEntity,
+# Import enums from the dedicated file
+from src.models.enums import (
     ActionItemStatusEnum,
-    RolesEnum
+    RolesEnum,
+    FactorTypeEnum,
+    PostMortemStatusEnum
 )
+from src.models.base import BaseEntity
+
+# Forward declaration to avoid circular imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.models.incident import Incident
+    from src.models.user import User
 
 
 class PostMortem(BaseEntity, table=True):
     __tablename__ = "postmortems"
+
+    status: Annotated[
+        PostMortemStatusEnum,
+        Field(
+            default=PostMortemStatusEnum.DRAFT,
+            description="Status of the post-mortem"
+        )
+    ]
+
+    links: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            max_length=512,
+            description=(
+                "Link to the detailed "
+                "postmortem document"
+            ),
+        )
+    ]
+
+    deep_rca: Annotated[
+        Optional[str],
+        Field(
+            default=None,
+            sa_column=Column(Text),
+            description=(
+                "In-depth technical cause from deep RCA"
+            )
+        )
+    ]
+
+    lessons_learned: Annotated[
+        List[str],
+        Field(
+            default_factory=list,
+            sa_column=Column(JSONB),
+            description=(
+                "List of lessons learned from the "
+                "incident, stored as simple strings."
+            )
+        )
+    ]
+
+    date_completed_utc: Annotated[
+        Optional[datetime],
+        Field(
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            ),
+            description=(
+                "The UTC datetime when the "
+                "post-mortem was marked as completed"
+            )
+        )
+    ]
+
+    # --- Relationships ---
+
+    # One-to-One relationship with Incident
 
     incident_id: Annotated[
         UUID,
@@ -33,19 +103,13 @@ class PostMortem(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     incident_ref: "Incident" = Relationship(
         back_populates="postmortem"
     )
 
-    profile: Optional[
-        "PostMortemProfile"
-    ] = Relationship(
-        back_populates="postmortem_ref",
-        sa_relationship_kwargs={
-            "uselist": False,
-            "cascade": "all, delete-orphan"
-        }
-    )
+    # One-to-Many relationships to child tables
+
     contributing_factors: List[
         "ContributingFactor"
     ] = Relationship(
@@ -54,14 +118,7 @@ class PostMortem(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
-    lessons_learned: List[
-        "LessonLearned"
-    ] = Relationship(
-        back_populates="postmortem_ref",
-        sa_relationship_kwargs={
-            "cascade": "all, delete-orphan"
-        }
-    )
+
     action_items: List[
         "ActionItem"
     ] = Relationship(
@@ -70,6 +127,7 @@ class PostMortem(BaseEntity, table=True):
             "cascade": "all, delete-orphan"
         }
     )
+
     approvals: List[
         "PostMortemApproval"
     ] = Relationship(
@@ -80,180 +138,105 @@ class PostMortem(BaseEntity, table=True):
     )
 
 
-class PostMortemProfile(BaseEntity, table=True):
-    __tablename__ = "postmortem_profile"
-
-    postmortem_ref: "PostMortem" = Relationship(
-        back_populates="profile"
-    )
-    post_mortem_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="postmortems.id",
-            unique=True,
-            index=True,
-            nullable=False,
-            description=(
-                "Foreign key to the main"
-                "postmortems table, "
-                "establishing a 1-to-1 link."
-            )
-        )
-    ]
-    status: Annotated[
-        str,
-        Field(
-            description=(
-                "Status of the post-mortem"
-            ),
-            max_length=50
-        )
-    ]
-    links: Annotated[
-        str | None,
-        Field(
-            default=None,
-            description=(
-                "Link to the detailed"
-                "postmortem document"
-            ),
-            max_length=512
-        )
-    ]
-    deep_rca: Annotated[
-        str | None,
-        Field(
-            default=None,
-            sa_column=Column(JSONB),
-            description=(
-                "In-depth technical "
-                "cause from deep RCA"
-            )
-        )
-    ]
-    date_completed_utc: Annotated[
-        datetime | None,
-        Field(
-            default=None,
-            sa_column=Column(
-                DateTime(timezone=True)
-            )
-        )
-    ]
-
-
 class ContributingFactor(BaseEntity, table=True):
     __tablename__ = "contributing_factors"
 
+    """
+    A structured factor that contributed to the incident,
+    identified during post-mortem.
+    """
+
     factor_type: Annotated[
-        str,
+        FactorTypeEnum,
         Field(
-            description="Type of factor",
-            max_length=100
+            default=FactorTypeEnum.UNKNOWN,
+            description="The category of the contributing factor."
         )
     ]
+
     description: Annotated[
         str,
         Field(
-            sa_column=Column(JSONB),
-            description=(
-                "Contributing factors"
-            )
+            sa_column=Column(Text),
+            description="Detailed description of the contributing factor."
         )
     ]
+
+    # Many-to-One relationship with PostMortem
+
     postmortem_id: Annotated[
         UUID,
         Field(
-            foreign_key="postmortems.id"
+            foreign_key="postmortems.id",
+            nullable=False
         )
     ]
-    postmortem_ref: Optional[
-        "PostMortem"
-    ] = Relationship(
+
+    postmortem_ref: "PostMortem" = Relationship(
         back_populates="contributing_factors"
-    )
-
-
-class LessonLearned(BaseEntity, table=True):
-    __tablename__ = "lessons_learned"
-
-    description: Annotated[
-        str,
-        Field(
-            sa_column=Column(JSONB),
-            description=(
-                "Lesson learned from"
-                "the incident"
-            )
-        )
-    ]
-    postmortem_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="postmortems.id"
-        )
-    ]
-    postmortem_ref: Optional[
-        "PostMortem"
-    ] = Relationship(
-        back_populates="lessons_learned"
     )
 
 
 class ActionItem(BaseEntity, table=True):
     __tablename__ = "action_items"
 
+    """
+    A specific, actionable task to prevent future incidents.
+    """
+
     description: Annotated[
         str,
         Field(
-            sa_column=Column(JSONB),
-            description=(
-                "Action items"
-            )
+            sa_column=Column(Text),
+            description="Description of the action to be taken"
         )
     ]
-    owner_user_id: Annotated[
-        UUID | None,
-        Field(
-            default=None,
-            foreign_key="users.id",
-            index=True
-        )
-    ]
-    owner_user: Optional[
-        "User"
-    ] = Relationship(
-        back_populates="action_items_owned"
-    )
+
     due_date: Annotated[
         date,
         Field(
-            description=(
-                "Due date for the "
-                "action item"
-            )
+            description="Due date for the action item"
         )
     ]
+
     status: Annotated[
         ActionItemStatusEnum,
         Field(
             default=ActionItemStatusEnum.OPEN,
-            description=(
-                "Status of the "
-                "action item"
-            )
+            description="Status of the action item"
         )
     ]
+
+    # Many-to-One relationship with PostMortem
+
     postmortem_id: Annotated[
         UUID,
         Field(
-            foreign_key="postmortems.id"
+            foreign_key="postmortems.id",
+            nullable=False
         )
     ]
-    postmortem_ref: Optional[
-        "PostMortem"
-    ] = Relationship(
+
+    postmortem_ref: "PostMortem" = Relationship(
         back_populates="action_items"
+    )
+
+    # Optional relationship to a
+    # User who owns the action item
+
+    owner_user_id: Annotated[
+        Optional[UUID],
+        Field(
+            foreign_key="users.id",
+            default=None,
+            index=True
+        )
+    ]
+
+    owner_user: Optional[
+        "User"
+    ] = Relationship(
+        back_populates="action_items_owned"
     )
 
 
@@ -263,14 +246,35 @@ class PostMortemApproval(BaseEntity, table=True):
     role: Annotated[
         RolesEnum,
         Field(
-            default=(
-                RolesEnum.SRE_LEAD
-            ),
             description=(
-                "Role of the approver"
+                "Role of the approver "
+                "(e.g., SRE Lead, Department Head)"
             )
         )
     ]
+    approval_date: Annotated[
+        date,
+        Field(
+            description="Date of approval"
+        )
+    ]
+
+    # Many-to-One relationship with PostMortem
+
+    postmortem_id: Annotated[
+        UUID,
+        Field(
+            foreign_key="postmortems.id",
+            nullable=False
+        )
+    ]
+
+    postmortem_ref: "PostMortem" = Relationship(
+        back_populates="approvals"
+    )
+
+    # Relationship to the User who approved it
+
     approver_user_id: Annotated[
         UUID,
         Field(
@@ -279,25 +283,7 @@ class PostMortemApproval(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     approver_user: "User" = Relationship(
-        back_populates="approvals"
-    )
-    approval_date: Annotated[
-        date,
-        Field(
-            description=(
-                "Date of approval"
-            )
-        )
-    ]
-    postmortem_id: Annotated[
-        UUID,
-        Field(
-            foreign_key="postmortems.id"
-        )
-    ]
-    postmortem_ref: Optional[
-        "PostMortem"
-    ] = Relationship(
         back_populates="approvals"
     )
