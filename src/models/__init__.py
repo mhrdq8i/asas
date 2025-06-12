@@ -6,17 +6,21 @@ This __init__.py should be imported once when the application starts,
 for example in src/database/session.py before creating tables.
 """
 
+# Import all Enums from the dedicated file
 from src.models.enums import (
+    UserRoleEnum,
+    RolesEnum,
     IncidentStatusEnum,
     SeverityLevelEnum,
     ActionItemStatusEnum,
-    UserRoleEnum,
-    RolesEnum,
-    FactorTypeEnum
+    AffectedItemEnum,
+    FactorTypeEnum,
+    PostMortemStatusEnum
 )
-from src.models.base import (
-    BaseEntity
-)
+# Import BaseEntity from its own file
+from src.models.base import BaseEntity
+
+# Import table models
 from src.models.user import User
 from src.models.incident import (
     Incident,
@@ -33,7 +37,7 @@ from src.models.postmortem import (
     PostMortem,
     ContributingFactor,
     ActionItem,
-    PostMortemApproval
+    PostMortemApproval,
 )
 
 
@@ -63,14 +67,19 @@ print(
 
 # Define __all__ to control `from src.models import *` behavior
 __all__ = [
-    # Bases and Enums
-    "BaseEntity",
+
+    #  Enums
+    "UserRoleEnum",
+    "RolesEnum",
     "IncidentStatusEnum",
     "SeverityLevelEnum",
     "ActionItemStatusEnum",
-    "UserRoleEnum",
-    "RolesEnum",
-    "FactorTypeEnum",  # Added new Enum
+    "AffectedItemEnum",
+    "FactorTypeEnum",
+    "PostMortemStatusEnum",
+
+    # Bases
+    "BaseEntity",
 
     # User Models
     "User",
