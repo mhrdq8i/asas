@@ -17,11 +17,10 @@ from src.models.user import User
 from src.core import security
 from src.dependencies.service_deps import get_user_service
 
-# OAuth2PasswordBearer scheme
-# The tokenUrl should point to your login
-# endpoint (which we will create in auth.py)
-# Make sure the path is correct based on your
-# router prefix for auth.
+# This defines the security scheme for OAuth2.
+# It tells FastAPI how to find the token.
+# The `tokenUrl` points to the login
+# endpoint where clients can obtain a token.
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/token"
 )
@@ -42,12 +41,32 @@ async def get_current_user(
     ]
 ) -> User:
     """
-    Dependency to get the current
-    user from a JWT token.
-    Decodes the token, validates it,
-    and retrieves the user from the database.
-    Raises HTTPException if authentication fails.
+    Decodes a JWT token to retrieve the current user.
+
+    This is the foundational dependency for authentication.
+    It performs the
+    following steps:
+    1. Receives the token from the `Authorization:
+       Bearer <token>` header.
+    2. Decodes and validates the JWT signature and expiration.
+    3. Extracts the subject ('sub', which is the username)
+       from the token payload.
+    4. Fetches the corresponding user from the database.
+
+    Args:
+        token: The JWT token string provided by the client.
+        user_service: An instance of UserService to
+        interact with the database.
+
+    Raises:
+        NotAuthenticatedException:
+          If the token is invalid, expired, malformed,
+         or the user does not exist in the database.
+
+    Returns:
+        The authenticated User model instance from the database.
     """
+
     try:
         payload = security.decode_token(
             token
@@ -73,19 +92,7 @@ async def get_current_user(
                 )
             )
 
-        # For this example, let's assume 'sub' is username.
-        # If you store user_id in 'sub', change this part:
-        # try:
-        #     user_id = UUID(token_sub)
-        # except ValueError:
-        #     raise NotAuthenticatedException(
-        # detail="Invalid user identifier in token"
-        # )
-        # user = await user_service.get_user_by_id(user_id=user_id)
-
-        # If 'sub' is username:
-        # Accessing crud_user directly
-        # for this specific lookup
+        # Assumes 'sub' claim in the JWT payload is the username.
         user = await user_service.crud_user.get_user_by_username(
             username=token_sub
         )
@@ -101,12 +108,12 @@ async def get_current_user(
             )
         )
 
-    except NotAuthenticatedException:  # Re-raise our custom exception
+    # Re-raise the custom exception to be handled by FastAPI.
+    except NotAuthenticatedException:
         raise
-    # Catch any other unexpected errors during token processing
 
+    # Catch any other unexpected errors during token processing
     except Exception as e:
-        # Log error e
         print(
             f"Unexpected error during token processing: {e}"
         )
@@ -139,10 +146,27 @@ async def get_current_active_user(
     ]
 ) -> User:
     """
-    Dependency to get the current active user.
-    Relies on get_current_user and then
-    checks if the user is active.
+    Ensures the authenticated user is currently active.
+
+    This dependency builds upon `get_current_user`.
+    After successfully authenticating the user,
+    it checks the `is_active` flag.
+    It should be used for most endpoints
+    that require a logged-in and active user.
+
+    Args:
+        current_user:
+            The User object injected by the
+            `get_current_user` dependency.
+
+    Raises:
+        InsufficientPermissionsException:
+            If the user's `is_active` attribute is False.
+
+    Returns:
+        The authenticated and active User model instance.
     """
+
     if not current_user.is_active:
         # You might want a more specific
         # exception here
@@ -163,9 +187,24 @@ async def get_current_active_superuser(
     ]
 ) -> User:
     """
-    Dependency to get the current active superuser.
-    Relies on get_current_active_user and
-    then checks if the user is a superuser.
+    Ensures the authenticated user is an active superuser.
+
+    This is the highest level of authorization,
+    intended for administrative endpoints.
+    It builds upon `get_current_active_user`,
+    adding a check for the `is_superuser` flag.
+
+    Args:
+        current_user:
+            The User object injected by the
+            `get_current_active_user` dependency.
+
+    Raises:
+        InsufficientPermissionsException:
+            If the user's `is_superuser` attribute is False.
+
+    Returns:
+        The authenticated, active, and superuser User model instance.
     """
     if not current_user.is_superuser:
         raise InsufficientPermissionsException(
