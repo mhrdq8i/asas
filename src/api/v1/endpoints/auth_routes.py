@@ -22,8 +22,12 @@ from src.api.v1.schemas.auth_schemas import (
     Msg,
     EmailVerifyTokenSchema
 )
-from src.dependencies.service_deps import get_user_service
-from src.dependencies.api_auth_deps import get_current_active_user
+from src.dependencies.service_deps import (
+    get_user_service
+)
+from src.dependencies.auth_deps import (
+    get_current_active_user
+)
 from src.exceptions.base_exceptions import AppException
 from src.exceptions.user_exceptions import (
     AuthenticationFailedException,
@@ -192,11 +196,11 @@ async def reset_password(
 
 
 @router.post(
-    "/request-email-verification",
+    "/email-verification",
     response_model=Msg,
     status_code=status.HTTP_200_OK
 )
-async def request_email_verification(
+async def email_verification(
     current_user: Annotated[
         UserModel,
         Depends(get_current_active_user)
@@ -266,7 +270,8 @@ async def verify_email(
         # To prevent user enumeration,
         # we mask UserNotFoundException.
         if isinstance(
-            e, UserNotFoundException
+            e,
+            UserNotFoundException
         ):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

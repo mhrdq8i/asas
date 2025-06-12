@@ -141,10 +141,10 @@ class CRUDUser:
 
         return result.first()
 
-    async def db_create_user(
-            self,
-            *,
-            user_in: UserCreateInternal
+    async def create_user(
+        self,
+        *,
+        user_in: UserCreateInternal
     ) -> User:
         """
         Create a new user in the database.

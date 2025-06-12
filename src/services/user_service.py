@@ -102,7 +102,7 @@ class UserService:
             is_email_verified=False
         )
 
-        created_user = await self.crud_user.db_create_user(
+        created_user = await self.crud_user.create_user(
             user_in=user_create_internal_data
         )
 

@@ -39,7 +39,7 @@ async def get_current_user(
         Depends(
             get_user_service
         )
-    ]  # Inject UserService
+    ]
 ) -> User:
     """
     Dependency to get the current

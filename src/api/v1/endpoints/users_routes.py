@@ -16,7 +16,7 @@ from src.api.v1.schemas.user_schemas import (
 )
 from src.core.email_utils import send_email_verification
 from src.dependencies.service_deps import get_user_service
-from src.dependencies.api_auth_deps import (
+from src.dependencies.auth_deps import (
     get_current_active_user,
     get_current_active_superuser
 )

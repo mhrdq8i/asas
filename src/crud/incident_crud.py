@@ -3,7 +3,9 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 from sqlmodel import select, func, and_
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 from sqlalchemy.orm import selectinload
 
 from src.models.incident import (
@@ -19,7 +21,10 @@ from src.models.incident import (
     SeverityLevelEnum,
     ResolutionMitigation
 )
-from src.api.v1.schemas.incident_schemas import IncidentCreate, ResolutionMitigationCreate
+from src.api.v1.schemas.incident_schemas import (
+    IncidentCreate,
+    ResolutionMitigationCreate
+)
 
 
 class CrudIncident:
@@ -301,24 +306,49 @@ class CrudIncident:
 
         return incident
 
-    async def add_communication_log(self, *, incident: Incident, new_log: CommunicationLog) -> Incident:
+    async def add_communication_log(
+        self,
+        *,
+        incident: Incident,
+        new_log: CommunicationLog
+    ) -> Incident:
+
         incident.communication_logs.append(new_log)
+
         self.db.add(incident)
         await self.db.flush()
         await self.db.refresh(incident)
+
         return incident
 
-    async def delete_incident(self, *, incident: Incident) -> None:
-        # The service layer will handle the commit for the deletion.
+    async def delete_incident(
+        self,
+        *,
+        incident: Incident
+    ) -> None:
+
         await self.db.delete(incident)
         await self.db.flush()
 
-    async def is_user_active_commander(self, *, user_id: UUID) -> bool:
-        statement = select(func.count(IncidentProfile.id)).where(
+    async def is_user_active_commander(
+        self,
+        *,
+        user_id: UUID
+    ) -> bool:
+
+        statement = select(
+            func.count(IncidentProfile.id)
+        ).where(
             IncidentProfile.commander_id == user_id,
             IncidentProfile.status.in_(
-                [IncidentStatusEnum.OPEN, IncidentStatusEnum.DOING])
+                [
+                    IncidentStatusEnum.OPEN,
+                    IncidentStatusEnum.DOING
+                ]
+            )
         )
+
         result = await self.db.exec(statement)
         count = result.one()
+
         return count > 0

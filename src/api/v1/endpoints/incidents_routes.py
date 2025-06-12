@@ -16,7 +16,7 @@ from fastapi import (
 from src.dependencies.service_deps import (
     get_incident_service
 )
-from src.dependencies.api_auth_deps import (
+from src.dependencies.auth_deps import (
     get_current_active_user,
     get_current_active_superuser
 )
