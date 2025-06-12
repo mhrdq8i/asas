@@ -14,7 +14,7 @@ from pydantic import (
     Field as PydanticField
 )
 
-from src.models.base import (
+from src.models.enums import (
     SeverityLevelEnum,
     IncidentStatusEnum,
     RolesEnum,

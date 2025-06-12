@@ -5,7 +5,7 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, DateTime
 from sqlalchemy import Column, Text
 
-from src.models.base import UserRoleEnum
+from src.models.enums import UserRoleEnum
 from src.models.base import BaseEntity
 
 
