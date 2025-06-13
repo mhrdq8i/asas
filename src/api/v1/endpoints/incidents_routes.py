@@ -47,7 +47,7 @@ from src.exceptions.base_exceptions import (
 )
 
 
-incidents_router = APIRouter(
+inc_router = APIRouter(
     prefix="/incidents",
     # Protect all routes in this router
     dependencies=[
@@ -58,7 +58,7 @@ incidents_router = APIRouter(
 )
 
 
-@incidents_router.post(
+@inc_router.post(
     "/",
     response_model=IncidentRead,
     status_code=status.HTTP_201_CREATED
@@ -100,7 +100,7 @@ async def create_incident(
         )
 
 
-@incidents_router.get(
+@inc_router.get(
     "/",
     response_model=PaginatedResponse[IncidentRead]
 )
@@ -148,7 +148,7 @@ async def search_incidents(
     return incidents
 
 
-@incidents_router.get(
+@inc_router.get(
     "/{incident_id}",
     response_model=IncidentRead
 )
@@ -176,7 +176,7 @@ async def get_incident(
         )
 
 
-@incidents_router.put(
+@inc_router.put(
     "/{incident_id}/profile",
     response_model=IncidentRead
 )
@@ -218,7 +218,7 @@ async def update_incident_profile(
         )
 
 
-@incidents_router.put(
+@inc_router.put(
     "/{incident_id}/impacts",
     response_model=IncidentRead
 )
@@ -259,7 +259,7 @@ async def update_incident_impacts(
         )
 
 
-@incidents_router.put(
+@inc_router.put(
     "/{incident_id}/rca",
     response_model=IncidentRead
 )
@@ -301,7 +301,7 @@ async def update_shallow_rca(
         )
 
 
-@incidents_router.post(
+@inc_router.post(
     "/{incident_id}/timeline-events",
     response_model=IncidentRead
 )
@@ -337,7 +337,7 @@ async def add_timeline_event(
         )
 
 
-@incidents_router.post(
+@inc_router.post(
     "/{incident_id}/communication-logs",
     response_model=IncidentRead
 )
@@ -374,7 +374,7 @@ async def add_communication_log(
         )
 
 
-@incidents_router.delete(
+@inc_router.delete(
     "/{incident_id}",
     status_code=status.HTTP_204_NO_CONTENT
 )

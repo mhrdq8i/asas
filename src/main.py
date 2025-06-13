@@ -19,6 +19,9 @@ from src.api.v1.endpoints import (
 from src.api.v1.endpoints import (
     incidents_routes as incident_router_v1
 )
+from src.api.v1.endpoints import (
+    postmortem_routes as postmortem_router_v1
+)
 
 
 @asynccontextmanager
@@ -107,10 +110,19 @@ app.include_router(
 # Incidents router
 app.include_router(
     router=(
-        incident_router_v1.incidents_router
+        incident_router_v1.inc_router
     ),
     prefix="/api/v1",
     tags=["V1 - Incidents"],
+)
+
+# Postmortem router
+app.include_router(
+    router=(
+        postmortem_router_v1.pm_router
+    ),
+    prefix="/api/v1",
+    tags=["V1 - Postmortem"]
 )
 
 

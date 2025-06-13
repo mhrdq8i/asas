@@ -13,6 +13,9 @@ from src.services.user_service import (
 from src.services.incident_service import (
     IncidentService
 )
+from src.services.postmortem_service import (
+    PostmortemService
+)
 
 
 def get_user_service(
@@ -43,6 +46,21 @@ def get_incident_service(
     return IncidentService(
         db_session=db_session
     )
+
+
+def get_postmortem_service(
+    db_session: AsyncSession = Depends(
+        get_async_session
+    )
+) -> PostmortemService:
+    """
+    Dependency to get an instance
+    of PostmortemService.
+    """
+    return PostmortemService(
+        db_session=db_session
+    )
+
 
 # def get_alert_service(
 #     db_session: AsyncSession = Depends(get_async_session)
