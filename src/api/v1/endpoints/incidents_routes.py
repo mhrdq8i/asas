@@ -10,7 +10,8 @@ from fastapi import (
     Depends,
     HTTPException,
     status,
-    Query
+    Query,
+    Response
 )
 
 from src.dependencies.service_deps import (
@@ -408,3 +409,7 @@ async def delete_incident(
             status_code=e.status_code,
             detail=e.detail
         )
+
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT
+    )
