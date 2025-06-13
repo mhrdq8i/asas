@@ -116,6 +116,7 @@ async def register_new_user(
             status_code=e.status_code,
             detail=e.detail
         )
+
     except Exception as e:
         # Catch any unexpected errors
         print(
@@ -181,6 +182,25 @@ async def update_current_user_me(
             status_code=e.status_code,
             detail=e.detail
         )
+
+
+@user_router.get(
+    "/commanders",
+    response_model=List[UserRead]
+)
+async def list_commanders(
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
+):
+    """
+    Get a list of all active users designated as Incident Commanders.
+    This is useful for populating dropdowns in the frontend.
+    """
+    commanders = await user_service.get_commander_list()
+
+    return commanders
 
 
 # --- Admin Endpoints ---

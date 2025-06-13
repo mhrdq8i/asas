@@ -58,6 +58,7 @@ class UserService:
         *,
         user_in: UserCreate
     ) -> User:
+
         existing_user_by_username = \
             await self.crud_user.get_user_by_username(
                 username=user_in.username
@@ -95,6 +96,7 @@ class UserService:
             full_name=user_in.full_name,
             role=user_in.role,
             is_active=True,
+            is_commander=user_in.is_commander,
             is_superuser=user_in.is_superuser,
             avatar_url=user_in.avatar_url,
             bio=user_in.bio,
@@ -659,3 +661,9 @@ class UserService:
             skip=skip,
             limit=limit
         )
+
+    async def get_commander_list(
+            self
+    ) -> List[User]:
+
+        return await self.crud_user.get_commanders()

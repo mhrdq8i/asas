@@ -15,20 +15,22 @@ class UserBase(BaseModel):
     Base schema for user attributes,
     shared by create and read schemas.
     """
+
     email: EmailStr
+
     username: str = PydanticField(
         min_length=3,
         max_length=50
     )
+
     full_name: str
     # role is not in UserBase,
     # will be added in specific
     # schemas if needed or UserRead
 
-    # Default for UserBase, can be overridden
     is_active: bool = True
-    # Default for UserBase, can be overridden
     is_superuser: bool = False
+    is_commander: bool = False
 
     avatar_url: str | None = None
     bio: str | None = None
@@ -44,7 +46,6 @@ class UserCreate(UserBase):
         min_length=8,
         description="User password"
     )
-    # Default role for new users via API
     role: UserRoleEnum = UserRoleEnum.VIEWER
 
 
@@ -94,6 +95,7 @@ class UserRead(UserBase):
 class MinimalUserRead(BaseModel):
     username: str
     full_name: str
+    is_commander: bool
     role: UserRoleEnum
 
 

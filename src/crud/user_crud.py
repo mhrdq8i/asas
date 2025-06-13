@@ -158,9 +158,7 @@ class CRUDUser:
 
         self.db.add(db_user)
         await self.db.commit()
-        await self.db.refresh(
-            db_user
-        )
+        await self.db.refresh(db_user)
 
         return db_user
 

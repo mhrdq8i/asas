@@ -21,6 +21,7 @@ class User(BaseEntity, table=True):
             max_length=50
         )
     ]
+
     full_name: Annotated[
         str,
         Field(
@@ -28,6 +29,7 @@ class User(BaseEntity, table=True):
             max_length=100
         )
     ]
+
     email: Annotated[
         EmailStr, Field(
             index=True,
@@ -36,13 +38,7 @@ class User(BaseEntity, table=True):
             max_length=255
         )
     ]
-    hashed_password: Annotated[
-        str,
-        Field(
-            nullable=False,
-            max_length=255
-        )
-    ]
+
     is_active: Annotated[
         bool,
         Field(
@@ -50,6 +46,7 @@ class User(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     is_superuser: Annotated[
         bool,
         Field(
@@ -57,6 +54,16 @@ class User(BaseEntity, table=True):
             nullable=False
         )
     ]
+
+    is_commander: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False,
+            index=True,
+        )
+    ]
+
     role: Annotated[
         UserRoleEnum,
         Field(
@@ -64,6 +71,7 @@ class User(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     is_email_verified: Annotated[
         bool,
         Field(
@@ -71,6 +79,7 @@ class User(BaseEntity, table=True):
             nullable=False
         )
     ]
+
     email_verification_token: Annotated[
         str | None,
         Field(
@@ -79,6 +88,7 @@ class User(BaseEntity, table=True):
             max_length=255
         )
     ]
+
     email_verified_at: Annotated[
         datetime | None,
         Field(
@@ -88,6 +98,15 @@ class User(BaseEntity, table=True):
             )
         )
     ]
+
+    hashed_password: Annotated[
+        str,
+        Field(
+            nullable=False,
+            max_length=255
+        )
+    ]
+
     reset_token: Annotated[
         str | None,
         Field(
@@ -96,6 +115,7 @@ class User(BaseEntity, table=True):
             max_length=255
         )
     ]
+
     reset_token_expires: Annotated[
         datetime | None,
         Field(
@@ -105,6 +125,7 @@ class User(BaseEntity, table=True):
             )
         )
     ]
+
     is_deleted: Annotated[
         bool,
         Field(
@@ -113,6 +134,7 @@ class User(BaseEntity, table=True):
             index=True
         )
     ]
+
     deleted_at: Annotated[
         datetime | None,
         Field(
@@ -122,6 +144,7 @@ class User(BaseEntity, table=True):
             )
         )
     ]
+
     avatar_url: Annotated[
         str | None,
         Field(
@@ -129,6 +152,7 @@ class User(BaseEntity, table=True):
             max_length=512
         )
     ]
+
     bio: Annotated[
         str | None,
         Field(
@@ -136,6 +160,7 @@ class User(BaseEntity, table=True):
             sa_column=Column(Text)
         )
     ]
+
     timezone: Annotated[
         str | None,
         Field(
@@ -143,6 +168,7 @@ class User(BaseEntity, table=True):
             max_length=50
         )
     ]
+
     last_login_at: Annotated[
         datetime | None,
         Field(
@@ -152,6 +178,7 @@ class User(BaseEntity, table=True):
             )
         )
     ]
+
     last_login_ip: Annotated[
         str | None,
         Field(

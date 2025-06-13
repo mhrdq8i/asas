@@ -160,6 +160,7 @@ class IncidentService:
         commander_id = incident_in.profile.commander_id
 
         if commander_id:
+
             commander = await self.crud_user.get_user_by_id(
                 user_id=commander_id
             )
@@ -170,6 +171,14 @@ class IncidentService:
                         "Commander with ID "
                         f"{commander_id} "
                         "not found or is inactive."
+                    )
+                )
+
+            if not commander.is_commander:
+                raise InvalidOperationException(
+                    detail=(
+                        f"User '{commander.username}' "
+                        "is not designated as an Incident Commander."
                     )
                 )
 
