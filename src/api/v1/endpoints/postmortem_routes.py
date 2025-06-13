@@ -38,7 +38,7 @@ async def create_postmortem(
     Creates a new draft post-mortem linked to a specific resolved incident.
     - **incident_id**: The UUID of the incident that must be in 'Resolved' status.
     """
-    new_pm = await pm_service.create_postmortem_for_incident(
+    new_pm = await pm_service.create_postmortem(
         incident_id=pm_in.incident_id,
         current_user=current_user
     )

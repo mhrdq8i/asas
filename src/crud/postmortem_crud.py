@@ -59,3 +59,18 @@ class CrudPostmortem:
         await self.db.flush()
         await self.db.refresh(db_postmortem)
         return db_postmortem
+
+    async def refresh_with_relationships(self, *, postmortem: PostMortem) -> PostMortem:
+        """
+        Refreshes the given post-mortem instance and eagerly loads its relationships.
+        This is crucial to prevent MissingGreenlet errors upon response serialization.
+        """
+        await self.db.refresh(
+            postmortem,
+            attribute_names=[
+                "contributing_factors",
+                "action_items",
+                "approvals"
+            ]
+        )
+        return postmortem
