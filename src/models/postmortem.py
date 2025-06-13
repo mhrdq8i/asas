@@ -55,10 +55,13 @@ class PostMortem(BaseEntity, table=True):
     ]
 
     lessons_learned: Annotated[
-        Optional[str],
+        List[str],
         Field(
-            default=None,
-            sa_column=Column(Text),
+            sa_column=Column(
+                JSONB,
+                nullable=False,
+                server_default='[]'
+            ),
             description=(
                 "The lessons that learned from the incident"
             )

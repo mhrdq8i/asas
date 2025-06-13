@@ -60,6 +60,11 @@ class CrudPostmortem:
         await self.db.refresh(db_postmortem)
         return db_postmortem
 
+    async def delete_postmortem(self, *, db_postmortem: PostMortem) -> None:
+        """Deletes a post-mortem instance from the database."""
+        await self.db.delete(db_postmortem)
+        await self.db.flush()
+
     async def refresh_with_relationships(self, *, postmortem: PostMortem) -> PostMortem:
         """
         Refreshes the given post-mortem instance and eagerly loads its relationships.

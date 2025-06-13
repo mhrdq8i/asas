@@ -111,3 +111,14 @@ class PostmortemService:
         refreshed_pm = await self.crud_postmortem.refresh_with_relationships(postmortem=updated_pm)
 
         return refreshed_pm
+
+    async def delete_postmortem(self, *, postmortem_id: UUID, current_user: User) -> None:
+        """Deletes a post-mortem after checking permissions."""
+        db_postmortem = await self._get_postmortem_or_fail(postmortem_id)
+
+        # We need the associated incident to check permissions
+        incident = await self._get_incident_or_fail(db_postmortem.incident_id)
+        await self._check_permission(incident=incident, user=current_user)
+
+        await self.crud_postmortem.delete_postmortem(db_postmortem=db_postmortem)
+        await self.db_session.commit()

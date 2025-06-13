@@ -245,7 +245,6 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        # Refresh to get latest state
         await self.db_session.refresh(updated_incident)
 
         return updated_incident
@@ -305,10 +304,15 @@ class IncidentService:
             exclude_unset=True
         )
 
-        return await self.crud_incident.update_shallow_rca(
+        updated_incident = await self.crud_incident.update_shallow_rca(
             db_incident=incident,
             rca_data=update_dict
         )
+
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_incident)
+
+        return updated_incident
 
     async def add_timeline_event(
         self,
@@ -348,6 +352,7 @@ class IncidentService:
         )
 
         await self.db_session.commit()
+        await self.db_session.refresh(updated_incident)
 
         return updated_incident
 
@@ -384,6 +389,9 @@ class IncidentService:
             new_log=new_log
         )
 
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_incident)
+
         return updated_incident
 
     async def update_resolution(
@@ -410,10 +418,15 @@ class IncidentService:
                 "resolved incident without one."
             )
 
-        return await self.crud_incident.update_resolution(
+        updated_incident = await self.crud_incident.update_resolution(
             db_incident=incident,
             resolution_data=resolution_in
         )
+
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_incident)
+
+        return updated_incident
 
     async def delete_incident(
             self,

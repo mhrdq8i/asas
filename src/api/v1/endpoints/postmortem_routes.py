@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 
 from src.dependencies.service_deps import get_postmortem_service
 from src.dependencies.auth_deps import get_current_active_user
@@ -85,7 +85,23 @@ async def update_postmortem(
     )
     return updated_pm
 
-# Note: Endpoints for adding/updating action items, factors, etc.,
-# would be added here following a similar pattern, e.g.:
-# POST /{postmortem_id}/action-items
-# PATCH /action-items/{action_item_id}
+
+@pm_router.delete(
+    "/{postmortem_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a Post-mortem"
+)
+async def delete_postmortem(
+    postmortem_id: UUID,
+    pm_service: Annotated[PostmortemService, Depends(get_postmortem_service)],
+    current_user: Annotated[User, Depends(get_current_active_user)]
+):
+    """
+    Deletes a post-mortem. Only the incident
+    commander or a superuser can perform this action.
+    """
+    await pm_service.delete_postmortem(
+        postmortem_id=postmortem_id,
+        current_user=current_user
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
