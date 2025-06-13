@@ -62,7 +62,7 @@ async def get_postmortem(
     return postmortem
 
 
-@pm_router.patch(
+@pm_router.put(
     "/{postmortem_id}",
     response_model=PostMortemRead,
     status_code=status.HTTP_200_OK,

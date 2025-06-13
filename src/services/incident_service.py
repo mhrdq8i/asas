@@ -239,10 +239,16 @@ class IncidentService:
                 "Cannot update profile details of a resolved incident."
             )
 
-        return await self.crud_incident.update_incident_profile(
+        updated_incident = await self.crud_incident.update_incident_profile(
             db_incident=incident,
             update_data=update_dict
         )
+
+        await self.db_session.commit()
+        # Refresh to get latest state
+        await self.db_session.refresh(updated_incident)
+
+        return updated_incident
 
     async def update_incident_impacts(
         self,
@@ -270,10 +276,15 @@ class IncidentService:
             exclude_unset=True
         )
 
-        return await self.crud_incident.update_incident_impacts(
+        updated_incident = await self.crud_incident.update_incident_impacts(
             db_incident=incident,
             impacts_data=update_dict
         )
+
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_incident)
+
+        return updated_incident
 
     async def update_shallow_rca(
         self,

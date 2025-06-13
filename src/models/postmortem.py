@@ -4,6 +4,7 @@ from typing import (
     Annotated,
     Optional,
     List,
+    Dict
 )
 
 from sqlalchemy import Column, Text
@@ -53,25 +54,26 @@ class PostMortem(BaseEntity, table=True):
         )
     ]
 
-    deep_rca: Annotated[
+    lessons_learned: Annotated[
         Optional[str],
         Field(
             default=None,
             sa_column=Column(Text),
             description=(
-                "In-depth technical cause from deep RCA"
+                "The lessons that learned from the incident"
             )
         )
     ]
 
-    lessons_learned: Annotated[
-        List[str],
+    deep_rca: Annotated[
+        List[Dict[str, str]],
         Field(
             default_factory=list,
             sa_column=Column(JSONB),
             description=(
-                "List of lessons learned from the "
-                "incident, stored as simple strings."
+                "Detailed root cause analysis, "
+                "structured. e.g. "
+                "[{'title': '...', 'analysis': '...'}]"
             )
         )
     ]

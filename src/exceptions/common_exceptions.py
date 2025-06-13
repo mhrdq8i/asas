@@ -27,8 +27,10 @@ class ResourceNotFoundException(
         detail = f"{resource_name} not found."
 
         if identifier:
-            detail = f"{resource_name} with\
-                  identifier '{identifier}' not found."
+            detail = (
+                f"{resource_name} with identifier "
+                f"{identifier} not found."
+            )
 
         super().__init__(
             detail=detail,

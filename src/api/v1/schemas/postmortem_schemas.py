@@ -11,10 +11,25 @@ from src.models.enums import (
     RolesEnum,
 )
 
+
+# =================================================================================
+# Reusable Schemas for JSON fields
+# =================================================================================
+
+class DeepRCAItem(BaseModel):
+    title: str = Field(
+        ...,
+        description="The title or category of the RCA finding."
+    )
+    analysis: str = Field(
+        ...,
+        description="The detailed analysis for this finding."
+    )
+
+
 # =================================================================================
 # ContributingFactor Schemas
 # =================================================================================
-
 
 class ContributingFactorBase(BaseModel):
     factor_type: FactorTypeEnum = FactorTypeEnum.UNKNOWN
@@ -96,7 +111,7 @@ class PostMortemApprovalRead(PostMortemApprovalBase):
 class PostMortemBase(BaseModel):
     status: PostMortemStatusEnum = PostMortemStatusEnum.DRAFT
     links: Optional[str] = None
-    deep_rca: Optional[str] = None
+    deep_rca: List[DeepRCAItem] = Field(default_factory=list)
     lessons_learned: List[str] = Field(default_factory=list)
 
 
@@ -109,7 +124,7 @@ class PostMortemCreate(BaseModel):
 class PostMortemUpdate(BaseModel):
     status: Optional[PostMortemStatusEnum] = None
     links: Optional[str] = None
-    deep_rca: Optional[str] = None
+    deep_rca: Optional[List[DeepRCAItem]] = None
     lessons_learned: Optional[List[str]] = None
 
 
