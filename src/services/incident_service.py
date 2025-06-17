@@ -214,7 +214,10 @@ class IncidentService:
                 f"Notification task queued for incident ID: {new_incident.id}")
         except Exception as e:
             logger.error(
-                f"Failed to queue notification task for incident {new_incident.id}: {e}"
+                (
+                    "Failed to queue notification task "
+                    f"for incident '{new_incident.id}: {e}'"
+                )
             )
         logger.info(
             "Successfully created incident with ID: "

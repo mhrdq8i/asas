@@ -24,7 +24,9 @@ class NotificationService:
         Formats and sends an email notification
         about a newly created incident.
         """
+
         recipients_str = settings.INCIDENT_NOTIFICATION_RECIPIENTS
+
         if not recipients_str:
             print(
                 "Warning: INCIDENT_NOTIFICATION_RECIPIENTS is not set. "
@@ -38,11 +40,15 @@ class NotificationService:
         ]
 
         if not recipients:
-            print("Warning: No valid recipients found. Skipping email notification.")
+            print(
+                "Warning: No valid recipients found. "
+                "Skipping email notification."
+            )
             return
 
         subject = (
-            f"New Incident [{incident.profile.severity.value}]: "
+            "New Incident "
+            f"[{incident.profile.severity.value}]: "
             f"{incident.profile.title}"
         )
 
@@ -69,7 +75,7 @@ class NotificationService:
             <h3>Summary:</h3>
             <p>{incident.profile.summary}</p>
             <hr>
-            <p>This is an automated notification from the Incident Management System.</p>
+            <p>Automated notification from the Incident Management System.</p>
         </body>
         </html>
         """

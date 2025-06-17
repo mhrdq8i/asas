@@ -27,4 +27,5 @@ def send_incident_notification_task(incident_id: str):
             await session.close()
 
     asyncio.run(_run_async())
+
     return f"Notification for incident {incident_id} completed."
