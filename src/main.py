@@ -14,10 +14,10 @@ from src.api.v1.endpoints import (
     auth_routes as auth_router_v1
 )
 from src.api.v1.endpoints import (
-    users_routes as users_router_v1
+    user_routes as users_router_v1
 )
 from src.api.v1.endpoints import (
-    incidents_routes as incident_router_v1
+    incident_routes as incident_router_v1
 )
 from src.api.v1.endpoints import (
     postmortem_routes as postmortem_router_v1

@@ -2,7 +2,6 @@ from uuid import UUID
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import select
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
@@ -39,6 +38,7 @@ from src.exceptions.user_exceptions import (
     CannotDeleteActiveCommanderException
 )
 from src.core.config import settings
+from src.core.celery import celery_app
 
 
 class UserService:
@@ -91,23 +91,29 @@ class UserService:
         )
 
         user_create_internal_data = UserCreateInternal(
-            username=user_in.username,
-            email=user_in.email,
-            hashed_password=hashed_password,
-            full_name=user_in.full_name,
-            role=user_in.role,
+            **user_in.model_dump(),
             is_active=True,
-            is_commander=user_in.is_commander,
-            is_superuser=user_in.is_superuser,
-            avatar_url=user_in.avatar_url,
-            bio=user_in.bio,
-            timezone=user_in.timezone,
-            is_email_verified=False
+            is_email_verified=False,
+            hashed_password=hashed_password
         )
 
         created_user = await self.crud_user.create_user(
             user_in=user_create_internal_data
         )
+
+        try:
+            celery_app.send_task(
+                "tasks.send_verification_email",
+                args=[str(created_user.id)]
+            )
+            print(
+                "Verification email task queued "
+                f"for user ID: {created_user.id}"
+            )
+        except Exception as e:
+            print(
+                f"Failed to queue verification email task: {e}"
+            )
 
         return created_user
 
@@ -278,81 +284,77 @@ class UserService:
         return updated_user
 
     async def prepare_password_reset_data(
-            self,
-            *,
-            email_in: PasswordResetRequest
-    ) -> Tuple[User | None, str | None, str]:
+        self,
+        *,
+        email_in: PasswordResetRequest
+    ) -> str:
         """
-        Prepares data for password reset.
-        Returns
-        (user, reset_token, message_to_client).
-        The actual email sending is handled
-        by the caller using a background task.
+        Prepares data for password reset
+        and queues the email task.
+        Returns a message to the client.
         """
 
         user = await self.crud_user.get_user_by_email(
             email=email_in.email
         )
+
         message_to_client = (
-            "If an account with this email exists "
-            "and is active, "
+            "If an account with this email exists, "
             "a password reset link has been sent."
         )
 
-        if not user or not user.is_active:
-            print(
-                "Password reset requested for "
-                f"email: {email_in.email}. "
-                f"User found: {bool(user)}, "
-                f"Active: {user.is_active if user else 'N/A'}"
-            )
-            return (
-                None,
-                None,
-                message_to_client
+        if user and user.is_active:
+            password_reset_token_expire_minutes = (
+                settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
             )
 
-        password_reset_token_expire_minutes = (
-            settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
-        )
+            reset_token_payload = {
+                "sub": str(user.id),
+                "type": "password_reset",
+                "email": user.email
+            }
 
-        reset_token_payload = {
-            "sub": str(user.id),
-            "type": "password_reset",
-            "email": user.email
-        }
-        reset_token = create_access_token(
-            subject=reset_token_payload,
-            expires_delta=timedelta(
-                minutes=password_reset_token_expire_minutes
+            reset_token = create_access_token(
+                subject=reset_token_payload,
+                expires_delta=timedelta(
+                    minutes=password_reset_token_expire_minutes
+                )
             )
-        )
 
-        update_data = {
-            "reset_token": get_password_hash(
-                reset_token
-            ),
-            "reset_token_expires": datetime.now(
-                timezone.utc
-            ) + timedelta(
-                minutes=password_reset_token_expire_minutes
+            update_data = {
+                "reset_token": get_password_hash(
+                    reset_token
+                ),
+                "reset_token_expires": datetime.now(
+                    timezone.utc
+                ) + timedelta(
+                    minutes=password_reset_token_expire_minutes
+                )
+            }
+
+            await self.crud_user.update_user(
+                db_user_to_update=user,
+                user_in_update_data=update_data
             )
-        }
-        await self.crud_user.update_user(
-            db_user_to_update=user,
-            user_in_update_data=update_data
-        )
 
-        # print(
-        # f"DEBUG: Password reset token generated for
-        # {user.email}: {reset_token} (SERVICE LAYER)"
-        # )
+            try:
+                celery_app.send_task(
+                    "tasks.send_password_reset_email",
+                    args=[
+                        str(user.id), reset_token
+                    ]
+                )
+                print(
+                    "Password reset task queued for user: "
+                    f"{user.email}"
+                )
 
-        return (
-            user,
-            reset_token,
-            message_to_client
-        )
+            except Exception as e:
+                print(
+                    f"Failed to queue password reset task: {e}"
+                )
+
+        return message_to_client
 
     async def confirm_password_reset(
         self,
@@ -508,12 +510,6 @@ class UserService:
             user_in_update_data=update_data
         )
 
-        # print(
-        # f"DEBUG: Email verification token generated for
-        # {user_updated.email}: {email_verification_token}
-        # (SERVICE LAYER)"
-        # )
-
         message_to_client = (
             "An email verification link "
             "has been sent to your email address."
@@ -532,6 +528,7 @@ class UserService:
     ) -> User:
 
         payload = decode_token(token_in)
+
         if not payload or payload.get(
             "type"
         ) != "email_verification":

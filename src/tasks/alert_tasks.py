@@ -1,4 +1,4 @@
-from src.core.celery_app import celery_app
+from src.core.celery import celery_app
 import logging
 
 logger = logging.getLogger(__name__)

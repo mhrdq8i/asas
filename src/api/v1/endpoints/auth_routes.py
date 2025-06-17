@@ -5,7 +5,6 @@ from fastapi import (
     Depends,
     HTTPException,
     status,
-    BackgroundTasks,
     Request
 )
 from fastapi.security import (
@@ -34,10 +33,7 @@ from src.exceptions.user_exceptions import (
     UserNotFoundException,
 )
 from src.models.user import User as UserModel
-from src.core.email_utils import (
-    send_password_reset_email,
-    send_email_verification
-)
+
 
 router = APIRouter(
     prefix="/auth",
@@ -109,36 +105,24 @@ async def password_recovery(
         UserService,
         Depends(get_user_service)
     ],
-    background_tasks: BackgroundTasks
 ):
     """
     Request a password recovery email.
+    The service queues the email task via Celery.
     """
     try:
-        (
-            user,
-            reset_token,
-            msg_to_client
-        ) = await user_service.prepare_password_reset_data(
+        # The service now handles all logic
+        # and just returns a message for security.
+        message = await user_service.prepare_password_reset_data(
             email_in=email_in
         )
-        if user and reset_token:
-            background_tasks.add_task(
-                send_password_reset_email,
-                email_to=user.email,
-                username=user.username,
-                reset_token=reset_token
-            )
-        return Msg(message=msg_to_client)
+        return Msg(message=message)
 
-    except AppException as e:
-        # For security, always return a
-        # generic success message for this endpoint
+    except Exception as e:
+        # For security, always return a generic success message
         # to prevent email enumeration.
         # The actual error can be logged internally.
-        print(
-            f"Error during password recovery request: {e.detail}"
-        )
+        print(f"Error during password recovery request: {e}")
         return Msg(
             message=(
                 "If an account with this email exists, "
@@ -156,39 +140,22 @@ async def reset_password(
     user_service: Annotated[
         UserService,
         Depends(get_user_service)
-    ]
+    ],
 ):
     """
-    Reset password using a
-    token and new password.
+    Reset password using a token and new
+    password provided in the request body.
     """
     try:
-        new_password_schema = PasswordResetConfirm(
-            new_password=reset_data.new_password
-        )
         await user_service.confirm_password_reset(
             token_in=reset_data.token,
-            new_password_in=new_password_schema
+            new_password_in=reset_data
         )
         return Msg(
-            message=(
-                "Your password has been "
-                "reset successfully."
-            )
+            message="Your password has been reset successfully."
         )
+
     except AppException as e:
-        # To prevent user enumeration,
-        # we mask UserNotFoundException.
-        if isinstance(
-            e, UserNotFoundException
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "Invalid or expired "
-                    "password reset token."
-                )
-            )
         raise HTTPException(
             status_code=e.status_code,
             detail=e.detail
@@ -200,7 +167,7 @@ async def reset_password(
     response_model=Msg,
     status_code=status.HTTP_200_OK
 )
-async def email_verification(
+async def request_new_email_verification(
     current_user: Annotated[
         UserModel,
         Depends(get_current_active_user)
@@ -209,35 +176,20 @@ async def email_verification(
         UserService,
         Depends(get_user_service)
     ],
-    background_tasks: BackgroundTasks
 ):
     """
-    Requests a new email verification
-    token for the current user.
+    Requests a new email verification token for the current user.
+    The task is handled in the background by Celery.
     """
     try:
-        (
-            user,
-            verification_token,
-            msg_to_client
-        ) = await user_service.prepare_email_verification_data(
+        message = await user_service.request_new_verification_email(
             current_user=current_user
         )
-        if user and verification_token:
-            background_tasks.add_task(
-                send_email_verification,
-                email_to=user.email,
-                username=user.username,
-                verification_token=verification_token
-            )
-        return Msg(
-            message=msg_to_client
-        )
+        return Msg(message=message)
 
     except AppException as e:
         raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
+            status_code=e.status_code, detail=e.detail
         )
 
 
@@ -250,37 +202,23 @@ async def verify_email(
     user_service: Annotated[
         UserService,
         Depends(get_user_service)
-    ]
+    ],
 ):
     """
-    Verify user's email address
+    Verify a user's email address
     using the provided token.
+    Upon successful verification,
+    a welcome email task is queued by the service.
     """
     try:
         await user_service.confirm_email_verification(
             token_in=token_data.token
         )
         return Msg(
-            message=(
-                "Your email address has been "
-                "successfully verified."
-            )
+            message="Your email address has been successfully verified."
         )
+
     except AppException as e:
-        # To prevent user enumeration,
-        # we mask UserNotFoundException.
-        if isinstance(
-            e,
-            UserNotFoundException
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "Invalid or expired "
-                    "email verification token."
-                )
-            )
         raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
+            status_code=e.status_code, detail=e.detail
         )

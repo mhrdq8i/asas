@@ -37,7 +37,7 @@ from src.exceptions.user_exceptions import (
     InsufficientPermissionsException,
     UserNotFoundException,
 )
-from src.core.celery_app import celery_app
+from src.core.celery import celery_app
 
 
 logger = logging.getLogger(__name__)
