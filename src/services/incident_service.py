@@ -37,6 +37,8 @@ from src.exceptions.user_exceptions import (
     InsufficientPermissionsException,
     UserNotFoundException,
 )
+from src.core.celery_app import celery_app
+
 
 logger = logging.getLogger(__name__)
 
@@ -153,7 +155,7 @@ class IncidentService:
         logger.info(
             "Creating incident "
             f"'{incident_in.profile.title}' "
-            " by user "
+            "by user "
             f"'{current_user.username}'"
         )
 
@@ -198,13 +200,31 @@ class IncidentService:
             incident_in=incident_in
         )
 
-        # Commit the transaction at the end of the service method.
         await self.db_session.commit()
         await self.db_session.refresh(new_incident)
 
+        # After successfully creating the incident,
+        # trigger the notification task in the background.
+        try:
+            celery_app.send_task(
+                "tasks.send_incident_notification",
+                args=[str(new_incident.id)],
+            )
+            logger.info(
+                f"Notification task queued for incident ID: {new_incident.id}")
+        except Exception as e:
+            logger.error(
+                f"Failed to queue notification task for incident {new_incident.id}: {e}"
+            )
         logger.info(
             "Successfully created incident with ID: "
             f"{new_incident.id}"
+        )
+
+        # We need to refetch the incident to get
+        # all eager-loaded fields for the response
+        new_incident = await self.get_incident_by_id(
+            incident_id=new_incident.id
         )
 
         return new_incident

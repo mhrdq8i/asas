@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     Values MUST be provided via environment variables
     or a .env file for required fields.
     """
+
+    # --- Application Metadata ---
+    APP_NAME: str = "Incident Management System API"
+    APP_VERSION: str = "0.1.0"
+    DEBUG_MODE: bool = False
+    SERVER_HOST: str = "0.0.0.0"
+    SERVER_PORT: int = 8000
+    LOG_LEVEL: str = "info"
+
     # --- Database Settings ---
     POSTGRES_SCHEME: str | None = None
     POSTGRES_USER: str | None = None
@@ -37,6 +46,9 @@ class Settings(BaseSettings):
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int
     EMAIL_VERIFY_TOKEN_EXPIRE_MINUTES: int
 
+    # --- Frontend URL ---
+    FRONTEND_URL: str
+
     # --- Email Settings ---
     MAIL_SERVER: str
     MAIL_PORT: int
@@ -49,16 +61,14 @@ class Settings(BaseSettings):
     MAIL_USE_SSL: bool
     MAIL_TIMEOUT: int = 60
 
-    # --- Frontend URL ---
-    FRONTEND_URL: str
+    # --- Notification Settings ---
+    INCIDENT_NOTIFICATION_RECIPIENTS: str = ""
 
-    # --- Application Metadata ---
-    APP_NAME: str = "Incident Management System API"
-    APP_VERSION: str = "0.1.0"
-    DEBUG_MODE: bool = False
-    SERVER_HOST: str = "0.0.0.0"
-    SERVER_PORT: int = 8000
-    LOG_LEVEL: str = "info"
+    # --- Celery and Prometheus Settings ---
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    PROMETHEUS_API_URL: str = "http://localhost:9090/api/v1/alerts"
+    ALERT_CHECK_INTERVAL_SECONDS: int = 120
 
     @model_validator(mode='before')
     @classmethod

@@ -2,6 +2,7 @@ from uuid import UUID
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
