@@ -43,7 +43,9 @@ def send_verification_email_task(self, user_id: str):
         f"Executing verification email task for user_id: {user_id}"
     )
     try:
-        asyncio.run(_send_verification_email_async(user_id))
+        asyncio.run(
+            _send_verification_email_async(user_id)
+        )
     except Exception as e:
         print(
             "Error in verification email task for user "

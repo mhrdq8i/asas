@@ -1,29 +1,26 @@
+import logging
 from uuid import UUID
-from typing import List, Tuple
-from datetime import datetime, timedelta, timezone
+from typing import List
+from datetime import datetime, timezone
 
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
 
 from src.crud.user_crud import CRUDUser
-from src.crud.incident_crud import CrudIncident
+from src.crud.incident_crud import (
+    CrudIncident
+)
 from src.models.user import User
 from src.api.v1.schemas.user_schemas import (
     UserCreate,
     UserCreateInternal,
     UserUpdate,
-    UserUpdatePassword
-)
-from src.api.v1.schemas.auth_schemas import (
-    PasswordResetRequest,
-    PasswordResetConfirm
+    UserUpdatePassword,
 )
 from src.core.security import (
     get_password_hash,
-    verify_password,
-    create_access_token,
-    decode_token
+    verify_password
 )
 from src.exceptions.common_exceptions import (
     DuplicateResourceException,
@@ -33,151 +30,93 @@ from src.exceptions.common_exceptions import (
 from src.exceptions.user_exceptions import (
     AuthenticationFailedException,
     UserNotFoundException,
-    InsufficientPermissionsException,
     UserAlreadyDeletedException,
-    CannotDeleteActiveCommanderException
+    CannotDeleteActiveCommanderException,
 )
-from src.core.config import settings
 from src.core.celery import celery_app
 
 
+logger = logging.getLogger(__name__)
+
+
 class UserService:
-    def __init__(
-        self,
-        db_session: AsyncSession
-    ):
+    def __init__(self, db_session: AsyncSession):
         self.db_session: AsyncSession = db_session
-        self.crud_user = CRUDUser(
-            db_session=self.db_session
+        self.crud_user = CRUDUser(db_session=self.db_session)
+        self.crud_incident = CrudIncident(db_session=self.db_session)
+
+    async def register_user(self, *, user_in: UserCreate) -> User:
+        """
+        Registers a new user and queues a verification email task.
+        """
+
+        existing_user = await self.crud_user.get_user_by_username_or_email(
+            username=user_in.username,
+            email=user_in.email
         )
-        self.crud_incident = CrudIncident(
-            db_session=self.db_session
-        )
 
-    async def register_user(
-        self,
-        *,
-        user_in: UserCreate
-    ) -> User:
-
-        existing_user_by_username = \
-            await self.crud_user.get_user_by_username(
-                username=user_in.username
-            )
-
-        if existing_user_by_username:
+        if existing_user:
             raise DuplicateResourceException(
-                detail=(
-                    f"Username '{user_in.username}' "
-                    f"is already registered."
-                )
+                detail="Username or email is already registered."
             )
 
-        existing_user_by_email = \
-            await self.crud_user.get_user_by_email(
-                email=user_in.email
-            )
+        hashed_password = get_password_hash(user_in.password)
 
-        if existing_user_by_email:
-            raise DuplicateResourceException(
-                detail=(
-                    f"Email '{user_in.email}' "
-                    "is already registered."
-                )
-            )
-
-        hashed_password = get_password_hash(
-            user_in.password
-        )
-
-        user_create_internal_data = UserCreateInternal(
+        user_data = UserCreateInternal(
             **user_in.model_dump(),
-            is_active=True,
-            is_email_verified=False,
             hashed_password=hashed_password
         )
 
         created_user = await self.crud_user.create_user(
-            user_in=user_create_internal_data
+            user_in=user_data
         )
 
+        await self.db_session.commit()
+
+        # Try to queue the task,
+        # but log errors instead
+        # of raising them.
         try:
             celery_app.send_task(
                 "tasks.send_verification_email",
-                args=[str(created_user.id)]
+                args=[
+                    str(created_user.id)]
             )
-            print(
-                "Verification email task queued "
-                f"for user ID: {created_user.id}"
+
+            logger.info(
+                "Verification email task successfully queued for "
+                f"user ID: {created_user.id}"
             )
-        except Exception as e:
-            print(
-                f"Failed to queue verification email task: {e}"
+
+        except Exception:
+            # Log the full exception info for debugging,
+            # but don't fail the request.
+            logger.error(
+                "Failed to queue verification email "
+                f"task for user {created_user.id}.",
+                exc_info=True
             )
 
         return created_user
 
-    async def authenticate_user(
+    async def get_users_list(
         self,
         *,
-        username: str,
-        password: str,
-        client_ip: str | None = None
-    ) -> User:
-        user = await self.crud_user.get_user_by_username(
-            username=username
+        skip: int,
+        limit: int
+    ) -> List[User]:
+        """
+        Retrieves a list of users with pagination.
+        """
+        return await self.crud_user.get_users(
+            skip=skip, limit=limit
         )
 
-        if not user:
-            raise AuthenticationFailedException()
-
-        if not verify_password(
-            password,
-            user.hashed_password
-        ):
-            raise AuthenticationFailedException()
-
-        if not user.is_active:
-            raise AuthenticationFailedException(
-                detail=(
-                    "Inactive user. "
-                    "Please verify your "
-                    "email or contact support."
-                )
-            )
-
-        # --- ADDED CHECK FOR EMAIL VERIFICATION ---
-        if not user.is_email_verified:
-            raise AuthenticationFailedException(
-                detail=(
-                    "Email not verified. "
-                    "Please check your inbox for a "
-                    "verification link or request a new one."
-                )
-            )
-
-        update_data = {
-            "last_login_at": datetime.now(
-                timezone.utc
-            )
-        }
-        if client_ip:
-            update_data[
-                "last_login_ip"
-            ] = client_ip
-
-        updated_user = await self.crud_user.update_user(
-            db_user_to_update=user,
-            user_in_update_data=update_data
-        )
-
-        return updated_user
-
-    async def get_user_by_id(
-        self,
-        *,
-        user_id: UUID
-    ) -> User:
+    async def get_user_by_id(self, *, user_id: UUID) -> User:
+        """
+        Retrieves a single user by their ID,
+        raising an error if not found.
+        """
 
         user = await self.crud_user.get_user_by_id(
             user_id=user_id
@@ -190,36 +129,29 @@ class UserService:
 
         return user
 
-    async def get_user_profile(
-        self,
-        *,
-        current_user: User
-    ) -> User:
-
-        return current_user
-
     async def update_user_profile(
         self,
         *,
         current_user: User,
         user_in: UserUpdate
     ) -> User:
+        """
+        Updates a user's profile,
+        checking for email/username conflicts.
+        """
 
-        update_data = user_in.model_dump(
-            exclude_unset=True
-        )
+        update_data = user_in.model_dump(exclude_unset=True)
 
         if "email" in update_data and update_data[
             "email"
         ] != current_user.email:
             existing_user = await self.crud_user.get_user_by_email(
-                email=update_data[
-                    "email"
-                ]
+                email=update_data["email"]
             )
+
             if existing_user and existing_user.id != current_user.id:
                 raise DuplicateResourceException(
-                    detail="Email already registered by another user."
+                    detail="Email is already registered by another user."
                 )
 
             update_data["is_email_verified"] = False
@@ -227,23 +159,23 @@ class UserService:
         if "username" in update_data and update_data[
             "username"
         ] != current_user.username:
+
             existing_user = await self.crud_user.get_user_by_username(
-                username=update_data[
-                    "username"
-                ]
+                username=update_data["username"]
             )
+
             if existing_user and existing_user.id != current_user.id:
                 raise DuplicateResourceException(
-                    detail="Username already taken by another user."
+                    detail="Username is already taken."
                 )
-
-        if "password" in update_data:
-            del update_data["password"]
 
         updated_user = await self.crud_user.update_user(
             db_user_to_update=current_user,
             user_in_update_data=update_data
         )
+
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_user)
 
         return updated_user
 
@@ -253,6 +185,10 @@ class UserService:
         current_user: User,
         password_in: UserUpdatePassword
     ) -> User:
+        """
+        Changes the password for the current user.
+        """
+
         if not verify_password(
             password_in.current_password,
             current_user.hashed_password
@@ -264,343 +200,29 @@ class UserService:
         if password_in.current_password == password_in.new_password:
             raise InvalidInputException(
                 detail=(
-                    "New password cannot be "
-                    "the same as the current password."
+                    "New password cannot be the same as the current one."
                 )
             )
 
-        new_hashed_password = get_password_hash(
-            password_in.new_password
-        )
-        update_data = {
-            "hashed_password": new_hashed_password
-        }
+        new_hashed_password = get_password_hash(password_in.new_password)
 
         updated_user = await self.crud_user.update_user(
             db_user_to_update=current_user,
-            user_in_update_data=update_data
-        )
-
-        return updated_user
-
-    async def prepare_password_reset_data(
-        self,
-        *,
-        email_in: PasswordResetRequest
-    ) -> str:
-        """
-        Prepares data for password reset
-        and queues the email task.
-        Returns a message to the client.
-        """
-
-        user = await self.crud_user.get_user_by_email(
-            email=email_in.email
-        )
-
-        message_to_client = (
-            "If an account with this email exists, "
-            "a password reset link has been sent."
-        )
-
-        if user and user.is_active:
-            password_reset_token_expire_minutes = (
-                settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
-            )
-
-            reset_token_payload = {
-                "sub": str(user.id),
-                "type": "password_reset",
-                "email": user.email
+            user_in_update_data={
+                "hashed_password": new_hashed_password
             }
-
-            reset_token = create_access_token(
-                subject=reset_token_payload,
-                expires_delta=timedelta(
-                    minutes=password_reset_token_expire_minutes
-                )
-            )
-
-            update_data = {
-                "reset_token": get_password_hash(
-                    reset_token
-                ),
-                "reset_token_expires": datetime.now(
-                    timezone.utc
-                ) + timedelta(
-                    minutes=password_reset_token_expire_minutes
-                )
-            }
-
-            await self.crud_user.update_user(
-                db_user_to_update=user,
-                user_in_update_data=update_data
-            )
-
-            try:
-                celery_app.send_task(
-                    "tasks.send_password_reset_email",
-                    args=[
-                        str(user.id), reset_token
-                    ]
-                )
-                print(
-                    "Password reset task queued for user: "
-                    f"{user.email}"
-                )
-
-            except Exception as e:
-                print(
-                    f"Failed to queue password reset task: {e}"
-                )
-
-        return message_to_client
-
-    async def confirm_password_reset(
-        self,
-        *,
-        token_in: str,
-        new_password_in: PasswordResetConfirm
-    ) -> User:
-
-        payload = decode_token(token_in)
-
-        if not payload or payload.get(
-            "type"
-        ) != "password_reset":
-            raise InvalidInputException(
-                detail=(
-                    "Invalid or expired password "
-                    "reset token (type or payload error)."
-                )
-            )
-
-        user_id_str = payload.get("sub")
-        token_email = payload.get("email")
-
-        if not user_id_str:
-            raise InvalidInputException(
-                detail="Invalid token payload (missing subject)."
-            )
-
-        try:
-            user_id = UUID(user_id_str)
-        except ValueError:
-            raise InvalidInputException(
-                detail="Invalid user identifier format in token."
-            )
-
-        user = await self.crud_user.get_user_by_id(
-            user_id=user_id
         )
 
-        if not user or not user.is_active:
-            raise UserNotFoundException(
-                detail=(
-                    "User not found, "
-                    "inactive, or token mismatch."
-                )
-            )
-
-        if token_email and user.email.lower(
-        ) != token_email.lower():
-            raise InvalidInputException(
-                detail="Token does not match user email."
-            )
-
-        if not user.reset_token or not user.reset_token_expires:
-            raise InvalidInputException(
-                detail=(
-                    "No pending password reset "
-                    "for this user or token already used."
-                )
-            )
-
-        if datetime.now(
-            timezone.utc
-        ) > user.reset_token_expires:
-            await self.crud_user.update_user(
-                db_user_to_update=user,
-                user_in_update_data={
-                    "reset_token": None,
-                    "reset_token_expires": None
-                }
-            )
-            raise InvalidInputException(
-                detail="Password reset token has expired."
-            )
-
-        if not verify_password(
-            token_in,
-            user.reset_token
-        ):
-            raise InvalidInputException(
-                detail=(
-                    "Invalid password reset token "
-                    "(verification failed)."
-                )
-            )
-
-        new_hashed_password = get_password_hash(
-            new_password_in.new_password
-        )
-
-        update_data = {
-            "hashed_password": new_hashed_password,
-            "reset_token": None,
-            "reset_token_expires": None,
-            "is_email_verified": True
-        }
-
-        updated_user = await self.crud_user.update_user(
-            db_user_to_update=user,
-            user_in_update_data=update_data
-        )
+        await self.db_session.commit()
+        await self.db_session.refresh(updated_user)
 
         return updated_user
 
-    async def prepare_email_verification_data(
-        self,
-        *,
-        current_user: User
-    ) -> Tuple[User, str, str]:
+    async def get_commander_list(self) -> List[User]:
         """
-        Prepares data for sending an email verification token.
-        Returns
-        (user, verification_token, message_to_client).
-        The actual email sending is handled
-        by the caller using a background task.
+        Retrieves a list of all active incident commanders.
         """
-
-        if current_user.is_email_verified:
-            raise InvalidOperationException(
-                detail="Email is already verified."
-            )
-
-        if not current_user.is_active:
-            raise InvalidOperationException(
-                detail="Cannot verify email for an inactive user."
-            )
-
-        email_verify_token_expire_minutes = (
-            settings.EMAIL_VERIFY_TOKEN_EXPIRE_MINUTES
-        )
-
-        verify_token_payload = {
-            "sub": str(current_user.id),
-            "type": "email_verification",
-            "email": current_user.email
-        }
-
-        email_verification_token = create_access_token(
-            subject=verify_token_payload,
-            expires_delta=timedelta(
-                minutes=email_verify_token_expire_minutes
-            )
-        )
-
-        update_data = {
-            "email_verification_token": get_password_hash(
-                email_verification_token
-            )
-        }
-
-        user_updated = await self.crud_user.update_user(
-            db_user_to_update=current_user,
-            user_in_update_data=update_data
-        )
-
-        message_to_client = (
-            "An email verification link "
-            "has been sent to your email address."
-        )
-
-        return (
-            user_updated,
-            email_verification_token,
-            message_to_client
-        )
-
-    async def confirm_email_verification(
-        self,
-        *,
-        token_in: str
-    ) -> User:
-
-        payload = decode_token(token_in)
-
-        if not payload or payload.get(
-            "type"
-        ) != "email_verification":
-            raise InvalidInputException(
-                detail="Invalid or expired "
-                "email verification token "
-                "(type or payload error)."
-            )
-
-        user_id_str = payload.get("sub")
-        token_email = payload.get("email")
-
-        if not user_id_str:
-            raise InvalidInputException(
-                detail="Invalid token payload (missing subject)."
-            )
-
-        try:
-            user_id = UUID(
-                user_id_str
-            )
-        except ValueError:
-            raise InvalidInputException(
-                detail="Invalid user identifier format in token."
-            )
-
-        user = await self.crud_user.get_user_by_id(
-            user_id=user_id
-        )
-
-        if not user:
-            raise UserNotFoundException(
-                detail="User not found or token mismatch."
-            )
-
-        if user.is_email_verified:
-            return user
-
-        if not user.email_verification_token:
-            raise InvalidInputException(
-                detail=(
-                    "No pending email verification "
-                    "for this user or token already used/invalid."
-                )
-            )
-
-        if not verify_password(
-            token_in,
-            user.email_verification_token
-        ):
-            raise InvalidInputException(
-                detail="Invalid email verification token."
-            )
-
-        if token_email and user.email.lower(
-        ) != token_email.lower():
-            raise InvalidInputException(
-                detail="Token email mismatch during verification."
-            )
-
-        update_data = {
-            "is_email_verified": True,
-            "email_verification_token": None,
-            "email_verified_at": datetime.now(timezone.utc),
-            "is_active": True
-        }
-        updated_user = await self.crud_user.update_user(
-            db_user_to_update=user,
-            user_in_update_data=update_data
-        )
-
-        return updated_user
+        return await self.crud_user.get_commanders()
 
     async def soft_delete_user(
         self,
@@ -608,37 +230,42 @@ class UserService:
         user_to_delete_id: UUID,
         performing_user: User
     ) -> User:
+        """
+        Soft deletes a user,
+        enforcing business rules
+        like not deleting oneself
+        or active commanders.
+        """
+
+        if user_to_delete_id == performing_user.id:
+            raise InvalidOperationException(
+                detail="Users cannot delete their own account."
+            )
 
         user_to_delete = await self.get_user_by_id(
             user_id=user_to_delete_id
         )
 
-        if user_to_delete.id != performing_user.id \
-                and not performing_user.is_superuser:
-            raise InsufficientPermissionsException()
-
         if user_to_delete.is_deleted:
             raise UserAlreadyDeletedException()
-
-        print(
-            "Placeholder: Check if user "
-            f"{user_to_delete_id} is an "
-            "active incident commander "
-            "would happen here."
-        )
 
         is_commander = await self.crud_incident.is_user_active_commander(
             user_id=user_to_delete.id
         )
+
         if is_commander:
             raise CannotDeleteActiveCommanderException()
 
         update_data = {
             "is_deleted": True,
-            "deleted_at": datetime.now(
-                timezone.utc
+            "deleted_at": datetime.now(timezone.utc),
+            "is_active": False,
+            "email": (
+                f"deleted_{user_to_delete_id}_{user_to_delete.email}"
             ),
-            "is_active": False
+            "username": (
+                f"deleted_{user_to_delete_id}_{user_to_delete.username}"
+            )
         }
 
         deleted_user = await self.crud_user.update_user(
@@ -646,22 +273,7 @@ class UserService:
             user_in_update_data=update_data
         )
 
+        await self.db_session.commit()
+        await self.db_session.refresh(deleted_user)
+
         return deleted_user
-
-    async def get_users_list(
-        self,
-        *,
-        skip: int = 0,
-        limit: int = 100
-    ) -> List[User]:
-
-        return await self.crud_user.get_users(
-            skip=skip,
-            limit=limit
-        )
-
-    async def get_commander_list(
-            self
-    ) -> List[User]:
-
-        return await self.crud_user.get_commanders()
