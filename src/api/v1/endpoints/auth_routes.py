@@ -7,7 +7,9 @@ from fastapi import (
     status,
     Request,
 )
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import (
+    OAuth2PasswordRequestForm
+)
 
 from src.core import security
 from src.services.user_service import UserService
@@ -25,8 +27,7 @@ from src.models.user import User as UserModel
 
 
 router = APIRouter(
-    prefix="/auth",
-    tags=["V1 - Authentication"]
+    prefix="/auth"
 )
 
 
@@ -49,10 +50,7 @@ async def login_for_access_token(
             password=form_data.password,
             client_ip=client_ip
         )
-
-        access_token = security.create_access_token(
-            subject=user.username
-        )
+        access_token = security.create_access_token(subject=user.username)
 
         return {
             "access_token": access_token,
@@ -70,7 +68,9 @@ async def login_for_access_token(
 
 
 @router.post(
-    "/password-recovery", response_model=Msg, status_code=status.HTTP_200_OK
+    "/password-recovery",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK
 )
 async def password_recovery(
     email_in: PasswordResetRequest,
@@ -110,7 +110,8 @@ async def reset_password(
 
     try:
         await user_service.confirm_password_reset(
-            token_in=reset_data.token, new_password_in=reset_data
+            token_in=reset_data.token,
+            new_password_in=reset_data
         )
 
         return Msg(
@@ -125,7 +126,9 @@ async def reset_password(
 
 
 @router.post(
-    "/email-verification", response_model=Msg, status_code=status.HTTP_200_OK
+    "/email-verification",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK
 )
 async def request_new_email_verification(
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
@@ -144,10 +147,7 @@ async def request_new_email_verification(
         return Msg(message=message)
 
     except AppException as e:
-        raise HTTPException(
-            status_code=e.status_code,
-            detail=e.detail
-        )
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 
 @router.post("/verify-email", response_model=Msg)
@@ -160,7 +160,6 @@ async def verify_email(
     Upon successful verification,
     a welcome email task is queued by the service.
     """
-
     try:
         await user_service.confirm_email_verification(
             token_in=token_data.token

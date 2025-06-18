@@ -1,20 +1,12 @@
-from datetime import datetime, timezone
 from uuid import UUID
-from typing import (
-    List,
-    Optional
-)
+from typing import List, Optional
 
-from sqlmodel import (
-    select,
-    func
-)
+from sqlmodel import select, func, or_
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
 
 from src.models.user import User
-
 from src.api.v1.schemas.user_schemas import (
     UserCreateInternal
 )
@@ -27,139 +19,53 @@ class CRUDUser:
     initialized with an AsyncSession.
     """
 
-    def __init__(
-            self,
-            db_session: AsyncSession
-    ):
+    def __init__(self, db_session: AsyncSession):
         self.db: AsyncSession = db_session
 
-    async def get_user_by_id(
-        self,
-        *,
-        user_id: UUID
-    ) -> Optional[User]:
-        """
-        Retrieve a user by their ID.
-        """
-        statement = select(User).where(
-            User.id == user_id
-        )
-        result = await self.db.exec(
-            statement
-        )
-
+    async def get_user_by_id(self, *, user_id: UUID) -> Optional[User]:
+        """Retrieve a user by their ID."""
+        statement = select(User).where(User.id == user_id)
+        result = await self.db.exec(statement)
         return result.first()
 
-    async def get_user_by_username(
-        self,
-        *,
-        username: str
-    ) -> Optional[User]:
-        """
-        Retrieve a user by their username.
-        Uses case-insensitive search for username.
-        """
-        statement = select(User).where(
-            func.lower(
-                User.username
-            ) == func.lower(
-                username
-            )
-        )
-        result = await self.db.exec(
-            statement
-        )
-
+    async def get_user_by_username(self, *, username: str) -> Optional[User]:
+        """Retrieve a user by their username (case-insensitive)."""
+        statement = select(User).where(func.lower(
+            User.username) == func.lower(username))
+        result = await self.db.exec(statement)
         return result.first()
 
-    async def get_user_by_email(
-        self,
-        *,
-        email: str
-    ) -> Optional[User]:
-        """
-        Retrieve a user by their email address.
-        Uses case-insensitive search for email.
-        """
+    async def get_user_by_email(self, *, email: str) -> Optional[User]:
+        """Retrieve a user by their email address (case-insensitive)."""
         statement = select(User).where(
-            func.lower(
-                User.email
-            ) == func.lower(
-                email
-            )
-        )
-        result = await self.db.exec(
-            statement
-        )
-
+            func.lower(User.email) == func.lower(email))
+        result = await self.db.exec(statement)
         return result.first()
 
     async def get_user_by_username_or_email(
         self,
         *,
-        username: str | None = None,
-        email: str | None = None
+        username: str,
+        email: str
     ) -> Optional[User]:
         """
-        Retrieve a user by either
-        username or email (case-insensitive).
-        Useful for checking if a user already
-        exists during registration.
+        Retrieves a user by either username or email (case-insensitive).
+        This method is fixed to use the correct 'or_' operator from SQLAlchemy.
         """
-        if not username and not email:
-            return None
-
-        conditions = []
-        if username:
-            conditions.append(
-                func.lower(
-                    User.username
-                ) == func.lower(
-                    username
-                )
-            )
-        if email:
-            conditions.append(
-                func.lower(
-                    User.email
-                ) == func.lower(
-                    email
-                )
-            )
-
-        if not conditions:
-            return None
-
         statement = select(User).where(
-            func.or_(
-                *conditions
+            or_(
+                func.lower(User.username) == func.lower(username),
+                func.lower(User.email) == func.lower(email)
             )
         )
-        result = await self.db.exec(
-            statement
-        )
-
+        result = await self.db.exec(statement)
         return result.first()
 
-    async def create_user(
-        self,
-        *,
-        user_in: UserCreateInternal
-    ) -> User:
-        """
-        Create a new user in the database.
-        Expects user_in.hashed_password
-        to be already hashed.
-        """
-
-        db_user = User.model_validate(
-            user_in
-        )  # Pydantic V2 way
-
+    async def create_user(self, *, user_in: UserCreateInternal) -> User:
+        """Create a new user in the database."""
+        db_user = User.model_validate(user_in)
         self.db.add(db_user)
-        await self.db.commit()
-        await self.db.refresh(db_user)
-
+        # The service layer will handle the commit.
         return db_user
 
     async def update_user(
@@ -170,30 +76,13 @@ class CRUDUser:
     ) -> User:
         """
         Update an existing user's information.
-        'db_user_to_update' is the existing
-        SQLAlchemy model instance.
-        'user_in_update_data' should be a
-        dictionary of fields to update.
         """
 
-        for (
-            field, value
-        ) in user_in_update_data.items():
-
+        for field, value in user_in_update_data.items():
             if value is not None:
-                setattr(
-                    db_user_to_update,
-                    field,
-                    value
-                )
+                setattr(db_user_to_update, field, value)
 
-        self.db.add(
-            db_user_to_update
-        )
-        await self.db.commit()
-        await self.db.refresh(
-            db_user_to_update
-        )
+        self.db.add(db_user_to_update)
 
         return db_user_to_update
 
@@ -203,71 +92,26 @@ class CRUDUser:
         skip: int = 0,
         limit: int = 100
     ) -> List[User]:
-        """
-        Retrieve a list of users with pagination.
-        """
-        statement = select(
-            User
-        ).offset(
+        """Retrieve a list of users with pagination."""
+
+        statement = select(User).offset(
             skip
-        ).limit(
-            limit
-        )
-        result = await self.db.exec(
-            statement
-        )
-        users = result.all()
+        ).limit(limit).order_by(User.username)
 
-        return list(users)
+        result = await self.db.exec(statement)
 
-    async def count_users(self) -> int:
+        return list(result.all())
+
+    async def get_commanders(self) -> List[User]:
         """
-        Count the total number of users.
+        Retrieve a list of all active users designated as commanders.
         """
-        statement = select(
-            func.count(
-                User.id
-            )
-        )
-        result = await self.db.exec(
-            statement
-        )
-        count = result.one_or_none()
 
-        return count if count is not None else 0
-
-    async def soft_delete_user(
-        self,
-        *,
-        user_id: UUID
-    ) -> Optional[User]:
-
-        # No need to pass db
-        db_user = await self.get_user_by_id(
-            user_id=user_id
+        statement = select(User).where(
+            User.is_commander,
+            User.is_active
         )
 
-        if not db_user:
-            return None
+        result = await self.db.exec(statement)
 
-        if not hasattr(
-            db_user, 'is_deleted'
-        ) or not hasattr(
-            db_user, 'deleted_at'
-        ):
-            raise AttributeError(
-                "User model does not support soft delete"
-                "(missing 'is_deleted' or 'deleted_at' fields)."
-            )
-
-        db_user.is_deleted = True
-        db_user.deleted_at = datetime.now(
-            timezone.utc
-        )
-        self.db.add(db_user)
-        await self.db.commit()
-        await self.db.refresh(
-            db_user
-        )
-
-        return db_user
+        return list(result.all())

@@ -179,7 +179,7 @@ async def read_all_users_admin(
     summary="Get User by ID (Admin)"
 )
 async def read_user_by_id_admin(
-    user_id_to_get: uuid.UUID,
+    user_id_to_get: UUID,
     user_service: Annotated[UserService, Depends(get_user_service)]
 ):
     """
@@ -198,8 +198,10 @@ async def read_user_by_id_admin(
     summary="Soft Delete User (Admin)"
 )
 async def soft_delete_user_by_admin(
-    user_id_to_delete: uuid.UUID,
-    performing_admin_user: Annotated[UserModel, Depends(get_current_active_superuser)],
+    user_id_to_delete: UUID,
+    performing_admin_user: Annotated[
+        UserModel, Depends(get_current_active_superuser)
+    ],
     user_service: Annotated[UserService, Depends(get_user_service)]
 ):
     """
