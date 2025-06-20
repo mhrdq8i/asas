@@ -1,4 +1,4 @@
-import logging
+from logging import getLogger
 from typing import Any, Union
 from datetime import (
     datetime,
@@ -15,7 +15,8 @@ from pwdlib import PasswordHash
 from src.core.config import settings
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
+
 password_hasher = PasswordHash.recommended()
 
 ALGORITHM = str(

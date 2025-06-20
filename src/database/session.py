@@ -1,4 +1,4 @@
-import logging
+from logging import getLogger
 
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import (
@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import (
 from src.core.config import settings
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 engine: AsyncEngine = create_async_engine(
     settings.DATABASE_URL,

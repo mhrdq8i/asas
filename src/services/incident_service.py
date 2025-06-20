@@ -1,7 +1,7 @@
 from uuid import UUID
 from typing import List, Optional
 from datetime import datetime, timezone
-import logging
+from logging import getLogger
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -40,7 +40,7 @@ from src.exceptions.user_exceptions import (
 from src.core.celery import celery_app
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class IncidentService:

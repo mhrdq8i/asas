@@ -1,4 +1,5 @@
-import logging
+from logging import getLogger
+
 from fastapi import (
     FastAPI,
     Request,
@@ -20,7 +21,7 @@ from src.exceptions.user_exceptions import (
     UserNotFoundException
 )
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 async def app_exception_handler(

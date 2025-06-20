@@ -1,3 +1,4 @@
+from logging import getLogger
 from uuid import UUID
 from datetime import (
     datetime,
@@ -34,6 +35,9 @@ from src.exceptions.user_exceptions import (
 )
 from src.core.config import settings
 from src.core.celery import celery_app
+
+
+logger = getLogger(__name__)
 
 
 class UserService:

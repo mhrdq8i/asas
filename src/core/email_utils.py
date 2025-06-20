@@ -1,4 +1,4 @@
-import logging
+from logging import getLogger
 
 from pydantic import EmailStr
 from fastapi_mail import (
@@ -11,7 +11,7 @@ from fastapi_mail import (
 from src.core.config import settings
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # --- Build ConnectionConfig ---
 # This logic determines if credentials

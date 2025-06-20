@@ -1,7 +1,7 @@
 from src.core.celery import celery_app
-import logging
+from logging import getLogger
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 # This is a placeholder for the future task that will check Prometheus.
 # We are defining it here to prevent ModuleNotFoundError when starting Celery.

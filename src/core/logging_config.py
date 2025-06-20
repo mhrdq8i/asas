@@ -1,19 +1,23 @@
-import logging
 import json
-from logging.config import dictConfig
 from typing import Any, Dict
+from logging.config import dictConfig
+from logging import (
+    getLogger,
+    Formatter,
+    LogRecord
+)
 
 from src.core.config import settings
 
 
-class JsonFormatter(logging.Formatter):
+class JsonFormatter(Formatter):
     """
     Custom formatter to output logs in JSON format.
     Ensures that logs are machine-readable
     for monitoring systems.
     """
 
-    def format(self, record: logging.LogRecord) -> str:
+    def format(self, record: LogRecord) -> str:
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
@@ -52,10 +56,10 @@ def setup_logging():
         "formatters": {
             "json": {
                 "()": "src.core.logging_config.JsonFormatter",
-                "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+                "format": "{asctime} {levelname} {name} {message}",
             },
             "simple": {
-                "format": "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+                "format": "{asctime} - {levelname} - {name} - {message}",
             },
         },
         "handlers": {
@@ -118,6 +122,6 @@ def setup_logging():
     }
 
     dictConfig(logging_config)
-    logging.getLogger(__name__).info(
+    getLogger(__name__).info(
         "Logging configured successfully."
     )
