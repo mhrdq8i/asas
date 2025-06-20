@@ -78,7 +78,8 @@ class UserService:
 
     async def register_user(self, *, user_in: UserCreate) -> User:
         """
-        Creates a new user, checking for uniqueness
+        Creates a new user,
+        checking for uniqueness
         and queuing a verification email.
         """
 
@@ -102,7 +103,9 @@ class UserService:
             hashed_password=hashed_password
         )
 
-        created_user = await self.crud_user.create_user(user_in=user_data)
+        created_user = await self.crud_user.create_user(
+            user_in=user_data
+        )
         await self.db_session.commit()
         await self.db_session.refresh(created_user)
 

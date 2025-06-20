@@ -62,8 +62,11 @@ async def init_db():
 
 
 async def get_async_session() -> AsyncSession:  # type: ignore
+
     async_session = AsyncSessionLocal()
+
     try:
         yield async_session
+
     finally:
         await async_session.close()

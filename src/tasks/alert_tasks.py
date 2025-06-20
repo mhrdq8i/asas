@@ -1,21 +1,53 @@
-from src.core.celery import celery_app
+from asyncio import run as async_run
 from logging import getLogger
+from src.core.celery import celery_app
+from src.database.session import AsyncSessionLocal
+from src.services.alert_service import AlertService
+
 
 logger = getLogger(__name__)
 
-# This is a placeholder for the future task that will check Prometheus.
-# We are defining it here to prevent ModuleNotFoundError when starting Celery.
+
+async def _check_alerts_async():
+    """
+    Async helper function to contain
+    the actual logic for checking alerts.
+    """
+
+    session = AsyncSessionLocal()
+
+    try:
+        alert_service = AlertService(db_session=session)
+        await alert_service.process_prometheus_alerts()
+
+    finally:
+        await session.close()
 
 
 @celery_app.task(name="tasks.check_prometheus_alerts")
-async def check_prometheus_alerts():
+def check_prometheus_alerts_task():
     """
-    Placeholder task to periodically check for alerts from Prometheus.
-    The actual implementation will be added in the future.
+    Celery task that periodically checks for new alerts from Prometheus.
+    It's a synchronous wrapper around the async logic.
     """
+
     logger.info(
-        "Executing placeholder task: "
-        "check_prometheus_alerts. "
-        "No action taken."
+        "Executing Celery task: check_prometheus_alerts_task"
     )
-    return "Prometheus alert check task is a placeholder."
+
+    try:
+        async_run(_check_alerts_async())
+
+    except Exception as e:
+        # This task should not retry aggressively as it's a periodic check.
+        # Logging the error is sufficient.
+
+        logger.error(
+            "An error occurred during the execution of "
+            f"check_prometheus_alerts_task: {e}",
+            exc_info=True
+        )
+
+    return_msg = "Prometheus alert check task finished."
+
+    return return_msg
