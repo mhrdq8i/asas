@@ -1,7 +1,11 @@
 {
   "cSpell.words": [
+    "autoflush",
     "levelname",
+    "pwdlib",
+    "redoc",
     "selectinload",
+    "sessionmaker",
     "uselist"
   ]
 }
