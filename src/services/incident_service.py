@@ -210,8 +210,11 @@ class IncidentService:
                 "tasks.send_incident_notification",
                 args=[str(new_incident.id)],
             )
+
             logger.info(
-                f"Notification task queued for incident ID: {new_incident.id}")
+                f"Notification task queued for incident ID: {new_incident.id}"
+            )
+
         except Exception as e:
             logger.error(
                 (
@@ -219,6 +222,7 @@ class IncidentService:
                     f"for incident '{new_incident.id}: {e}'"
                 )
             )
+
         logger.info(
             "Successfully created incident with ID: "
             f"{new_incident.id}"

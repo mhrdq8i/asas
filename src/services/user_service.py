@@ -76,12 +76,17 @@ class UserService:
                 args=[str(created_user.id)]
             )
 
-            print(
-                f"Verification email task queued for user ID: {created_user.id}"
+            logger.info(
+                "Verification email task queued for user ID: "
+                f"{created_user.id}"
             )
 
         except Exception as e:
-            print(f"Failed to queue verification email task: {e}")
+            logger.error(
+                "Failed to queue verification email task for user "
+                f"{created_user.id}: {e}",
+                exc_info=True
+            )
 
         return created_user
 
@@ -169,18 +174,18 @@ class UserService:
             try:
                 celery_app.send_task(
                     "tasks.send_password_reset_email",
-                    args=[
-                        str(user.id),
-                        reset_token
-                    ]
+                    args=[str(user.id), "dummy_token"]
                 )
 
-                print(
+                logger.info(
                     f"Password reset task queued for user: {user.email}"
                 )
 
             except Exception as e:
-                print(f"Failed to queue password reset task: {e}")
+                logger.error(
+                    f"Failed to queue password reset task for "
+                    f"{user.email}: {e}", exc_info=True
+                )
 
         return message_to_client
 

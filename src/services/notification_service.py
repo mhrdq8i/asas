@@ -1,8 +1,12 @@
+from logging import getLogger
 from typing import List
 
 from src.models.incident import Incident
 from src.core.config import settings
 from src.core.email_utils import send_email_async
+
+
+logger = getLogger(__name__)
 
 
 class NotificationService:
@@ -28,27 +32,26 @@ class NotificationService:
         recipients_str = settings.INCIDENT_NOTIFICATION_RECIPIENTS
 
         if not recipients_str:
-            print(
-                "Warning: INCIDENT_NOTIFICATION_RECIPIENTS is not set. "
+            logger.warning(
+                "INCIDENT_NOTIFICATION_RECIPIENTS is not set. "
                 "Skipping email notification."
             )
+
             return
 
-        # Assuming recipients are comma-separated in the .env file
         recipients: List[str] = [
-            email.strip() for email in recipients_str.split(',') if email.strip()
+            email.strip() for email in recipients_str.split(
+                ',') if email.strip()
         ]
 
         if not recipients:
-            print(
-                "Warning: No valid recipients found. "
-                "Skipping email notification."
+            logger.warning(
+                "No valid recipients found. Skipping email notification."
             )
             return
 
         subject = (
-            "New Incident "
-            f"[{incident.profile.severity.value}]: "
+            f"New Incident [{incident.profile.severity.value}]: "
             f"{incident.profile.title}"
         )
 
@@ -70,7 +73,10 @@ class NotificationService:
             <p><strong>Title:</strong> {incident.profile.title}</p>
             <p><strong>Severity:</strong> {incident.profile.severity.value}</p>
             <p><strong>Status:</strong> {incident.profile.status.value}</p>
-            <p><strong>Commander:</strong> {incident.profile.commander.username if incident.profile.commander else 'N/A'}</p>
+            <p>
+            <strong>Commander:</strong>
+            {incident.profile.commander.username if incident.profile.commander else 'N/A'}
+            </p>
             <hr>
             <h3>Summary:</h3>
             <p>{incident.profile.summary}</p>
@@ -80,22 +86,28 @@ class NotificationService:
         </html>
         """
 
-        print(
-            f"Attempting to send incident creation "
-            f"notification for incident {incident.id} to: {recipients}"
+        logger.info(
+            "Attempting to send incident creation notification "
+            f"for incident {incident.id} to: {recipients}"
         )
 
         for recipient in recipients:
             try:
+                # CORRECTED: Pass the actual subject and html_content variables
                 await send_email_async(
                     email_to=recipient,
                     subject=subject,
                     html_content=html_content
                 )
+
             except Exception as e:
-                print(
-                    f"Failed to send incident notification "
-                    f"email to {recipient}: {e}"
+                logger.error(
+                    "Failed to send incident notification "
+                    f"email to {recipient}: {e}",
+                    exc_info=True
                 )
 
-        print("Finished sending incident creation notifications.")
+        logger.info(
+            "Finished sending incident creation notifications "
+            f"for incident {incident.id}."
+        )

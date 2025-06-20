@@ -1,9 +1,13 @@
-import asyncio
+from asyncio import run as async_run
+from logging import getLogger
 from uuid import UUID
 from src.core.celery import celery_app
 from src.database.session import AsyncSessionLocal
 from src.crud.incident_crud import CrudIncident
 from src.services.notification_service import NotificationService
+
+
+logger = getLogger(__name__)
 
 
 async def _send_notification_async(incident_id: str):
@@ -22,7 +26,10 @@ async def _send_notification_async(incident_id: str):
         )
 
         if not incident:
-            print(f"Incident with ID {incident_id} not found. Aborting.")
+            logger.warning(
+                f"Incident with ID {incident_id} not found "
+                "in notification task. Aborting."
+            )
             return
 
         # Send the notification
@@ -45,20 +52,24 @@ def send_incident_notification_task(self, incident_id: str):
     including the default one,
     and prevents event loop conflicts.
     """
-    print(
-        "Executing synchronous wrapper for notification "
-        f"task: {incident_id}"
+
+    logger.info(
+        "Executing notification task for incident_id: "
+        f"{incident_id} (Try {self.request.retries})"
     )
+
     try:
         # Run the async helper function in a new event loop for each task
-        asyncio.run(
+        async_run(
             _send_notification_async(incident_id)
         )
     except Exception as e:
-        print(
-            f"Error in notification task for incident {incident_id}: {e}"
+        logger.error(
+            f"Error in notification task for incident {incident_id}: {e}",
+            exc_info=True
         )
         countdown_seconds = 60 * (self.request.retries + 1)
+
         raise self.retry(
             exc=e, countdown=countdown_seconds
         )
