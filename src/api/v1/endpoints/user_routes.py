@@ -104,6 +104,7 @@ async def update_current_user_me(
             current_user=current_user, user_in=user_update_in
         )
         return updated_user
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -126,6 +127,7 @@ async def change_current_user_password(
             current_user=current_user, password_in=password_in
         )
         return updated_user
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -145,6 +147,7 @@ async def list_commanders(
     try:
         commanders = await user_service.get_commander_list()
         return commanders
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -169,6 +172,7 @@ async def read_all_users_admin(
     try:
         users = await user_service.get_users_list(skip=skip, limit=limit)
         return users
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -188,6 +192,7 @@ async def read_user_by_id_admin(
     try:
         user = await user_service.get_user_by_id(user_id=user_id_to_get)
         return user
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
@@ -215,5 +220,6 @@ async def soft_delete_user_by_admin(
             performing_user=performing_admin_user
         )
         return deleted_user
+
     except AppException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
