@@ -110,12 +110,12 @@ class UserService:
                 args=[str(current_user.id)]
             )
 
-            print(
+            logger.info(
                 f"Re-queued verification email for user ID: {current_user.id}"
             )
 
         except Exception as e:
-            print(f"Failed to re-queue verification email task: {e}")
+            logger.error(f"Failed to re-queue verification email task: {e}")
 
         return (
             "If your account is eligible, "
@@ -302,12 +302,14 @@ class UserService:
                 "tasks.send_welcome_email",
                 args=[str(updated_user.id)]
             )
-            print(
+
+            logger.info(
                 "Welcome email task queued for verified "
                 f"user ID: {updated_user.id}"
             )
+
         except Exception as e:
-            print(f"Failed to queue welcome email task: {e}")
+            logger.error(f"Failed to queue welcome email task: {e}")
 
         return updated_user
 
