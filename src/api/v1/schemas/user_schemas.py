@@ -31,6 +31,7 @@ class UserBase(BaseModel):
     is_active: bool = True
     is_superuser: bool = False
     is_commander: bool = False
+    is_system_user: bool = False
 
     avatar_url: str | None = None
     bio: str | None = None
@@ -47,6 +48,10 @@ class UserCreate(UserBase):
         description="User password"
     )
     role: UserRoleEnum = UserRoleEnum.VIEWER
+    is_system_user: bool = PydanticField(
+        default=False,
+        exclude=True
+    )
 
 
 class UserUpdate(BaseModel):
@@ -101,26 +106,17 @@ class MinimalUserRead(BaseModel):
 
 class UserCreateInternal(UserBase):
     """
-    Internal schema for creating a user,
-    used by CRUD operations.
-    Accepts hashed_password
-    instead of plain password.
+    Internal schema for creating a user, used by CRUD operations.
+    Accepts hashed_password and can set system user status.
     """
     hashed_password: str
-
-    # Fields that are part of User model
-    # but might not be in UserBase,
-    # or need specific defaults for internal
-    # creation different from API creation.
-    # UserCreate (API input) defines role,
-    # is_active, is_superuser defaults for API.
-    # Here, we ensure they are present for
-    # DB creation if not in UserBase.
-    # This field must be provided when creating UserCreateInternal instance
     role: UserRoleEnum
-    # is_active is in UserBase with default True
-    # is_superuser is in UserBase with default False
-    is_email_verified: bool = False
+
+    # Logic: a system user is
+    # considered verified by default.
+    @property
+    def is_email_verified(self) -> bool:
+        return self.is_system_user
 
 
 class UserUpdatePassword(BaseModel):

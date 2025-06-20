@@ -1,6 +1,6 @@
 import logging
-from typing import List
 import httpx
+from typing import List
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -8,7 +8,10 @@ from src.crud.user_crud import CRUDUser
 from src.core.config import settings
 from src.services.incident_service import IncidentService
 from src.crud.incident_crud import CrudIncident
-from src.api.v1.schemas.alerting_schemas import IncomingAlert, AlertManagerResponse
+from src.api.v1.schemas.alerting_schemas import (
+    IncomingAlert,
+    AlertManagerResponse
+)
 from src.api.v1.schemas.incident_schemas import (
     IncidentCreate,
     IncidentProfileCreate,
@@ -16,8 +19,8 @@ from src.api.v1.schemas.incident_schemas import (
     ShallowRCACreate
 )
 from src.models.enums import SeverityLevelEnum, IncidentStatusEnum
-from src.exceptions.common_exceptions import (
-    InvalidOperationException
+from src.exceptions.base_exceptions import (
+    ConfigurationError
 )
 
 
@@ -42,22 +45,47 @@ class AlertingService:
 
     async def _get_system_user(self):
         """
-        Retrieves a user to act as the creator of automated incidents.
-        For now, it fetches the first superuser as a fallback.
+        Retrieves the dedicated system user
+        configured to be the incident commander.
+        This user must exist and be flagged
+        as both a system user and a commander.
         """
 
         if self.system_user is None:
+            commander_username = settings.SYSTEM_COMMANDER_USERNAME
 
-            user_crud = CRUDUser(self.db_session)
-            # Fetch the first superuser available to act as commander.
-            users = await user_crud.get_users(limit=1)
-
-            if not users:
-                raise InvalidOperationException(
-                    "No users found in the system to act as incident commander."
+            if not commander_username:
+                raise ConfigurationError(
+                    "SYSTEM_COMMANDER_USERNAME is not configured."
                 )
 
-            self.system_user = users[0]
+            user_crud = CRUDUser(self.db_session)
+
+            system_user = await user_crud.get_user_by_username(
+                username=commander_username
+            )
+
+            if not system_user:
+                raise ConfigurationError(
+                    "The configured system commander user "
+                    f"'{commander_username}' was not found."
+                )
+
+            if not system_user.is_system_user:
+                raise ConfigurationError(
+                    f"The configured user '{commander_username}' "
+                    "is not a designated system user (is_system_user=False)."
+                )
+
+            if not system_user.is_commander:
+                raise ConfigurationError(
+                    f"The configured system user '{commander_username}' "
+                    "is not designated as an Incident Commander (is_commander=False)."
+                )
+
+            logger.info(f"Loaded system commander: {system_user.username}")
+
+            self.system_user = system_user
 
         return self.system_user
 
@@ -66,19 +94,26 @@ class AlertingService:
         Fetches active alerts from the configured Alert Manager API.
         """
         api_url = settings.ALERT_MANAGER_API_URL
+
         if not api_url:
             logger.warning(
-                "ALERT_MANAGER_API_URL is not configured. Skipping alert check.")
+                "ALERT_MANAGER_API_URL is not configured. "
+                " Skipping alert check."
+            )
+
             return []
 
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(api_url)
+
                 response.raise_for_status()
 
                 alert_data = response.json()
+
                 validated_response = AlertManagerResponse.model_validate(
-                    alert_data)
+                    alert_data
+                )
 
                 if validated_response.status == "success":
                     firing_alerts = [

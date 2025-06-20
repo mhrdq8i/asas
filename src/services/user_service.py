@@ -109,22 +109,23 @@ class UserService:
         await self.db_session.commit()
         await self.db_session.refresh(created_user)
 
-        try:
-            celery_app.send_task(
-                "tasks.send_verification_email",
-                args=[str(created_user.id)]
-            )
+        if not created_user.is_system_user:
+            try:
+                celery_app.send_task(
+                    "tasks.send_verification_email",
+                    args=[str(created_user.id)]
+                )
 
-            logger.info(
-                "Verification email task queued for "
-                f"user ID: {created_user.id}"
-            )
+                logger.info(
+                    "Verification email task queued for "
+                    f"user ID: {created_user.id}"
+                )
 
-        except Exception as e:
-            logger.error(
-                "Failed to queue verification email task for user "
-                f"{created_user.id}: {e}", exc_info=True
-            )
+            except Exception as e:
+                logger.error(
+                    "Failed to queue verification email task for user "
+                    f"{created_user.id}: {e}", exc_info=True
+                )
 
         return created_user
 
@@ -293,7 +294,8 @@ class UserService:
                 detail="Inactive user."
             )
 
-        if not user.is_email_verified:
+        # Bypass email verification check for system users
+        if not user.is_email_verified and not user.is_system_user:
             raise AuthenticationFailedException(
                 detail="Email not verified. Please check your inbox."
             )

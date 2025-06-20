@@ -12,6 +12,15 @@ from src.models.base import BaseEntity
 class User(BaseEntity, table=True):
     __tablename__ = "users"
 
+    # Username fields
+    full_name: Annotated[
+        str,
+        Field(
+            default=None,
+            max_length=100
+        )
+    ]
+
     username: Annotated[
         str,
         Field(
@@ -22,23 +31,35 @@ class User(BaseEntity, table=True):
         )
     ]
 
-    full_name: Annotated[
+    # Password reset fields
+    hashed_password: Annotated[
         str,
         Field(
-            default=None,
-            max_length=100
-        )
-    ]
-
-    email: Annotated[
-        EmailStr, Field(
-            index=True,
-            unique=True,
             nullable=False,
             max_length=255
         )
     ]
 
+    reset_token: Annotated[
+        str | None,
+        Field(
+            default=None,
+            index=True,
+            max_length=255
+        )
+    ]
+
+    reset_token_expires: Annotated[
+        datetime | None,
+        Field(
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
+        )
+    ]
+
+    # User status and roles
     is_active: Annotated[
         bool,
         Field(
@@ -64,11 +85,38 @@ class User(BaseEntity, table=True):
         )
     ]
 
+    is_system_user: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False
+        )
+    ]
+
+    is_deleted: Annotated[
+        bool,
+        Field(
+            default=False,
+            nullable=False,
+            index=True
+        )
+    ]
+
     role: Annotated[
         UserRoleEnum,
         Field(
             default=UserRoleEnum.VIEWER,
             nullable=False
+        )
+    ]
+
+    # Email fields
+    email: Annotated[
+        EmailStr, Field(
+            index=True,
+            unique=True,
+            nullable=False,
+            max_length=255
         )
     ]
 
@@ -99,52 +147,7 @@ class User(BaseEntity, table=True):
         )
     ]
 
-    hashed_password: Annotated[
-        str,
-        Field(
-            nullable=False,
-            max_length=255
-        )
-    ]
-
-    reset_token: Annotated[
-        str | None,
-        Field(
-            default=None,
-            index=True,
-            max_length=255
-        )
-    ]
-
-    reset_token_expires: Annotated[
-        datetime | None,
-        Field(
-            default=None,
-            sa_column=Column(
-                DateTime(timezone=True)
-            )
-        )
-    ]
-
-    is_deleted: Annotated[
-        bool,
-        Field(
-            default=False,
-            nullable=False,
-            index=True
-        )
-    ]
-
-    deleted_at: Annotated[
-        datetime | None,
-        Field(
-            default=None,
-            sa_column=Column(
-                DateTime(timezone=True)
-            )
-        )
-    ]
-
+    # Profile and activity
     avatar_url: Annotated[
         str | None,
         Field(
@@ -184,6 +187,16 @@ class User(BaseEntity, table=True):
         Field(
             default=None,
             max_length=45
+        )
+    ]
+
+    deleted_at: Annotated[
+        datetime | None,
+        Field(
+            default=None,
+            sa_column=Column(
+                DateTime(timezone=True)
+            )
         )
     ]
 
