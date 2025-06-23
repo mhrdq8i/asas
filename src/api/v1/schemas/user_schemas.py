@@ -43,12 +43,16 @@ class UserCreate(UserBase):
     Schema for creating a new user via API.
     Requires a plain password.
     """
+    role: UserRoleEnum = UserRoleEnum.VIEWER
     password: str = PydanticField(
         min_length=8,
         description="User password"
     )
-    role: UserRoleEnum = UserRoleEnum.VIEWER
     is_system_user: bool = PydanticField(
+        default=False,
+        exclude=True
+    )
+    is_superuser: bool = PydanticField(
         default=False,
         exclude=True
     )

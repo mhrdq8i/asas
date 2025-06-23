@@ -2,7 +2,7 @@ from asyncio import run as async_run
 from logging import getLogger
 from src.core.celery import celery_app
 from src.database.session import AsyncSessionLocal
-from src.services.alert_service import AlertService
+from src.services.alerting_service import AlertingService
 
 
 logger = getLogger(__name__)
@@ -17,7 +17,7 @@ async def _check_alerts_async():
     session = AsyncSessionLocal()
 
     try:
-        alert_service = AlertService(db_session=session)
+        alert_service = AlertingService(db_session=session)
         await alert_service.process_prometheus_alerts()
 
     finally:
