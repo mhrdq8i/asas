@@ -1,7 +1,7 @@
-import logging
-import asyncio
+from logging import getLogger
+from asyncio import gather
 from typing import List
-import httpx
+from httpx import AsyncClient, RequestError
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 from src.core.config import settings
@@ -26,7 +26,7 @@ from src.exceptions.base_exceptions import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class AlertingService:
@@ -71,7 +71,7 @@ class AlertingService:
         return self.system_user
 
     async def _fetch_alerts_from_endpoint(
-        self, api_url: str, client: httpx.AsyncClient
+        self, api_url: str, client: AsyncClient
     ) -> List[IncomingAlert]:
         """
         Fetches and validates alerts from a single Alert Manager API endpoint.
@@ -101,7 +101,7 @@ class AlertingService:
                 )
                 return []
 
-        except httpx.RequestError as e:
+        except RequestError as e:
             logger.error(
                 "HTTP request error occurred while "
                 f"fetching alerts from {api_url}: {e}"
@@ -129,10 +129,13 @@ class AlertingService:
             return []
 
         all_firing_alerts: List[IncomingAlert] = []
-        async with httpx.AsyncClient() as client:
-            tasks = [self._fetch_alerts_from_endpoint(
-                url, client) for url in api_urls]
-            results = await asyncio.gather(*tasks)
+        async with AsyncClient() as client:
+            tasks = [
+                self._fetch_alerts_from_endpoint(
+                    url, client
+                ) for url in api_urls
+            ]
+            results = await gather(*tasks)
 
             for alert_list in results:
                 all_firing_alerts.extend(alert_list)

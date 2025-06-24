@@ -70,3 +70,13 @@ class FactorTypeEnum(str, Enum):
     PROCESS = "Process"
     HUMAN = "Human"
     UNKNOWN = "Unknown"
+
+
+# --- Alerting Enums (New) ---
+
+class MatchTypeEnum(str, Enum):
+    EQUALS = "equals"
+    NOT_EQUALS = "not_equals"
+    CONTAINS = "contains"
+    NOT_CONTAINS = "not_contains"
+    REGEX = "regex"
