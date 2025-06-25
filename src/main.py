@@ -22,6 +22,9 @@ from src.api.v1.endpoints import (
 from src.api.v1.endpoints import (
     postmortem_routes as postmortem_router_v1
 )
+from src.api.v1.endpoints import (
+    alert_filter_rule_routes as afr_route_v1
+)
 
 
 @asynccontextmanager
@@ -123,6 +126,15 @@ app.include_router(
     ),
     prefix="/api/v1",
     tags=["V1 - Postmortem"]
+)
+
+# Alert Filter Rules
+app.include_router(
+    afr_route_v1.router,
+    prefix="/api/v1",
+    tags=[
+        "V1 - Admin - Alert Filter Rules"
+    ]
 )
 
 
