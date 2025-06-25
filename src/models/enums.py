@@ -72,7 +72,7 @@ class FactorTypeEnum(str, Enum):
     UNKNOWN = "Unknown"
 
 
-# --- Alerting Enums (New) ---
+# --- Alerting Enums ---
 
 class MatchTypeEnum(str, Enum):
     EQUALS = "equals"

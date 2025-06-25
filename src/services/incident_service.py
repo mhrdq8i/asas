@@ -5,7 +5,7 @@ from logging import getLogger
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.crud.user_crud import CRUDUser
+from src.crud.user_crud import CrudUser
 from src.crud.incident_crud import CrudIncident
 from src.models.user import User
 from src.models.incident import (
@@ -52,7 +52,7 @@ class IncidentService:
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
-        self.crud_user = CRUDUser(self.db_session)
+        self.crud_user = CrudUser(self.db_session)
         self.crud_incident = CrudIncident(self.db_session)
 
     async def _check_permission(

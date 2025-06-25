@@ -5,7 +5,7 @@ from typing import List
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.crud.user_crud import CRUDUser
+from src.crud.user_crud import CrudUser
 from src.crud.incident_crud import CrudIncident
 from src.models.user import User
 from src.api.v1.schemas.user_schemas import (
@@ -45,7 +45,7 @@ logger = getLogger(__name__)
 class UserService:
     def __init__(self, db_session: AsyncSession):
         self.db_session: AsyncSession = db_session
-        self.crud_user = CRUDUser(db_session=self.db_session)
+        self.crud_user = CrudUser(db_session=self.db_session)
         self.crud_incident = CrudIncident(db_session=self.db_session)
 
     async def get_user_by_id(self, *, user_id: UUID) -> User:

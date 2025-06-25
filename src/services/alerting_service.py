@@ -4,8 +4,10 @@ from typing import List
 from httpx import AsyncClient, RequestError
 
 from sqlmodel.ext.asyncio.session import AsyncSession
+
 from src.core.config import settings
 from src.services.incident_service import IncidentService
+from src.crud.user_crud import CrudUser
 from src.crud.incident_crud import CrudIncident
 from src.api.v1.schemas.alerting_schemas import (
     IncomingAlert,
@@ -51,8 +53,7 @@ class AlertingService:
                 raise ConfigurationError(
                     "SYSTEM_COMMANDER_USERNAME is not configured.")
 
-            from src.crud.user_crud import CRUDUser
-            user_crud = CRUDUser(self.db_session)
+            user_crud = CrudUser(self.db_session)
 
             system_user = await user_crud.get_user_by_username(
                 username=commander_username

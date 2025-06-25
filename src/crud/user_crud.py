@@ -12,7 +12,7 @@ from src.api.v1.schemas.user_schemas import (
 )
 
 
-class CRUDUser:
+class CrudUser:
     """
     CRUD operations for User model.
     An instance of this class should be

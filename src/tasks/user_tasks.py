@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import timedelta
 from src.core.celery import celery_app
 from src.database.session import AsyncSessionLocal
-from src.crud.user_crud import CRUDUser
+from src.crud.user_crud import CrudUser
 from src.core.email_utils import (
     send_email_verification,
     send_password_reset_email
@@ -29,7 +29,7 @@ async def _send_verification_email_async(user_id: str):
     session = AsyncSessionLocal()
 
     try:
-        user_crud = CRUDUser(db_session=session)
+        user_crud = CrudUser(db_session=session)
         user = await user_crud.get_user_by_id(user_id=UUID(user_id))
 
         if not user or user.is_email_verified:
@@ -102,7 +102,7 @@ def send_verification_email_task(self, user_id: str):
 async def _send_password_reset_async(user_id: str, token: str):
     session = AsyncSessionLocal()
     try:
-        user_crud = CRUDUser(db_session=session)
+        user_crud = CrudUser(db_session=session)
         user = await user_crud.get_user_by_id(user_id=UUID(user_id))
 
         if user:
