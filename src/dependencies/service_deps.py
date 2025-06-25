@@ -68,16 +68,6 @@ def get_postmortem_service(
     )
 
 
-# def get_alert_service(
-#     db_session: AsyncSession = Depends(
-#         get_async_session
-#     )
-# ) -> AlertService:
-#     """
-#     Dependency to get an instance of AlertService.
-#     """
-#     return AlertService(db_session=db_session)
-
 def get_alert_filter_rule_service(
         db_session: AsyncSession = Depends(
             get_async_session
