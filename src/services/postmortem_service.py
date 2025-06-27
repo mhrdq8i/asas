@@ -135,11 +135,16 @@ class PostmortemService:
 
         return refreshed_pm
 
-    async def get_postmortem_by_id(self, *, postmortem_id: UUID) -> PostMortem:
+    async def get_postmortem_by_id(
+        self,
+        *,
+        postmortem_id: UUID
+    ) -> PostMortem:
         """
         Retrieves a single post-mortem by its ID.
         Note: Assumes read access is public within the organization.
         """
+
         return await self._get_postmortem_or_fail(postmortem_id)
 
     async def update_postmortem(

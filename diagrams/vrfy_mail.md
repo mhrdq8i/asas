@@ -1,6 +1,6 @@
 ```mermaid
 sequenceDiagram
-participant User
+actor User
 participant FastAPI App
 participant UserService
 participant Database

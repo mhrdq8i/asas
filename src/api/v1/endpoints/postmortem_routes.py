@@ -53,12 +53,17 @@ async def create_postmortem(
 )
 async def get_postmortem(
     postmortem_id: UUID,
-    pm_service: Annotated[PostmortemService, Depends(get_postmortem_service)]
+    postmortem_service: Annotated[
+        PostmortemService, Depends(get_postmortem_service)
+    ]
 ):
     """
     Retrieves the full details of a single post-mortem by its unique ID.
     """
-    postmortem = await pm_service.get_postmortem_by_id(postmortem_id=postmortem_id)
+    postmortem = await postmortem_service.get_postmortem_by_id(
+        postmortem_id=postmortem_id
+    )
+
     return postmortem
 
 

@@ -352,3 +352,22 @@ class CrudIncident:
         count = result.one()
 
         return count > 0
+
+    async def get_incident_by_fingerprint(
+        self,
+        fingerprint: str
+    ) -> Optional[Incident]:
+        """
+        Get an incident by its alert
+        fingerprint to avoid duplicates.
+        """
+
+        if not fingerprint:
+            return None
+
+        statement = select(Incident).where(
+            Incident.alert_fingerprint == fingerprint
+        )
+        result = await self.db_session.execute(statement)
+
+        return result.scalar_one_or_none()

@@ -16,9 +16,9 @@ from src.services.incident_service import (
 from src.services.postmortem_service import (
     PostmortemService
 )
-# from src.services.alert_service import (
-#     AlertService
-# )
+from src.services.alert_service import (
+    AlertService
+)
 from src.services.alert_filter_rule_service import (
     AlertFilterRuleService
 )
@@ -64,6 +64,19 @@ def get_postmortem_service(
     of PostmortemService.
     """
     return PostmortemService(
+        db_session=db_session
+    )
+
+
+def get_alert_service(
+        db_session: AsyncSession = Depends(
+            get_async_session
+        )
+) -> AlertService:
+    """
+    Dependency to get an instance of AlertService.
+    """
+    return AlertService(
         db_session=db_session
     )
 

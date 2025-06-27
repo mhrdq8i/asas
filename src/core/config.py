@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     DEBUG_MODE: bool = False
     SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
-    LOG_LEVEL: str = "info"
+    LOG_LEVEL: str
 
     # --- Database Settings ---
     POSTGRES_SCHEME: str | None = None
@@ -62,13 +62,15 @@ class Settings(BaseSettings):
     MAIL_TIMEOUT: int = 60
 
     # --- Notification Settings ---
-    INCIDENT_NOTIFICATION_RECIPIENTS: str = ""
+    INCIDENT_NOTIFICATION_RECIPIENTS: str | None = None
 
-    # --- Celery and Prometheus Settings ---
-    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
-    PROMETHEUS_API_URL: str = "http://localhost:9090/api/v1/alerts"
-    ALERT_CHECK_INTERVAL_SECONDS: int = 120
+    # --- Celery Settings ---
+    CELERY_BROKER_URL: str
+    CELERY_RESULT_BACKEND: str
+
+    # --- Prometheus Settings ---
+    PROMETHEUS_API_URL: str | None = None
+    ALERT_CHECK_INTERVAL_SECONDS: int
 
     @model_validator(mode='before')
     @classmethod
@@ -162,8 +164,9 @@ class Settings(BaseSettings):
                 "DATABASE_URL is not set or is empty, "
                 "and the following parameters required "
                 "for its construction are "
-                f"missing or empty: {', '.join(missing_db_params)}. \
-                    Please provide either a full "
+                "missing or empty: "
+                f"{', '.join(missing_db_params)}. "
+                "Please provide either a full "
                 "DATABASE_URL or all of these: "
                 "POSTGRES_SCHEME, POSTGRES_USER, "
                 "POSTGRES_PASSWORD, POSTGRES_SERVER, "
@@ -268,6 +271,18 @@ class Settings(BaseSettings):
                     "provided and non-empty in the .env file."
                 )
         return values
+
+    def get_notification_recipients(self) -> list[str]:
+        """
+        Returns a list of notification recipient email addresses.
+        """
+
+        if not self.INCIDENT_NOTIFICATION_RECIPIENTS:
+            return []
+        return [
+            email.strip(
+            ) for email in self.INCIDENT_NOTIFICATION_RECIPIENTS.split(',')
+        ]
 
     model_config = SettingsConfigDict(
         env_file=".env",
