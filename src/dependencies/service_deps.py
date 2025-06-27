@@ -49,6 +49,7 @@ def get_incident_service(
     Dependency to get an
     instance of IncidentService.
     """
+
     return IncidentService(
         db_session=db_session
     )
@@ -63,6 +64,7 @@ def get_postmortem_service(
     Dependency to get an instance
     of PostmortemService.
     """
+
     return PostmortemService(
         db_session=db_session
     )
@@ -76,6 +78,7 @@ def get_alert_service(
     """
     Dependency to get an instance of AlertService.
     """
+
     return AlertService(
         db_session=db_session
     )
@@ -87,7 +90,8 @@ def get_alert_filter_rule_service(
         )
 ) -> AlertFilterRuleService:
     """
-    Dependency to get an instance of AlertFilterRuleService.
+    Dependency to get an instance
+    of AlertFilterRuleService.
     """
 
     return AlertFilterRuleService(

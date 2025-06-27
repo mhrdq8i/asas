@@ -15,7 +15,9 @@ from src.services.user_service import (
 )
 from src.models.user import User
 from src.core import security
-from src.dependencies.service_deps import get_user_service
+from src.dependencies.service_deps import (
+    get_user_service
+)
 
 # This defines the security scheme for OAuth2.
 # It tells FastAPI how to find the token.
@@ -117,6 +119,7 @@ async def get_current_user(
         print(
             f"Unexpected error during token processing: {e}"
         )
+
         raise NotAuthenticatedException(
             detail=(
                 "Could not validate credentials "
@@ -206,6 +209,7 @@ async def get_current_active_superuser(
     Returns:
         The authenticated, active, and superuser User model instance.
     """
+
     if not current_user.is_superuser:
         raise InsufficientPermissionsException(
             detail=(

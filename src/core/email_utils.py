@@ -34,7 +34,7 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=settings.MAIL_USE_SSL,
     USE_CREDENTIALS=use_credentials,
     VALIDATE_CERTS=True if settings.MAIL_SERVER not in [
-        "localhost", "127.0.0.1", "mailhog"
+        "localhost", "127.0.0.1"
     ] else False,
     TIMEOUT=settings.MAIL_TIMEOUT,
 )
@@ -49,12 +49,14 @@ async def send_email_async(
     html_content: str,
 ) -> None:
     """
-    Sends an email using fastapi-mail with detailed error logging.
+    Sends an email using fastapi-mail
+    with detailed error logging.
     """
 
     if not settings.MAIL_FROM_EMAIL:
         logger.error(
-            "MAIL_FROM_EMAIL is not configured. Cannot send email."
+            "MAIL_FROM_EMAIL is not configured. "
+            "Cannot send email."
         )
 
         return
@@ -91,7 +93,9 @@ async def send_email_async(
 
 
 async def send_email_verification(
-    email_to: EmailStr, username: str, verification_token: str
+    email_to: EmailStr,
+    username: str,
+    verification_token: str
 ) -> None:
     """
     Prepares and sends the email verification message.
@@ -108,10 +112,15 @@ async def send_email_verification(
         return
 
     verification_link = (
-        f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+        f"{settings.FRONTEND_URL}"
+        "/verify-email?token="
+        f"{verification_token}"
     )
 
-    subject = f"Verify your email for {project_name}"
+    subject = (
+        "Verify your email for "
+        f"{project_name}"
+    )
 
     html_content = f"""
     <html><body>
@@ -123,12 +132,16 @@ async def send_email_verification(
     """
 
     await send_email_async(
-        email_to=email_to, subject=subject, html_content=html_content
+        email_to=email_to,
+        subject=subject,
+        html_content=html_content
     )
 
 
 async def send_password_reset_email(
-    email_to: EmailStr, username: str, reset_token: str
+    email_to: EmailStr,
+    username: str,
+    reset_token: str
 ) -> None:
     """
     Prepares and sends the password reset message.
@@ -138,16 +151,21 @@ async def send_password_reset_email(
 
     if not settings.FRONTEND_URL:
         logger.error(
-            "FRONTEND_URL is not configured. Cannot generate reset link."
+            "FRONTEND_URL is not configured. "
+            "Cannot generate reset link."
         )
 
         return
 
     reset_link = (
-        f"{settings.FRONTEND_URL}/reset-password-confirm?token={reset_token}"
+        f"{settings.FRONTEND_URL}"
+        "/reset-password-confirm?token="
+        f"{reset_token}"
     )
 
-    subject = f"Password Reset Request for {project_name}"
+    subject = (
+        f"Password Reset Request for {project_name}"
+    )
 
     html_content = f"""
     <html><body>
@@ -158,5 +176,7 @@ async def send_password_reset_email(
     """
 
     await send_email_async(
-        email_to=email_to, subject=subject, html_content=html_content
+        email_to=email_to,
+        subject=subject,
+        html_content=html_content
     )

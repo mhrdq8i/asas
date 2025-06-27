@@ -31,12 +31,21 @@ router = APIRouter(
 )
 
 
-@router.post("/token", response_model=Token)
+@router.post(
+    "/token",
+    response_model=Token
+)
 async def login_for_access_token(
     request: Request,
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    form_data: Annotated[
+        OAuth2PasswordRequestForm,
+        Depends()
+    ],
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
+) -> Token:
     """
     OAuth2 compatible token login,
     get an access token for future requests.
@@ -50,7 +59,9 @@ async def login_for_access_token(
             password=form_data.password,
             client_ip=client_ip
         )
-        access_token = security.create_access_token(subject=user.username)
+        access_token = security.create_access_token(
+            subject=user.username
+        )
 
         return {
             "access_token": access_token,
@@ -74,8 +85,11 @@ async def login_for_access_token(
 )
 async def password_recovery(
     email_in: PasswordResetRequest,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
+) -> Msg:
     """
     Request a password recovery email.
     The service queues the email task.
@@ -98,11 +112,17 @@ async def password_recovery(
         )
 
 
-@router.post("/reset-password", response_model=Msg)
+@router.post(
+    "/reset-password",
+    response_model=Msg
+)
 async def reset_password(
     reset_data: PasswordResetConfirmWithToken,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
+) -> Msg:
     """
     Reset password using a token and new
     password provided in the request body.
@@ -131,9 +151,15 @@ async def reset_password(
     status_code=status.HTTP_200_OK
 )
 async def request_new_email_verification(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    current_user: Annotated[
+        UserModel,
+        Depends(get_current_active_user)
+    ],
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
+) -> Msg:
     """
     Requests a new email verification token for the current user.
     The task is handled in the background by Celery.
@@ -147,19 +173,29 @@ async def request_new_email_verification(
         return Msg(message=message)
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
-@router.post("/verify-email", response_model=Msg)
+@router.post(
+    "/verify-email",
+    response_model=Msg
+)
 async def verify_email(
     token_data: EmailVerifyTokenSchema,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
+) -> Msg:
     """
     Verify a user's email address using the provided token.
     Upon successful verification,
     a welcome email task is queued by the service.
     """
+
     try:
         await user_service.confirm_email_verification(
             token_in=token_data.token

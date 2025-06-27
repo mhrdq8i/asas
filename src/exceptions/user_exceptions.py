@@ -2,7 +2,9 @@ from typing import Any
 
 from fastapi import status
 
-from src.exceptions.base_exceptions import AppException
+from src.exceptions.base_exceptions import (
+    AppException
+)
 from src.exceptions.common_exceptions import (
     ResourceNotFoundException,
     InvalidOperationException,
@@ -12,7 +14,8 @@ from src.exceptions.common_exceptions import (
 class AuthenticationFailedException(AppException):
     """
     Raised when authentication fails
-    (e.g., incorrect username/password, inactive user).
+    (e.g., incorrect username/password,
+    inactive user).
     """
 
     def __init__(
@@ -64,7 +67,8 @@ class UserNotFoundException(ResourceNotFoundException):
     Allows for a custom detail message.
     """
 
-    # FIX: Added 'detail' parameter to allow custom messages.
+    # FIX: Added 'detail' parameter
+    # to allow custom messages.
 
     def __init__(
             self,

@@ -27,15 +27,17 @@ logger = getLogger(__name__)
 async def app_exception_handler(
     request: Request,
     exc: AppException
-):
+) -> JSONResponse:
     """
     Handles any custom application exception
     that inherits from AppException.
     """
 
     logger.warning(
-        f"Application exception caught: {exc.detail} "
-        f"for request {request.url.path} ",
+        "Application exception caught: "
+        f"{exc.detail} "
+        "for request "
+        f"{request.url.path}",
 
         extra={
             "status_code": exc.status_code,
@@ -56,7 +58,9 @@ async def user_not_found_exception_handler(
     exc: UserNotFoundException
 ):
     """
-    Handles the specific UserNotFoundException to provide a richer response.
+    Handles the specific
+    UserNotFoundException
+    to provide a richer response.
     """
 
     logger.warning(
@@ -77,14 +81,17 @@ async def user_not_found_exception_handler(
 async def request_validation_exception_handler(
     request: Request,
     exc: RequestValidationError
-):
+) -> JSONResponse:
     """
     Handles FastAPI's own request validation errors.
     """
 
     logger.warning(
-        f"RequestValidationError caught for path '{request.url.path}'",
-        extra={"errors": exc.errors()}
+        "RequestValidationError caught for path "
+        f"'{request.url.path}'",
+        extra={
+            "errors": exc.errors()
+        }
     )
 
     return JSONResponse(
@@ -99,7 +106,7 @@ async def request_validation_exception_handler(
 async def pydantic_validation_error_handler(
     request: Request,
     exc: ValidationError
-):
+) -> JSONResponse:
     """
     Handles Pydantic ValidationErrors that
     might be raised manually in the code.
@@ -123,14 +130,15 @@ async def pydantic_validation_error_handler(
 async def generic_exception_handler(
     request: Request,
     exc: Exception
-):
+) -> JSONResponse:
     """
     Handles any other unhandled Python exceptions.
     This is the last resort handler.
     """
 
     logger.error(
-        f"Unhandled exception caught for request: {request.url.path}",
+        "Unhandled exception caught for request: "
+        f"{request.url.path}",
         exc_info=True
     )
 

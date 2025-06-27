@@ -78,11 +78,12 @@ async def create_incident(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Create a new incident.
     Requires authentication.
     """
+
     try:
         new_incident = await incident_service.create_incident(
             incident_in=incident_in,
@@ -103,7 +104,9 @@ async def create_incident(
 
 @inc_router.get(
     "/",
-    response_model=PaginatedResponse[IncidentRead]
+    response_model=PaginatedResponse[
+        IncidentRead
+    ]
 )
 async def search_incidents(
     incident_service: Annotated[
@@ -111,10 +114,14 @@ async def search_incidents(
         Depends(get_incident_service)
     ],
     statuses: Optional[
-        List[IncidentStatusEnum]
+        List[
+            IncidentStatusEnum
+        ]
     ] = Query(None),
     severities: Optional[
-        List[SeverityLevelEnum]
+        List[
+            SeverityLevelEnum
+        ]
     ] = Query(None),
     commander_id: Optional[UUID] = Query(None),
     start_date: Optional[str] = Query(
@@ -133,11 +140,12 @@ async def search_incidents(
     ),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
-):
+) -> PaginatedResponse[IncidentRead]:
     """
     Search for incidents with
     various filter criteria.
     """
+
     incidents = await incident_service.get_incidents_list(
         statuses=statuses,
         severities=severities,
@@ -153,7 +161,7 @@ async def search_incidents(
     "/{incident_id}",
     response_model=IncidentRead
 )
-async def get_incident(
+async def get_incident_by_id(
     incident_id: UUID,
     incident_service: Annotated[
         IncidentService,
@@ -161,7 +169,7 @@ async def get_incident(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Retrieve a single incident by its ID.
     """
@@ -196,7 +204,7 @@ async def update_incident_profile(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Update the profile of an incident.
     Only the commander or an
@@ -238,7 +246,7 @@ async def update_incident_impacts(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Update the impacts section of an incident.
     Only the commander or an
@@ -286,15 +294,18 @@ async def update_shallow_rca(
     Only the commander or an
     admin can perform this action.
     """
+
     try:
         await incident_service.update_shallow_rca(
             incident_id=incident_id,
             update_data=update_data,
             current_user=current_user
         )
+
         return await incident_service.get_incident_by_id(
             incident_id=incident_id
         )
+
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -321,16 +332,18 @@ async def add_timeline_event(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Add a new timeline event to an incident.
     """
+
     try:
         return await incident_service.add_timeline_event(
             incident_id=incident_id,
             event_in=event_in,
             current_user=current_user
         )
+
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -357,7 +370,7 @@ async def add_communication_log(
             get_incident_service
         )
     ],
-):
+) -> IncidentRead:
     """
     Add a new communication log
     to an incident.
@@ -368,6 +381,7 @@ async def add_communication_log(
             log_in=log_in,
             current_user=current_user
         )
+
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -394,7 +408,7 @@ async def delete_incident(
             get_incident_service
         )
     ],
-):
+) -> Response:
     """
     Delete an incident.
     Requires superuser privileges.

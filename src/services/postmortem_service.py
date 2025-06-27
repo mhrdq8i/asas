@@ -1,11 +1,20 @@
 from uuid import UUID
+from typing import List
 from datetime import datetime, timezone
 
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 
-from src.crud.postmortem_crud import CrudPostmortem
-from src.crud.incident_crud import CrudIncident
-from src.models.user import User
+from src.crud.postmortem_crud import (
+    CrudPostmortem
+)
+from src.crud.incident_crud import (
+    CrudIncident
+)
+from src.models.user import (
+    User
+)
 from src.models.incident import (
     Incident,
     IncidentStatusEnum
@@ -35,10 +44,17 @@ class PostmortemService:
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
-        self.crud_postmortem = CrudPostmortem(self.db_session)
-        self.crud_incident = CrudIncident(self.db_session)
+        self.crud_postmortem = CrudPostmortem(
+            self.db_session
+        )
+        self.crud_incident = CrudIncident(
+            self.db_session
+        )
 
-    async def _get_incident_or_fail(self, incident_id: UUID) -> Incident:
+    async def _get_incident_or_fail(
+        self,
+        incident_id: UUID
+    ) -> Incident:
         """
         Helper to fetch an incident by ID or
         raise a standard not-found exception.
@@ -49,11 +65,16 @@ class PostmortemService:
         )
 
         if not incident:
-            raise IncidentNotFoundException(identifier=incident_id)
+            raise IncidentNotFoundException(
+                identifier=incident_id
+            )
 
         return incident
 
-    async def _get_postmortem_or_fail(self, postmortem_id: UUID) -> PostMortem:
+    async def _get_postmortem_or_fail(
+        self,
+        postmortem_id: UUID
+    ) -> PostMortem:
         """
         Helper to fetch a postmortem by ID or
         raise a standard not-found exception.
@@ -70,7 +91,12 @@ class PostmortemService:
 
         return postmortem
 
-    async def _check_permission(self, *, incident: Incident, user: User):
+    async def _check_permission(
+        self,
+        *,
+        incident: Incident,
+        user: User
+    ):
         """
         Centralized permission check for post-mortem management.
         """
@@ -94,10 +120,16 @@ class PostmortemService:
         given incident, enforcing business rules.
         """
 
-        incident = await self._get_incident_or_fail(incident_id)
+        incident = await self._get_incident_or_fail(
+            incident_id
+        )
 
-        # Permission Check: Only commander or superuser can create it.
-        await self._check_permission(incident=incident, user=current_user)
+        # Permission Check:
+        # Only commander or superuser can create it.
+        await self._check_permission(
+            incident=incident,
+            user=current_user
+        )
 
         # Ensure the incident is resolved before creating a post-mortem.
         if incident.profile.status != IncidentStatusEnum.RESOLVED:
@@ -105,7 +137,8 @@ class PostmortemService:
                 incident_id=incident_id
             )
 
-        # Ensure a post-mortem doesn't already exist for this incident.
+        # Ensure a post-mortem doesn't
+        # already exist for this incident.
         existing_postmortem = await \
             self.crud_postmortem.get_postmortem_by_incident_id(
                 incident_id=incident_id
@@ -118,7 +151,8 @@ class PostmortemService:
 
         # Create a new draft post-mortem instance.
         new_postmortem = PostMortem(
-            incident_id=incident_id, status=PostMortemStatusEnum.DRAFT
+            incident_id=incident_id,
+            status=PostMortemStatusEnum.DRAFT
         )
 
         db_postmortem = await self.crud_postmortem.create_postmortem(
@@ -135,6 +169,23 @@ class PostmortemService:
 
         return refreshed_pm
 
+    async def get_all_postmortems(
+        self,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[PostMortem]:
+        """
+        Retrieves all postmortems with
+        pagination via the CRUD layer.
+        """
+
+        result = await self.crud_postmortem.get_all_postmortems(
+            skip=skip,
+            limit=limit
+        )
+
+        return result
+
     async def get_postmortem_by_id(
         self,
         *,
@@ -142,10 +193,13 @@ class PostmortemService:
     ) -> PostMortem:
         """
         Retrieves a single post-mortem by its ID.
-        Note: Assumes read access is public within the organization.
+        Note: Assumes read access is public
+        within the organization.
         """
 
-        return await self._get_postmortem_or_fail(postmortem_id)
+        return await self._get_postmortem_or_fail(
+            postmortem_id
+        )
 
     async def update_postmortem(
         self,
@@ -158,22 +212,34 @@ class PostmortemService:
         Updates the main properties of a post-mortem.
         """
 
-        db_postmortem = await self._get_postmortem_or_fail(postmortem_id)
+        db_postmortem = await self._get_postmortem_or_fail(
+            postmortem_id
+        )
 
         # Fetch related incident for permission checking.
         incident = await self._get_incident_or_fail(
             db_postmortem.incident_id
         )
 
-        await self._check_permission(incident=incident, user=current_user)
+        await self._check_permission(
+            incident=incident,
+            user=current_user
+        )
 
-        update_dict = update_data.model_dump(exclude_unset=True)
+        update_dict = update_data.model_dump(
+            exclude_unset=True
+        )
 
         # Business Rule:
-        # If status changes to "Completed", set the completion date.
-        if update_dict.get("status") == PostMortemStatusEnum.COMPLETED \
-                and db_postmortem.status != PostMortemStatusEnum.COMPLETED:
-            update_dict["date_completed_utc"] = datetime.now(timezone.utc)
+        # If status changes to "Completed",
+        # set the completion date.
+        if update_dict.get(
+            "status"
+        ) == PostMortemStatusEnum.COMPLETED and \
+                db_postmortem.status != PostMortemStatusEnum.COMPLETED:
+            update_dict[
+                "date_completed_utc"
+            ] = datetime.now(timezone.utc)
 
         updated_pm = await self.crud_postmortem.update_postmortem(
             db_postmortem=db_postmortem,
@@ -182,10 +248,12 @@ class PostmortemService:
 
         await self.db_session.commit()
 
-        # Eagerly load relationships after the update as well.
-        refreshed_pm = await self.crud_postmortem.refresh_with_relationships(
-            postmortem=updated_pm
-        )
+        # Eagerly load relationships
+        # after the update as well.
+        refreshed_pm = await \
+            self.crud_postmortem.refresh_with_relationships(
+                postmortem=updated_pm
+            )
 
         return refreshed_pm
 
@@ -195,14 +263,23 @@ class PostmortemService:
         postmortem_id: UUID,
         current_user: User
     ) -> None:
-        """Deletes a post-mortem after checking permissions."""
+        """
+        Deletes a post-mortem after checking permissions.
+        """
 
-        db_postmortem = await self._get_postmortem_or_fail(postmortem_id)
+        db_postmortem = await self._get_postmortem_or_fail(
+            postmortem_id
+        )
 
         # We need the associated incident to check permissions
-        incident = await self._get_incident_or_fail(db_postmortem.incident_id)
+        incident = await self._get_incident_or_fail(
+            db_postmortem.incident_id
+        )
 
-        await self._check_permission(incident=incident, user=current_user)
+        await self._check_permission(
+            incident=incident,
+            user=current_user
+        )
 
         await self.crud_postmortem.delete_postmortem(
             db_postmortem=db_postmortem

@@ -1,12 +1,16 @@
+from typing import AsyncGenerator
 from contextlib import (
     asynccontextmanager
 )
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 
-from src.database.session import init_db
-from src.core.config import settings
+from src.database.session import (
+    init_db
+)
+from src.core.config import (
+    settings
+)
 from src.core.error_handlers import (
     register_error_handlers
 )
@@ -39,17 +43,21 @@ async def lifespan(
     """
 
     print(
-        "Application Lifespan: Startup sequence initiated."
+        "Application Lifespan: "
+        "Startup sequence initiated."
     )
 
     print(
-        "Creating database tables if they don't exist..."
+        "Creating database tables "
+        "if they don't exist..."
     )
 
     await init_db()
 
     print(
-        "Database tables check/creation complete."
+        "Database tables "
+        "check/creation "
+        "complete."
     )
 
     yield
@@ -78,6 +86,7 @@ app = FastAPI(
 )
 
 register_error_handlers(app)
+
 print(
     "Custom error handlers registered "
     "with the application."
@@ -130,7 +139,7 @@ app.include_router(
 
 # Alert Filter Rules
 app.include_router(
-    afr_route_v1.router,
+    afr_route_v1.rules_router,
     prefix="/api/v1",
     tags=[
         "V1 - Admin - Alert Filter Rules"
@@ -148,6 +157,7 @@ async def root():
     Root endpoint to check if the API is running.
     Provides basic information about the API.
     """
+
     return {
         "message": f"Welcome to the {app.title}",
         "version": app.version,
@@ -166,11 +176,13 @@ if __name__ == "__main__":
         'SERVER_HOST',
         "0.0.0.0"
     )
+
     server_port = getattr(
         settings,
         'SERVER_PORT',
         8000
     )
+
     # Default to True
     # for dev if not set
     debug_mode = getattr(
@@ -178,6 +190,7 @@ if __name__ == "__main__":
         'DEBUG_MODE',
         True
     )
+
     log_level = getattr(
         settings,
         'LOG_LEVEL',

@@ -3,8 +3,12 @@ from typing import List
 
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from src.crud.alert_filter_rule_crud import CrudAlertFilterRule
-from src.models.alert_filter_rule import AlertFilterRule
+from src.crud.alert_filter_rule_crud import (
+    CrudAlertFilterRule
+)
+from src.models.alert_filter_rule import (
+    AlertFilterRule
+)
 from src.api.v1.schemas.alert_filter_rule_schemas import (
     AlertFilterRuleCreate,
     AlertFilterRuleUpdate
@@ -27,11 +31,14 @@ class AlertFilterRuleService:
         rule_id: UUID
     ) -> AlertFilterRule:
 
-        rule = await self.crud.get_rule_by_id(rule_id=rule_id)
+        rule = await self.crud.get_rule_by_id(
+            rule_id=rule_id
+        )
 
         if not rule:
             raise ResourceNotFoundException(
-                resource_name="AlertFilterRule", identifier=rule_id
+                resource_name="AlertFilterRule",
+                identifier=rule_id
             )
 
         return rule
@@ -66,7 +73,9 @@ class AlertFilterRuleService:
 
         db_rule = AlertFilterRule.model_validate(rule_in)
 
-        new_rule = await self.crud.create_rule(rule=db_rule)
+        new_rule = await self.crud.create_rule(
+            rule=db_rule
+        )
         await self.db_session.commit()
         await self.db_session.refresh(new_rule)
 
@@ -79,9 +88,13 @@ class AlertFilterRuleService:
         update_data: AlertFilterRuleUpdate
     ) -> AlertFilterRule:
 
-        db_rule = await self.get_by_id(rule_id=rule_id)
+        db_rule = await self.get_by_id(
+            rule_id=rule_id
+        )
 
-        update_dict = update_data.model_dump(exclude_unset=True)
+        update_dict = update_data.model_dump(
+            exclude_unset=True
+        )
 
         if not update_dict:
             return db_rule
@@ -106,7 +119,9 @@ class AlertFilterRuleService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_rule)
+        await self.db_session.refresh(
+            updated_rule
+        )
 
         return updated_rule
 
@@ -116,7 +131,11 @@ class AlertFilterRuleService:
         rule_id: UUID
     ) -> None:
 
-        rule_to_delete = await self.get_by_id(rule_id=rule_id)
+        rule_to_delete = await self.get_by_id(
+            rule_id=rule_id
+        )
 
-        await self.crud.delete_rule(rule=rule_to_delete)
+        await self.crud.delete_rule(
+            rule=rule_to_delete
+        )
         await self.db_session.commit()

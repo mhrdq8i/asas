@@ -8,7 +8,9 @@ from typing import (
 )
 
 from sqlalchemy import Column, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import (
+    JSONB
+)
 from sqlmodel import (
     Field,
     Relationship,
@@ -147,7 +149,8 @@ class ContributingFactor(BaseEntity, table=True):
     __tablename__ = "contributing_factors"
 
     """
-    A structured factor that contributed to the incident,
+    A structured factor that
+    contributed to the incident,
     identified during post-mortem.
     """
 
@@ -155,7 +158,10 @@ class ContributingFactor(BaseEntity, table=True):
         FactorTypeEnum,
         Field(
             default=FactorTypeEnum.UNKNOWN,
-            description="The category of the contributing factor."
+            description=(
+                "The category of the "
+                "contributing factor."
+            )
         )
     ]
 
@@ -163,7 +169,10 @@ class ContributingFactor(BaseEntity, table=True):
         str,
         Field(
             sa_column=Column(Text),
-            description="Detailed description of the contributing factor."
+            description=(
+                "Detailed description of "
+                "the contributing factor."
+            )
         )
     ]
 
@@ -186,7 +195,8 @@ class ActionItem(BaseEntity, table=True):
     __tablename__ = "action_items"
 
     """
-    A specific, actionable task to prevent future incidents.
+    A specific, actionable task to
+    prevent future incidents.
     """
 
     description: Annotated[

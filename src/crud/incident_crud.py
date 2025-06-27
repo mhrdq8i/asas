@@ -1,12 +1,12 @@
 from uuid import UUID
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import List, Optional, Dict, Any
 
+from sqlalchemy.orm import selectinload
 from sqlmodel import select, func, and_
 from sqlmodel.ext.asyncio.session import (
     AsyncSession
 )
-from sqlalchemy.orm import selectinload
 
 from src.models.incident import (
     Incident,
@@ -33,9 +33,9 @@ class CrudIncident:
         self.db: AsyncSession = db_session
 
     async def get_incident_by_id(
-            self,
-            *,
-            incident_id: UUID
+        self,
+        *,
+        incident_id: UUID
     ) -> Optional[Incident]:
 
         statement = (
@@ -85,17 +85,23 @@ class CrudIncident:
             **incident_in.shallow_rca.model_dump()
         )
 
-        db_incident.affected_items = [AffectedItem(
-            **item.model_dump()
-        ) for item in incident_in.affected_items]
+        db_incident.affected_items = [
+            AffectedItem(
+                **item.model_dump()
+            ) for item in incident_in.affected_items
+        ]
 
-        db_incident.timeline_events = [TimelineEvent(
-            **t.model_dump()
-        ) for t in incident_in.timeline_events]
+        db_incident.timeline_events = [
+            TimelineEvent(
+                **t.model_dump()
+            ) for t in incident_in.timeline_events
+        ]
 
-        db_incident.communication_logs = [CommunicationLog(
-            **c.model_dump()
-        ) for c in incident_in.communication_logs]
+        db_incident.communication_logs = [
+            CommunicationLog(
+                **c.model_dump()
+            ) for c in incident_in.communication_logs
+        ]
 
         self.db.add(db_incident)
         # We flush to send changes to the DB and get IDs,
@@ -186,8 +192,12 @@ class CrudIncident:
     async def count_incidents(
         self,
         *,
-        statuses: Optional[List[IncidentStatusEnum]] = None,
-        severities: Optional[List[SeverityLevelEnum]] = None,
+        statuses: Optional[
+            List[IncidentStatusEnum]
+        ] = None,
+        severities: Optional[
+            List[SeverityLevelEnum]
+        ] = None,
         commander_id: Optional[UUID] = None
     ) -> int:
 
@@ -198,13 +208,19 @@ class CrudIncident:
         conditions = []
 
         if statuses:
-            conditions.append(IncidentProfile.status.in_(statuses))
+            conditions.append(
+                IncidentProfile.status.in_(statuses)
+            )
 
         if severities:
-            conditions.append(IncidentProfile.severity.in_(severities))
+            conditions.append(
+                IncidentProfile.severity.in_(severities)
+            )
 
         if commander_id:
-            conditions.append(IncidentProfile.commander_id == commander_id)
+            conditions.append(
+                IncidentProfile.commander_id == commander_id
+            )
 
         if conditions:
             statement = statement.where(and_(*conditions))
@@ -278,7 +294,9 @@ class CrudIncident:
                 exclude_unset=True
             ).items():
                 setattr(
-                    db_incident.resolution_mitigation, field, value
+                    db_incident.resolution_mitigation,
+                    field,
+                    value
                 )
         else:
             db_incident.resolution_mitigation = ResolutionMitigation(
@@ -313,7 +331,9 @@ class CrudIncident:
         new_log: CommunicationLog
     ) -> Incident:
 
-        incident.communication_logs.append(new_log)
+        incident.communication_logs.append(
+            new_log
+        )
 
         self.db.add(incident)
         await self.db.flush()
@@ -368,6 +388,9 @@ class CrudIncident:
         statement = select(Incident).where(
             Incident.alert_fingerprint == fingerprint
         )
-        result = await self.db_session.execute(statement)
+
+        result = await self.db_session.execute(
+            statement
+        )
 
         return result.scalar_one_or_none()

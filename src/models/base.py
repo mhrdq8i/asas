@@ -10,6 +10,7 @@ class BaseEntity(SQLModel):
     """
     It provides common fields for other table models.
     """
+
     id: Annotated[
         UUID,
         Field(
@@ -19,10 +20,13 @@ class BaseEntity(SQLModel):
             nullable=False
         )
     ]
+
     created_at: Annotated[
         datetime,
         Field(
-            default_factory=lambda: datetime.now(timezone.utc),
+            default_factory=lambda: datetime.now(
+                timezone.utc
+            ),
             # This is for Pydantic validation
             nullable=False,
             # Specify SQLAlchemy type
@@ -33,10 +37,13 @@ class BaseEntity(SQLModel):
                 "nullable": False
             }
         )]
+
     updated_at: Annotated[
         datetime,
         Field(
-            default_factory=lambda: datetime.now(timezone.utc),
+            default_factory=lambda: datetime.now(
+                timezone.utc
+            ),
             # This is for Pydantic validation
             nullable=False,
             # Specify SQLAlchemy type

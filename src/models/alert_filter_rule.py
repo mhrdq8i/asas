@@ -14,7 +14,10 @@ class AlertFilterRule(BaseEntity, table=True):
             max_length=255,
             nullable=False,
             unique=True,
-            description="A unique, human-readable name for the rule."
+            description=(
+                "A unique, "
+                "human-readable name for the rule."
+            )
         )
     ]
 
@@ -23,7 +26,10 @@ class AlertFilterRule(BaseEntity, table=True):
         Field(
             max_length=512,
             nullable=True,
-            description="A brief description of what the rule does."
+            description=(
+                "A brief description of "
+                "what the rule does."
+            )
         )
     ]
 
@@ -33,8 +39,10 @@ class AlertFilterRule(BaseEntity, table=True):
             max_length=100,
             nullable=False,
             description=(
-                "The field in the alert payload to check "
-                "(e.g., 'labels.severity', 'annotations.summary')."
+                "The field in the alert "
+                "payload to check "
+                "(e.g., 'labels.severity', "
+                "'annotations.summary')."
             )
         )
     ]
@@ -76,8 +84,10 @@ class AlertFilterRule(BaseEntity, table=True):
             default=False,
             nullable=False,
             description=(
-                "If true, an alert matching this rule will be EXCLUDED, "
-                "even if it matches other inclusion rules."
+                "If true, an alert matching "
+                "this rule will be EXCLUDED, "
+                "even if it matches other "
+                "inclusion rules."
             )
         )
     ]

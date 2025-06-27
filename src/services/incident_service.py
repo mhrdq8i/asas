@@ -24,7 +24,9 @@ from src.api.v1.schemas.incident_schemas import (
     CommunicationLogCreate,
     ResolutionMitigationCreate,
 )
-from src.api.v1.schemas.common_schemas import PaginatedResponse
+from src.api.v1.schemas.common_schemas import (
+    PaginatedResponse
+)
 from src.exceptions.common_exceptions import (
     InvalidOperationException,
 )
@@ -180,20 +182,25 @@ class IncidentService:
                 raise InvalidOperationException(
                     detail=(
                         f"User '{commander.username}' "
-                        "is not designated as an Incident Commander."
+                        "is not designated as an "
+                        "Incident Commander."
                     )
                 )
 
         creation_event = TimelineEventCreate(
-            time_utc=datetime.now(timezone.utc),
+            time_utc=datetime.now(
+                timezone.utc
+            ),
             event_description=(
                 "Incident created by "
                 f"{current_user.username}"
             ),
             owner_user_id=current_user.id,
         )
+
         incident_in.timeline_events.insert(
-            0, creation_event
+            0,
+            creation_event
         )
 
         new_incident = await self.crud_incident.create_incident(
@@ -201,7 +208,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(new_incident)
+        await self.db_session.refresh(
+            new_incident
+        )
 
         # After successfully creating the incident,
         # trigger the notification task in the background.
@@ -212,7 +221,8 @@ class IncidentService:
             )
 
             logger.info(
-                f"Notification task queued for incident ID: {new_incident.id}"
+                "Notification task queued for incident ID: "
+                f"{new_incident.id}"
             )
 
         except Exception as e:
@@ -247,9 +257,11 @@ class IncidentService:
         Updates an incident's profile
         (status, severity, etc.).
         """
+
         incident = await self.get_incident_by_id(
             incident_id=incident_id
         )
+
         await self._check_permission(
             incident=incident,
             user=current_user
@@ -261,18 +273,24 @@ class IncidentService:
 
         # Business logic for status transitions
         old_status = incident.profile.status
-        if 'status' in update_dict and old_status != update_dict['status']:
+
+        if 'status' in update_dict and old_status != update_dict[
+            'status'
+        ]:
             if old_status == IncidentStatusEnum.RESOLVED:
                 raise InvalidStatusTransitionException(
                     from_status=old_status,
-                    to_status=update_dict['status']
+                    to_status=update_dict[
+                        'status'
+                    ]
                 )
 
         elif old_status == IncidentStatusEnum.RESOLVED and len(
             update_dict
         ) > 0:
             raise IncidentAlreadyResolvedException(
-                "Cannot update profile details of a resolved incident."
+                "Cannot update profile details "
+                "of a resolved incident."
             )
 
         updated_incident = await self.crud_incident.update_incident_profile(
@@ -281,7 +299,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
@@ -317,7 +337,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
@@ -328,8 +350,15 @@ class IncidentService:
         update_data: ShallowRCAUpdate,
         current_user: User
     ) -> Incident:
-        incident = await self.get_incident_by_id(incident_id=incident_id)
-        await self._check_permission(incident=incident, user=current_user)
+
+        incident = await self.get_incident_by_id(
+            incident_id=incident_id
+        )
+
+        await self._check_permission(
+            incident=incident,
+            user=current_user
+        )
 
         if incident.profile.status == IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
@@ -346,7 +375,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
@@ -388,7 +419,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
@@ -426,7 +459,9 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
@@ -460,15 +495,17 @@ class IncidentService:
         )
 
         await self.db_session.commit()
-        await self.db_session.refresh(updated_incident)
+        await self.db_session.refresh(
+            updated_incident
+        )
 
         return updated_incident
 
     async def delete_incident(
-            self,
-            *,
-            incident_id: UUID,
-            current_user: User
+        self,
+        *,
+        incident_id: UUID,
+        current_user: User
     ) -> None:
 
         if not current_user.is_superuser:
@@ -484,7 +521,7 @@ class IncidentService:
             raise InvalidOperationException(
                 "Cannot delete an incident that "
                 "is not in 'Resolved' status. "
-                f"Current status is "
+                "Current status is "
                 f"'{incident_to_delete.profile.status.value}'."
             )
 

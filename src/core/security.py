@@ -44,7 +44,8 @@ def verify_password(
 
     except Exception:
         logger.warning(
-            "Password verification failed with an unexpected error.",
+            "Password verification failed "
+            "with an unexpected error.",
             exc_info=True
         )
 
@@ -54,6 +55,7 @@ def verify_password(
 def get_password_hash(
         password: str
 ) -> str:
+
     return password_hasher.hash(
         password.encode('utf-8')
     )
@@ -79,6 +81,7 @@ def create_access_token(
 
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
+
     else:
         expire = datetime.now(timezone.utc) + timedelta(
             minutes=default_expiry_minutes
@@ -86,13 +89,16 @@ def create_access_token(
 
     if isinstance(subject, dict):
         to_encode = subject.copy()
+
     else:
         to_encode = {"sub": str(subject)}
 
     to_encode["exp"] = expire
 
     encoded_jwt = jwt.encode(
-        to_encode, SECRET_KEY, algorithm=ALGORITHM
+        to_encode,
+        SECRET_KEY,
+        algorithm=ALGORITHM
     )
 
     return encoded_jwt
@@ -103,20 +109,27 @@ def decode_token(token: str) -> dict | None:
     Decodes a JWT token.
     Provides specific error logging.
     """
+
     try:
         payload = jwt.decode(
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
+
         logger.debug(
-            f"Token decoded successfully for subject {payload.get('sub')}"
+            "Token decoded successfully for subject "
+            f"{payload.get('sub')}"
         )
 
         return payload
 
     except ExpiredSignatureError:
-        logger.warning("Token decoding failed: Token has expired.")
+        logger.warning(
+            "Token decoding failed: "
+            "Token has expired."
+        )
+
         return None
 
     except JWTError as e:
@@ -131,7 +144,8 @@ def decode_token(token: str) -> dict | None:
 
     except Exception:
         logger.error(
-            "An unexpected error occurred during token decoding.",
+            "An unexpected error occurred "
+            "during token decoding.",
             exc_info=True
         )
 

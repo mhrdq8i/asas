@@ -92,7 +92,9 @@ class CrudUser:
         skip: int = 0,
         limit: int = 100
     ) -> List[User]:
-        """Retrieve a list of users with pagination."""
+        """
+        Retrieve a list of users with pagination.
+        """
 
         statement = select(User).offset(
             skip

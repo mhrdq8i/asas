@@ -23,7 +23,10 @@ class NotificationService:
         """
         pass
 
-    async def send_incident_creation_email(self, incident: Incident):
+    async def send_incident_creation_email(
+        self,
+        incident: Incident
+    ):
         """
         Formats and sends an email notification
         about a newly created incident.
@@ -41,17 +44,20 @@ class NotificationService:
 
         recipients: List[str] = [
             email.strip() for email in recipients_str.split(
-                ',') if email.strip()
+                ','
+            ) if email.strip()
         ]
 
         if not recipients:
             logger.warning(
-                "No valid recipients found. Skipping email notification."
+                "No valid recipients found. "
+                "Skipping email notification."
             )
             return
 
         subject = (
-            f"New Incident [{incident.profile.severity.value}]: "
+            "New Incident "
+            f"[{incident.profile.severity.value}]: "
             f"{incident.profile.title}"
         )
 
@@ -87,8 +93,10 @@ class NotificationService:
         """
 
         logger.info(
-            "Attempting to send incident creation notification "
-            f"for incident {incident.id} to: {recipients}"
+            "Attempting to send incident "
+            "creation notification "
+            f"for incident {incident.id} "
+            f"to: {recipients}"
         )
 
         for recipient in recipients:
@@ -108,6 +116,7 @@ class NotificationService:
                 )
 
         logger.info(
-            "Finished sending incident creation notifications "
+            "Finished sending incident "
+            "creation notifications "
             f"for incident {incident.id}."
         )

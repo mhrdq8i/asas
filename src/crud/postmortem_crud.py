@@ -1,17 +1,43 @@
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 from sqlalchemy.orm import selectinload
 
-from src.models.postmortem import PostMortem
+from src.models.postmortem import (
+    PostMortem
+)
 
 
 class CrudPostmortem:
 
     def __init__(self, db_session: AsyncSession):
         self.db: AsyncSession = db_session
+
+    async def get_all_postmortems(
+        self,
+        *,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[PostMortem]:
+        """
+        Retrieve a list of users with pagination.
+        """
+
+        statement = select(
+            PostMortem
+        ).options(
+            selectinload(PostMortem.contributing_factors),
+            selectinload(PostMortem.action_items),
+            selectinload(PostMortem.approvals)
+        )
+
+        result = await self.db.exec(statement)
+
+        return result.all()
 
     async def get_postmortem_by_id(
         self,

@@ -8,7 +8,9 @@ from src.exceptions.common_exceptions import (
 )
 
 
-class PostMortemNotFoundException(ResourceNotFoundException):
+class PostMortemNotFoundException(
+    ResourceNotFoundException
+):
     """
     Raised specifically when a post-mortem is not found.
     """
@@ -20,7 +22,9 @@ class PostMortemNotFoundException(ResourceNotFoundException):
         )
 
 
-class PostMortemAlreadyExistsException(DuplicateResourceException):
+class PostMortemAlreadyExistsException(
+    DuplicateResourceException
+):
     """
     Raised when attempting to create a post-mortem
     for an incident that already has one.
@@ -34,7 +38,9 @@ class PostMortemAlreadyExistsException(DuplicateResourceException):
         super().__init__(detail=detail)
 
 
-class IncidentNotResolvedException(InvalidOperationException):
+class IncidentNotResolvedException(
+    InvalidOperationException
+):
     """
     Raised when trying to create a post-mortem
     for an incident that is not yet resolved.

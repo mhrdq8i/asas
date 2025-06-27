@@ -32,32 +32,44 @@ AsyncSessionLocal = sessionmaker(
 
 async def init_db():
 
-    logger.info("Attempting to initialize database and create tables.")
+    logger.info(
+        "Attempting to initialize database and create tables."
+    )
 
     try:
-        known_models = list(SQLModel.metadata.tables.keys())
+        known_models = list(
+            SQLModel.metadata.tables.keys()
+        )
 
         if not known_models:
             logger.critical(
-                "SQLModel.metadata is empty! Models might not have been "
-                "imported correctly. Ensure 'src.models' is imported."
+                "SQLModel.metadata is empty! "
+                "Models might not have been "
+                "imported correctly. "
+                "Ensure 'src.models' is imported."
             )
+
             return
 
-        logger.debug(f"Models known by SQLModel: {known_models}")
+        logger.debug(
+            f"Models known by SQLModel: {known_models}"
+        )
 
         async with engine.begin() as conn:
             await conn.run_sync(
                 SQLModel.metadata.create_all
             )
 
-        logger.info("Database tables checked/created successfully.")
+        logger.info(
+            "Database tables checked/created successfully."
+        )
 
     except Exception:
         logger.critical(
             "Failed to create database tables.",
             exc_info=True
         )
+
         raise
 
 

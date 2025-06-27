@@ -3,29 +3,50 @@ from asyncio import run as async_run
 
 import httpx
 
-from src.core.celery import celery_app
-from src.core.config import settings
-from src.database.session import AsyncSessionLocal
-from src.services.alert_service import AlertService
+from src.core.celery import (
+    celery_app
+)
+from src.core.config import (
+    settings
+)
+from src.database.session import (
+    AsyncSessionLocal
+)
+from src.services.alert_service import (
+    AlertService
+)
 
 
 logger = getLogger(__name__)
 
 
-@celery_app.task(name="tasks.fetch_and_process_alerts")
+@celery_app.task(
+    name="tasks.fetch_and_process_alerts"
+)
 def fetch_and_process_alerts():
     """
     A Celery task to fetch alerts from
     Prometheus AlertManager and process them.
-    This is a synchronous wrapper for the async implementation.
+    This is a synchronous wrapper for
+    the async implementation.
     """
 
-    logger.info("Starting task: fetch_and_process_alerts.")
+    logger.info(
+        "Starting task: "
+        "fetch_and_process_alerts."
+    )
 
     try:
-        # Run the asynchronous function to perform the actual work
-        async_run(_fetch_and_process_alerts_async())
-        logger.info("Finished task: fetch_and_process_alerts.")
+        # Run the asynchronous function
+        #  to perform the actual work
+        async_run(
+            _fetch_and_process_alerts_async()
+        )
+
+        logger.info(
+            "Finished task: "
+            "fetch_and_process_alerts."
+        )
 
     except Exception as e:
         logger.error(
@@ -46,12 +67,15 @@ async def _fetch_and_process_alerts_async():
 
     if not alerts_url:
         logger.warning(
-            "PROMETHEUS_API_URL is not set. Skipping alert fetching."
+            "PROMETHEUS_API_URL is not set. "
+            "Skipping alert fetching."
         )
         return
 
     try:
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(
+            timeout=30
+        ) as client:
             # The AlertManager API endpoint for
             # alerts is typically /api/v2/alerts
             # The user's .env example has /api/v1/alerts,
@@ -71,33 +95,48 @@ async def _fetch_and_process_alerts_async():
             # Assuming the response is a list of alerts.
             # Adjust if your structure differs.
             alerts = alerts_data if isinstance(
-                alerts_data, list
-            ) else alerts_data.get('data', {}).get('alerts', [])
+                alerts_data,
+                list
+            ) else alerts_data.get(
+                'data', {}
+            ).get(
+                'alerts', []
+            )
 
             if alerts:
                 logger.info(
-                    f"Fetched {len(alerts)} alerts from AlertManager."
+                    f"Fetched {len(alerts)} "
+                    "alerts from AlertManager."
                 )
 
                 db_session = AsyncSessionLocal()
 
                 try:
-                    alert_service = AlertService(db_session)
-                    await alert_service.process_alerts(alerts)
+                    alert_service = AlertService(
+                        db_session
+                    )
+                    await alert_service.process_alerts(
+                        alerts
+                    )
 
                 finally:
                     await db_session.close()
 
             else:
-                logger.info("No active alerts fetched from AlertManager.")
+                logger.info(
+                    "No active alerts fetched from AlertManager."
+                )
 
     except httpx.RequestError as e:
         logger.error(
-            f"Could not fetch alerts from AlertManager at {alerts_url}: {e}"
+            "Could not fetch alerts "
+            "from AlertManager at "
+            f"{alerts_url}: {e}"
         )
 
     except Exception as e:
         logger.error(
-            f"An unexpected error occurred while processing alerts: {e}",
+            "An unexpected error occurred "
+            f"while processing alerts: {e}",
             exc_info=True
         )

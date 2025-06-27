@@ -19,7 +19,10 @@ class JsonFormatter(Formatter):
 
     def format(self, record: LogRecord) -> str:
         log_record = {
-            "timestamp": self.formatTime(record, self.datefmt),
+            "timestamp": self.formatTime(
+                record,
+                self.datefmt
+            ),
             "level": record.levelname,
             "name": record.name,
             "message": record.getMessage(),
@@ -29,7 +32,9 @@ class JsonFormatter(Formatter):
 
         # Include exception info if available
         if record.exc_info:
-            log_record["exc_info"] = self.formatException(
+            log_record[
+                "exc_info"
+            ] = self.formatException(
                 record.exc_info
             )
 
@@ -45,9 +50,12 @@ class JsonFormatter(Formatter):
 
 def setup_logging():
     """
-    Sets up the application's logging configuration using dictConfig.
-    Logs will be output in JSON format to the console.
+    Sets up the application's logging
+    configuration using dictConfig.
+    Logs will be output in JSON
+    format to the console.
     """
+
     log_level = settings.LOG_LEVEL.upper()
 
     logging_config: Dict[str, Any] = {
@@ -122,6 +130,7 @@ def setup_logging():
     }
 
     dictConfig(logging_config)
+
     getLogger(__name__).info(
         "Logging configured successfully."
     )

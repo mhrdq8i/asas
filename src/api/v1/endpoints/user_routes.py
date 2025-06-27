@@ -14,34 +14,46 @@ from src.api.v1.schemas.user_schemas import (
     UserUpdate,
     UserUpdatePassword,
 )
-from src.dependencies.service_deps import get_user_service
+from src.dependencies.service_deps import (
+    get_user_service
+)
 from src.dependencies.auth_deps import (
     get_current_active_user,
     get_current_active_superuser,
 )
-from src.services.user_service import UserService
-from src.models.user import User as UserModel
-from src.exceptions.base_exceptions import AppException
+from src.services.user_service import (
+    UserService
+)
+from src.models.user import (
+    User as UserModel
+)
+from src.exceptions.base_exceptions import (
+    AppException
+)
 
-# ==============================================================================
+# ===================
 # Router Definitions
-# ==============================================================================
+# ===================
 
-# Public user router (for registration and self-management)
+# Public user router
+# (for registration and self-management)
 user_router = APIRouter(
     prefix="/users",
 )
 
-# Admin router (for managing all users, requires superuser privileges)
+# Admin router
+# (for managing all users, requires superuser privileges)
 admin_router = APIRouter(
     prefix="/admin/users",
-    dependencies=[Depends(get_current_active_superuser)]
+    dependencies=[
+        Depends(get_current_active_superuser)
+    ]
 )
 
 
-# ==============================================================================
+# ======================
 # Public User Endpoints
-# ==============================================================================
+# ======================
 
 
 @user_router.post(
@@ -52,8 +64,11 @@ admin_router = APIRouter(
 )
 async def register_new_user(
     user_in: UserCreate,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
+) -> UserRead:
     """
     Create a new user account.
     - Username and email must be unique.
@@ -61,7 +76,9 @@ async def register_new_user(
     """
 
     try:
-        created_user = await user_service.register_user(user_in=user_in)
+        created_user = await user_service.register_user(
+            user_in=user_in
+        )
 
         return created_user
 
@@ -78,11 +95,16 @@ async def register_new_user(
     summary="Get Current User's Profile"
 )
 async def read_current_user_me(
-    current_user: Annotated[UserModel, Depends(get_current_active_user)]
-):
+    current_user: Annotated[
+        UserModel,
+        Depends(get_current_active_user)
+    ]
+) -> UserRead:
     """
-    Get all profile information for the currently authenticated user.
+    Get all profile information for
+    the currently authenticated user.
     """
+
     return current_user
 
 
@@ -95,18 +117,25 @@ async def update_current_user_me(
     user_update_in: UserUpdate,
     current_user: Annotated[UserModel, Depends(get_current_active_user)],
     user_service: Annotated[UserService, Depends(get_user_service)],
-):
+) -> UserRead:
     """
-    Update the profile information for the currently authenticated user.
+    Update the profile information for
+    the currently authenticated user.
     """
+
     try:
         updated_user = await user_service.update_user_profile(
-            current_user=current_user, user_in=user_update_in
+            current_user=current_user,
+            user_in=user_update_in
         )
+
         return updated_user
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
 @user_router.post(
@@ -116,20 +145,33 @@ async def update_current_user_me(
 )
 async def change_current_user_password(
     password_in: UserUpdatePassword,
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
+    current_user: Annotated[
+        UserModel,
+        Depends(get_current_active_user)
+    ],
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
+) -> UserRead:
     """
-    Change the password for the currently authenticated user.
+    Change the password for the
+    currently authenticated user.
     """
+
     try:
         updated_user = await user_service.change_password(
-            current_user=current_user, password_in=password_in
+            current_user=current_user,
+            password_in=password_in
         )
+
         return updated_user
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
 @user_router.get(
@@ -138,22 +180,31 @@ async def change_current_user_password(
     summary="List All Incident Commanders"
 )
 async def list_commanders(
-    user_service: Annotated[UserService, Depends(get_user_service)]
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
+) -> List[UserRead]:
     """
     Get a list of all active users designated as Incident Commanders.
     This is useful for populating dropdowns in the frontend.
     """
+
     try:
         commanders = await user_service.get_commander_list()
+
         return commanders
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
-# ==============================================================================
+
+# ================
 # Admin Endpoints
-# ==============================================================================
+# ================
 
 
 @admin_router.get(
@@ -162,19 +213,31 @@ async def list_commanders(
     summary="List All Users (Admin)"
 )
 async def read_all_users_admin(
-    user_service: Annotated[UserService, Depends(get_user_service)],
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ],
     skip: int = 0,
     limit: int = 100
-):
+) -> List[UserRead]:
     """
-    Get a list of all users with pagination. Requires superuser privileges.
+    Get a list of all users with pagination.
+    Requires superuser privileges.
     """
+
     try:
-        users = await user_service.get_users_list(skip=skip, limit=limit)
+        users = await user_service.get_users_list(
+            skip=skip,
+            limit=limit
+        )
+
         return users
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
 @admin_router.get(
@@ -184,17 +247,27 @@ async def read_all_users_admin(
 )
 async def read_user_by_id_admin(
     user_id_to_get: UUID,
-    user_service: Annotated[UserService, Depends(get_user_service)]
-):
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
+) -> UserRead:
     """
-    Get a specific user by their ID. Requires superuser privileges.
+    Get a specific user by their ID.
+    Requires superuser privileges.
     """
+
     try:
-        user = await user_service.get_user_by_id(user_id=user_id_to_get)
+        user = await user_service.get_user_by_id(
+            user_id=user_id_to_get
+        )
         return user
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
 
 
 @admin_router.delete(
@@ -205,21 +278,32 @@ async def read_user_by_id_admin(
 async def soft_delete_user_by_admin(
     user_id_to_delete: UUID,
     performing_admin_user: Annotated[
-        UserModel, Depends(get_current_active_superuser)
+        UserModel,
+        Depends(
+            get_current_active_superuser
+        )
     ],
-    user_service: Annotated[UserService, Depends(get_user_service)]
+    user_service: Annotated[
+        UserService,
+        Depends(get_user_service)
+    ]
 ):
     """
     Soft delete a user. Requires superuser privileges.
     This action is irreversible through the API.
     Cannot delete active incident commanders.
     """
+
     try:
         deleted_user = await user_service.soft_delete_user(
             user_to_delete_id=user_id_to_delete,
             performing_user=performing_admin_user
         )
+
         return deleted_user
 
     except AppException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
+        raise HTTPException(
+            status_code=e.status_code,
+            detail=e.detail
+        )
