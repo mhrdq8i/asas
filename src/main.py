@@ -139,7 +139,7 @@ app.include_router(
 
 # Alert Filter Rules
 app.include_router(
-    afr_route_v1.rules_router,
+    router=afr_route_v1.rules_router,
     prefix="/api/v1",
     tags=[
         "V1 - Admin - Alert Filter Rules"

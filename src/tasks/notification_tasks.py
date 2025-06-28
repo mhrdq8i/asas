@@ -92,6 +92,7 @@ def send_incident_notification_task(
                 incident_id
             )
         )
+
     except Exception as e:
         logger.error(
             "Error in notification task "

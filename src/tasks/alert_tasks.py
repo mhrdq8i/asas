@@ -1,142 +1,62 @@
-from logging import getLogger
-from asyncio import run as async_run
-
-import httpx
-
-from src.core.celery import (
-    celery_app
-)
-from src.core.config import (
-    settings
-)
-from src.database.session import (
-    AsyncSessionLocal
-)
-from src.services.alert_service import (
-    AlertService
-)
+import logging
+from src.core.celery import celery_app
+from src.services.alert_service import AlertService
+from src.database.session import AsyncSession
 
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-@celery_app.task(
-    name="tasks.fetch_and_process_alerts"
-)
+@celery_app.task(name="tasks.fetch_and_process_alerts")
 def fetch_and_process_alerts():
     """
-    A Celery task to fetch alerts from
-    Prometheus AlertManager and process them.
-    This is a synchronous wrapper for
-    the async implementation.
+    A periodic Celery task that fetches
+    alerts from Prometheus Alertmanager
+    and processes them to create
+    incidents if necessary.
     """
+    print("==================================================")
+    logger.info("Starting the scheduled alert processing task.")
 
-    logger.info(
-        "Starting task: "
-        "fetch_and_process_alerts."
-    )
-
+    db_session = None
     try:
-        # Run the asynchronous function
-        #  to perform the actual work
-        async_run(
-            _fetch_and_process_alerts_async()
-        )
+        # Initialize a new database session for this task.
+        db_session = AsyncSession()
+        alert_service = AlertService(db_session)
+        logger.info(
+            "Successfully initialized database session and alert service.")
+
+        # Fetch active alerts from the configured Alertmanager endpoint.
+        logger.info("Fetching alerts from Alertmanager...")
+        active_alerts = alert_service.fetch_alerts_from_prometheus()
+
+        if not active_alerts:
+            logger.info("No active alerts found. Task finished.")
+            print("==================================================")
+            return "Task completed: No alerts to process."
 
         logger.info(
-            "Finished task: "
-            "fetch_and_process_alerts."
-        )
+            f"Successfully fetched {len(active_alerts)} active alert(s).")
+
+        # Hand over the alerts to the service layer for processing.
+        # This includes filtering and incident creation logic.
+        logger.info(
+            "Handing over alerts to the alert_service for processing...")
+        alert_service.process_alerts(active_alerts)
+
+        logger.info("Alert processing completed successfully.")
 
     except Exception as e:
         logger.error(
-            "An error occurred during the execution of "
-            f"fetch_and_process_alerts task: {e}",
+            f"An unexpected error occurred during the task: {e}",
             exc_info=True
         )
 
+    finally:
+        # Always close the database session to release the connection.
+        if db_session:
+            db_session.close()
+            logger.info("Database session closed.")
+        print("==================================================\n")
 
-async def _fetch_and_process_alerts_async():
-    """
-    Asynchronously fetches alerts,
-    processes them,
-    and handles database sessions.
-    """
-
-    alerts_url = settings.PROMETHEUS_API_URL
-
-    if not alerts_url:
-        logger.warning(
-            "PROMETHEUS_API_URL is not set. "
-            "Skipping alert fetching."
-        )
-        return
-
-    try:
-        async with httpx.AsyncClient(
-            timeout=30
-        ) as client:
-            # The AlertManager API endpoint for
-            # alerts is typically /api/v2/alerts
-            # The user's .env example has /api/v1/alerts,
-            # which is for Prometheus itself.
-            # Let's assume the user knows their endpoint.
-
-            response = await client.get(alerts_url)
-
-            # Raise an exception for bad
-            # status codes (4xx or 5xx)
-            response.raise_for_status()
-
-            alerts_data = response.json()
-
-            # The structure of AlertManager response
-            #  can be a list directly, or nested.
-            # Assuming the response is a list of alerts.
-            # Adjust if your structure differs.
-            alerts = alerts_data if isinstance(
-                alerts_data,
-                list
-            ) else alerts_data.get(
-                'data', {}
-            ).get(
-                'alerts', []
-            )
-
-            if alerts:
-                logger.info(
-                    f"Fetched {len(alerts)} "
-                    "alerts from AlertManager."
-                )
-
-                db_session = AsyncSessionLocal()
-
-                try:
-                    alert_service = AlertService(
-                        db_session
-                    )
-                    await alert_service.process_alerts(
-                        alerts
-                    )
-
-                finally:
-                    await db_session.close()
-
-            else:
-                logger.info(
-                    "No active alerts fetched from AlertManager."
-                )
-
-    except httpx.RequestError as e:
-        logger.error(
-            "Could not fetch alerts "
-            "from AlertManager at "
-            f"{alerts_url}: {e}"
-        )
-
-    except Exception as e:
-        logger.error(
-            "An unexpected error occurred "
-            f"while processing alerts: {e}",
-            exc_info=True
-        )
+    return "Alert fetching and processing task finished."
