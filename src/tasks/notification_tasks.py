@@ -1,15 +1,11 @@
-from asyncio import run as async_run
-from logging import getLogger
 from uuid import UUID
-from src.core.celery import (
-    celery_app
-)
-from src.database.session import (
-    AsyncSessionLocal
-)
-from src.crud.incident_crud import (
-    CrudIncident
-)
+from logging import getLogger
+from asyncio import run as async_run
+
+from src.core.config import settings
+from src.core.celery import celery_app
+from src.database.session import AsyncSessionLocal
+from src.crud.incident_crud import CrudIncident
 from src.services.notification_service import (
     NotificationService
 )
@@ -19,97 +15,104 @@ logger = getLogger(__name__)
 
 
 async def _send_notification_async(
-        incident_id: str
+        incident_id_str: str
 ):
     """
-    The actual async logic for
-    sending the notification.
-    This helper function contains
-    all the await calls.
+    Asynchronous helper function to
+    perform the actual notification logic.
     """
 
-    session = AsyncSessionLocal()
+    logger.info(
+        "Starting async notification for "
+        f"incident: {incident_id_str}"
+    )
+
+    db_session = None
 
     try:
-        incident_crud = CrudIncident(
-            db_session=session
-        )
+        incident_id = UUID(incident_id_str)
 
-        notification_service = NotificationService()
+        db_session = AsyncSessionLocal()
 
-        # Fetch the full incident object using the CRUD layer
+        incident_crud = CrudIncident(db_session)
+
         incident = await incident_crud.get_incident_by_id(
-            incident_id=UUID(incident_id)
+            incident_id=incident_id
         )
 
         if not incident:
-            logger.warning(
-                f"Incident with ID {incident_id} "
-                "not found in notification task. "
-                "Aborting."
+            logger.error(
+                f"Incident with ID {incident_id_str} "
+                "not found for notification."
             )
 
             return
 
-        # Send the notification
-        await notification_service.send_incident_creation_email(
+        recipients = settings.get_notification_recipients()
+
+        if not recipients:
+            logger.warning(
+                "No notification recipients "
+                "configured. Skipping email."
+            )
+
+            return
+
+        notification_service = NotificationService()
+
+        await notification_service.send_incident_notification_email(
+            recipients=recipients,
             incident=incident
         )
 
+        logger.info(
+            "Successfully sent notification for "
+            "incident {incident_id_str}."
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error in notification task for incident "
+            f"{incident_id_str}: {e}",
+            exc_info=True
+        )
+
     finally:
-        # Ensure the session is always closed.
-        await session.close()
+        if db_session:
+            await db_session.close()
 
 
 @celery_app.task(
-    name="tasks.send_incident_notification",
-    bind=True,
-    max_retries=3
+    name="tasks.send_incident_notification"
 )
 def send_incident_notification_task(
-    self,
-    incident_id: str
+        incident_id_str: str
 ):
     """
-    Synchronous Celery task that wraps the async logic.
-    This pattern is compatible with all Celery workers,
-    including the default one,
-    and prevents event loop conflicts.
+    Synchronous Celery task entry point
+    for sending incident notifications.
+    Uses asyncio.run() for robust
+    execution of async code.
     """
 
     logger.info(
-        "Executing notification "
-        "task for incident_id: "
-        f"{incident_id} (Try "
-        f"{self.request.retries})"
+        "Received notification task for "
+        f"incident ID: {incident_id_str}"
     )
 
     try:
-        # Run the async helper function in
-        # a new event loop for each task
+        # Use asyncio.run() for consistency
+        # and robustness with --pool=solo
         async_run(
             _send_notification_async(
-                incident_id
+                incident_id_str
             )
         )
 
     except Exception as e:
         logger.error(
-            "Error in notification task "
-            f"for incident {incident_id}: {e}",
+            "Critical error in notification "
+            "task runner for incident "
+            f"{incident_id_str}: {e}",
             exc_info=True
         )
-
-        countdown_seconds = 60 * (
-            self.request.retries + 1
-        )
-
-        raise self.retry(
-            exc=e,
-            countdown=countdown_seconds
-        )
-
-    return (
-        "Notification task for incident "
-        f"{incident_id} completed."
-    )
