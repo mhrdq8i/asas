@@ -2,12 +2,17 @@ from uuid import UUID
 from typing import List, Optional
 
 from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 
-from src.models.alert_filter_rule import AlertFilterRule
+from src.models.alert_filter_rule import (
+    AlertFilterRule
+)
 
 
 class CrudAlertFilterRule:
+
     def __init__(self, db_session: AsyncSession):
         self.db = db_session
 
@@ -70,11 +75,17 @@ class CrudAlertFilterRule:
         self
     ) -> List[AlertFilterRule]:
 
-        statement = select(AlertFilterRule).where(
+        statement = select(
+            AlertFilterRule
+        ).where(
             AlertFilterRule.is_active == True
-        ).order_by(AlertFilterRule.rule_name)
+        ).order_by(
+            AlertFilterRule.rule_name
+        )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement
+        )
 
         return list(result.all())
 
@@ -85,13 +96,22 @@ class CrudAlertFilterRule:
         update_data: dict
     ) -> AlertFilterRule:
 
-        for field, value in update_data.items():
+        for (
+            field,
+            value
+        ) in update_data.items():
             if value is not None:
-                setattr(db_rule, field, value)
+                setattr(
+                    db_rule,
+                    field,
+                    value
+                )
 
         self.db.add(db_rule)
         await self.db.flush()
-        await self.db.refresh(db_rule)
+        await self.db.refresh(
+            db_rule
+        )
 
         return db_rule
 
