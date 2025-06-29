@@ -81,7 +81,8 @@ class NotificationService:
             <p><strong>Status:</strong> {incident.profile.status.value}</p>
             <p>
             <strong>Commander:</strong>
-            {incident.profile.commander.username if incident.profile.commander else 'N/A'}
+            {incident.profile.commander.username \
+             if incident.profile.commander else 'N/A'}
             </p>
             <hr>
             <h3>Summary:</h3>
@@ -101,7 +102,9 @@ class NotificationService:
 
         for recipient in recipients:
             try:
-                # CORRECTED: Pass the actual subject and html_content variables
+                # CORRECTED:
+                # Pass the actual subject and
+                # html_content variables
                 await send_email_async(
                     email_to=recipient,
                     subject=subject,

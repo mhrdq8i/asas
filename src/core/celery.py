@@ -10,7 +10,7 @@ celery_app = Celery(
     include=[
         "src.tasks.alert_tasks",
         "src.tasks.user_tasks",
-        "src.tasks.notification_tasks"
+        "src.tasks.incident_tasks",
     ],
 )
 
