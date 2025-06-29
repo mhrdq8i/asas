@@ -1,5 +1,5 @@
-import logging
-import httpx
+from logging import getLogger
+from httpx import AsyncClient, RequestError
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 
@@ -36,7 +36,8 @@ from src.services.incident_service import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
+
 SYSTEM_USER_USERNAME = "alert_manager"
 
 
@@ -61,7 +62,7 @@ class AlertService:
             return []
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with AsyncClient() as client:
                 response = await client.get(
                     api_url,
                     timeout=10.0
@@ -78,11 +79,9 @@ class AlertService:
 
                     return response_data.get('data', [])
 
-                # If the structure is unexpected,
-                # return it as is for debugging
                 return response_data
 
-        except httpx.RequestError as e:
+        except RequestError as e:
             logger.error(
                 f"Failed to fetch alerts from {api_url}: {e}"
             )
@@ -278,11 +277,15 @@ class AlertService:
             )
 
         except (KeyError, ValueError):
-            detected_at = datetime.now(timezone.utc)
+            detected_at = datetime.now(
+                timezone.utc
+            )
 
         incident_in = IncidentCreate(
 
-            alert_fingerprint=alert.get('fingerprint'),
+            alert_fingerprint=alert.get(
+                'fingerprint'
+            ),
 
             profile=IncidentProfileCreate(
                 title=f"[AUTO] {title}",
@@ -300,7 +303,9 @@ class AlertService:
             ),
 
             shallow_rca=ShallowRCACreate(
-                what_happened=f"Alert '{labels.get('alertname', 'N/A')}' fired.",
+                what_happened=(
+                    f"Alert '{labels.get('alertname', 'N/A')}' fired."
+                ),
                 why_it_happened="To be investigated.",
                 technical_causes="To be investigated.",
                 detection_mechanisms="Prometheus AlertManager"
