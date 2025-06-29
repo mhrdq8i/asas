@@ -1,118 +1,66 @@
+import asyncio
+import logging
 from uuid import UUID
-from logging import getLogger
-from asyncio import run as async_run
 
-from src.core.config import settings
-from src.core.celery import celery_app
+from celery import shared_task
+
 from src.database.session import AsyncSessionLocal
-from src.crud.incident_crud import CrudIncident
-from src.services.notification_service import (
-    NotificationService
-)
+from src.services.incident_service import IncidentService
+from src.services.notification_service import NotificationService
+from src.exceptions.incident_exceptions import IncidentNotFoundException
 
 
-logger = getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-async def _send_notification_async(
-        incident_id_str: str
-):
+@shared_task
+def send_incident_notification(incident_id: str):
     """
-    Asynchronous helper function to
-    perform the actual notification logic.
+    Celery task to send a notification for a new incident.
     """
+    # It's better to run async code in a managed event loop within a Celery task
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:  # 'RuntimeError: There is no current event loop...'
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
-    logger.info(
-        "Starting async notification for "
-        f"incident: {incident_id_str}"
-    )
+    loop.run_until_complete(_send_notification_async(incident_id))
 
-    db_session = None
 
+async def _send_notification_async(incident_id_str: str):
+    """
+    Asynchronous helper function to send the notification.
+    This is where the actual logic resides.
+    """
+    logger.info(f"Starting notification task for incident {incident_id_str}")
+    db = AsyncSessionLocal()
     try:
         incident_id = UUID(incident_id_str)
-
-        db_session = AsyncSessionLocal()
-
-        incident_crud = CrudIncident(db_session)
-
-        incident = await incident_crud.get_incident_by_id(
-            incident_id=incident_id
-        )
-
-        if not incident:
-            logger.error(
-                f"Incident with ID {incident_id_str} "
-                "not found for notification."
-            )
-
-            return
-
-        recipients = settings.get_notification_recipients()
-
-        if not recipients:
-            logger.warning(
-                "No notification recipients "
-                "configured. Skipping email."
-            )
-
-            return
-
+        incident_service = IncidentService(db)
         notification_service = NotificationService()
 
-        await notification_service.send_incident_notification_email(
-            recipients=recipients,
+        incident = await incident_service.get_incident_by_id(incident_id)
+        if not incident:
+            raise IncidentNotFoundException(
+                f"Incident with ID {incident_id_str} not found.")
+
+        # --- FIX: Removed the unexpected keyword argument 'recipients' ---
+        # The 'send_incident_creation_email' method gets recipients from settings internally.
+        await notification_service.send_incident_creation_email(
             incident=incident
         )
 
         logger.info(
-            "Successfully sent notification for "
-            "incident {incident_id_str}."
+            f"Successfully sent notification for incident {incident_id_str}."
         )
 
-    except Exception as e:
+    except IncidentNotFoundException as e:
         logger.error(
-            "Error in notification task for incident "
-            f"{incident_id_str}: {e}",
-            exc_info=True
-        )
-
+            f"Error in notification task for incident {incident_id_str}: {e}")
+    except Exception as e:
+        # Catching generic exceptions to log them properly
+        logger.error(
+            f"Error in notification task for incident {incident_id_str}: {e}", exc_info=True)
     finally:
-        if db_session:
-            await db_session.close()
-
-
-@celery_app.task(
-    name="tasks.send_incident_notification"
-)
-def send_incident_notification_task(
-        incident_id_str: str
-):
-    """
-    Synchronous Celery task entry point
-    for sending incident notifications.
-    Uses asyncio.run() for robust
-    execution of async code.
-    """
-
-    logger.info(
-        "Received notification task for "
-        f"incident ID: {incident_id_str}"
-    )
-
-    try:
-        # Use asyncio.run() for consistency
-        # and robustness with --pool=solo
-        async_run(
-            _send_notification_async(
-                incident_id_str
-            )
-        )
-
-    except Exception as e:
-        logger.error(
-            "Critical error in notification "
-            "task runner for incident "
-            f"{incident_id_str}: {e}",
-            exc_info=True
-        )
+        db.close()
