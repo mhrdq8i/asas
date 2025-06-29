@@ -3,13 +3,10 @@ from src.core.config import settings
 
 
 # Initialize Celery
-# The broker and backend are configured using environment variables
-# loaded into the `settings` object.
 celery_app = Celery(
     "incident_management_system",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    # IMPORTANT: We must include the module where our tasks are defined.
     include=[
         "src.tasks.alert_tasks",
         "src.tasks.user_tasks",
@@ -17,13 +14,14 @@ celery_app = Celery(
     ],
 )
 
-# Optional configuration, see the Celery docs.
+# Optional configuration.
 celery_app.conf.update(
     result_expires=3600,
 )
 
 # --- CRUCIAL PART FOR PERIODIC TASKS ---
-# This dictionary tells Celery Beat what tasks to run and when.
+# This dictionary tells Celery Beat
+# what tasks to run and when.
 celery_app.conf.beat_schedule = {
     # A descriptive name for the scheduled task
     'fetch-alerts-periodically': {

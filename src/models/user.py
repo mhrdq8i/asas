@@ -31,15 +31,6 @@ class User(BaseEntity, table=True):
         )
     ]
 
-    # Password reset fields
-    hashed_password: Annotated[
-        str,
-        Field(
-            nullable=False,
-            max_length=255
-        )
-    ]
-
     reset_token: Annotated[
         str | None,
         Field(
@@ -144,6 +135,15 @@ class User(BaseEntity, table=True):
             sa_column=Column(
                 DateTime(timezone=True)
             )
+        )
+    ]
+
+    # Password reset fields
+    hashed_password: Annotated[
+        str,
+        Field(
+            nullable=False,
+            max_length=255
         )
     ]
 

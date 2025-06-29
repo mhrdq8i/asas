@@ -216,7 +216,7 @@ class IncidentService:
         # trigger the notification task in the background.
         try:
             celery_app.send_task(
-                "tasks.send_incident_notification",
+                "src.tasks.notification_tasks",
                 args=[str(new_incident.id)],
             )
 
