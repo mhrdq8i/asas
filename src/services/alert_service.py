@@ -75,22 +75,28 @@ class AlertService:
                 if isinstance(
                     response_data,
                     dict
-                ) and response_data.get('status') == 'success':
+                ) and response_data.get(
+                    'status'
+                ) == 'success':
 
-                    return response_data.get('data', [])
+                    return response_data.get(
+                        'data', []
+                    )
 
                 return response_data
 
         except RequestError as e:
             logger.error(
-                f"Failed to fetch alerts from {api_url}: {e}"
+                "Failed to fetch alerts "
+                f"from {api_url}: {e}"
             )
 
             return []
 
         except Exception as e:
             logger.error(
-                f"Error parsing JSON from Alertmanager: {e}"
+                "Error parsing JSON "
+                f"from Alertmanager: {e}"
             )
 
             return []
@@ -139,10 +145,12 @@ class AlertService:
                     self.incident_crud.get_incident_by_fingerprint(
                         fingerprint
                     ):
+
                 logger.info(
                     "Duplicate incident for fingerprint "
                     f"{fingerprint}. Skipping."
                 )
+
                 continue
 
             if await self._should_create_incident(
@@ -153,6 +161,7 @@ class AlertService:
                     alert,
                     system_user
                 )
+
             else:
                 logger.info(
                     f"Alert with fingerprint {fingerprint} "
@@ -168,13 +177,17 @@ class AlertService:
         matched_inclusion = False
 
         for rule in rules:
-            if self._matches(alert, rule):
+            if self._matches(
+                alert,
+                rule
+            ):
                 if rule.is_exclusion_rule:
                     logger.info(
                         "Alert matched EXCLUSION rule "
                         f"'{rule.rule_name}'. "
                         "Will not create incident."
                     )
+
                     return False
 
                 matched_inclusion = True
@@ -186,12 +199,14 @@ class AlertService:
         alert: Dict[str, Any],
         rule: AlertFilterRule
     ) -> bool:
+
         def get_nested_value(
             data: Dict,
             key: str
         ) -> Optional[str]:
 
             keys = key.split('.')
+
             value = data
 
             for k in keys:
@@ -312,10 +327,11 @@ class AlertService:
             )
         )
 
-        new_incident = await self.incident_service.create_incident(
-            incident_in=incident_in,
-            current_user=system_user
-        )
+        new_incident = await \
+            self.incident_service.create_incident(
+                incident_in=incident_in,
+                current_user=system_user
+            )
 
         logger.info(
             "Successfully created incident "
