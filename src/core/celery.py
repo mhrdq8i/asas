@@ -1,6 +1,7 @@
 from celery import Celery
 from src.core.config import settings
 
+
 # Initialize Celery
 # The broker and backend are configured using environment variables
 # loaded into the `settings` object.

@@ -42,6 +42,12 @@ IncidentID: TypeAlias = UUID
 class Incident(BaseEntity, table=True):
     __tablename__ = "incidents"
 
+    alert_fingerprint: Optional[str] = Field(
+        default=None,
+        index=True,
+        nullable=True
+    )
+
     # --- Mandatory Relationships ---
 
     profile: "IncidentProfile" = Relationship(
@@ -291,6 +297,7 @@ class AffectedItem(BaseEntity, table=True):
         default="",
         sa_column=Column(Text),
     )
+
 
 # --- Impacts ---
 

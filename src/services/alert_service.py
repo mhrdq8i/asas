@@ -10,17 +10,17 @@ from sqlalchemy.ext.asyncio.session import (
 from src.core.config import settings
 from src.models.user import User
 from src.crud.user_crud import CrudUser
-from src.crud.alert_filter_rule_crud import (
-    CrudAlertFilterRule
-)
+from src.models.incident import Incident
 from src.crud.incident_crud import (
     CrudIncident
+)
+from src.crud.alert_filter_rule_crud import (
+    CrudAlertFilterRule
 )
 from src.models.alert_filter_rule import (
     AlertFilterRule,
     MatchTypeEnum
 )
-from src.models.incident import Incident
 from src.api.v1.schemas.incident_schemas import (
     IncidentCreate,
     IncidentProfileCreate,
@@ -37,17 +37,10 @@ from src.services.incident_service import (
 
 
 logger = logging.getLogger(__name__)
-
-# Define the username for the system account that creates incidents
 SYSTEM_USER_USERNAME = "alert_manager"
 
 
 class AlertService:
-    """
-    Service for fetching, processing,
-    and creating incidents from alerts.
-    """
-
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.rule_crud = CrudAlertFilterRule(db_session)
@@ -55,20 +48,16 @@ class AlertService:
         self.user_crud = CrudUser(db_session)
         self.incident_service = IncidentService(db_session)
 
-    async def fetch_alerts_from_prometheus(self) -> List[Dict[str, Any]]:
-        """
-        Fetches active alerts from
-        the Prometheus Alertmanager API.
-        """
+    async def fetch_alerts_from_prometheus(
+            self
+    ) -> List[Dict[str, Any]]:
 
         api_url = settings.PROMETHEUS_API_URL
 
         if not api_url:
             logger.error(
-                "PROMETHEUS_API_URL is not configured. "
-                "Cannot fetch alerts."
+                "PROMETHEUS_API_URL is not configured."
             )
-
             return []
 
         try:
@@ -77,8 +66,21 @@ class AlertService:
                     api_url,
                     timeout=10.0
                 )
+
                 response.raise_for_status()
-                return response.json()
+
+                response_data = response.json()
+
+                if isinstance(
+                    response_data,
+                    dict
+                ) and response_data.get('status') == 'success':
+
+                    return response_data.get('data', [])
+
+                # If the structure is unexpected,
+                # return it as is for debugging
+                return response_data
 
         except httpx.RequestError as e:
             logger.error(
@@ -87,21 +89,24 @@ class AlertService:
 
             return []
 
+        except Exception as e:
+            logger.error(
+                f"Error parsing JSON from Alertmanager: {e}"
+            )
+
+            return []
+
     async def process_alerts(
         self,
         alerts: List[Dict[str, Any]]
     ) -> None:
-        """
-        Processes a list of alerts,
-        filters them, and creates incidents.
-        """
 
         active_rules = await self.rule_crud.get_all_active_rules()
 
         if not active_rules:
             logger.warning(
-                "No active alert filter rules found. "
-                "Skipping alert processing."
+                "No active filter rules found. "
+                "Skipping processing."
             )
 
             return
@@ -112,21 +117,32 @@ class AlertService:
 
         if not system_user:
             logger.error(
-                f"CRITICAL: System user '{SYSTEM_USER_USERNAME}' "
-                "not found in the database. Cannot create incidents."
+                "CRITICAL: System user "
+                f"'{SYSTEM_USER_USERNAME}' not found. "
+                "Cannot create incidents."
             )
 
             return
 
         for alert in alerts:
+            # Ensure 'alert' is a
+            # dictionary before processing
+            if not isinstance(alert, dict):
+                logger.warning(
+                    "Skipping non-dictionary item "
+                    f"in alerts list: {alert}"
+                )
+                continue
+
             fingerprint = alert.get('fingerprint')
+
             if fingerprint and await \
                     self.incident_crud.get_incident_by_fingerprint(
                         fingerprint
                     ):
                 logger.info(
-                    f"Incident for fingerprint {fingerprint} "
-                    "already exists. Skipping."
+                    "Duplicate incident for fingerprint "
+                    f"{fingerprint}. Skipping."
                 )
                 continue
 
@@ -138,18 +154,19 @@ class AlertService:
                     alert,
                     system_user
                 )
+            else:
+                logger.info(
+                    f"Alert with fingerprint {fingerprint} "
+                    "did not match filters."
+                )
 
     async def _should_create_incident(
         self,
         alert: Dict[str, Any],
         rules: List[AlertFilterRule]
     ) -> bool:
-        """
-        Determines if an incident should be
-        created based on the defined rules.
-        """
 
-        matched_an_inclusion_rule = False
+        matched_inclusion = False
 
         for rule in rules:
             if self._matches(alert, rule):
@@ -157,32 +174,22 @@ class AlertService:
                     logger.info(
                         "Alert matched EXCLUSION rule "
                         f"'{rule.rule_name}'. "
-                        "Incident will NOT be created."
+                        "Will not create incident."
                     )
-
                     return False
 
-                else:
-                    logger.info(
-                        "Alert matched INCLUSION rule "
-                        f"'{rule.rule_name}'."
-                    )
-                    matched_an_inclusion_rule = True
+                matched_inclusion = True
 
-        return matched_an_inclusion_rule
+        return matched_inclusion
 
     def _matches(
         self,
         alert: Dict[str, Any],
         rule: AlertFilterRule
     ) -> bool:
-        """
-        Checks if an alert's field matches a rule's condition.
-        """
-
         def get_nested_value(
-                data: Dict,
-                key: str
+            data: Dict,
+            key: str
         ) -> Optional[str]:
 
             keys = key.split('.')
@@ -200,53 +207,44 @@ class AlertService:
 
             return str(value)
 
-        target_value_str = get_nested_value(
+        target_value = get_nested_value(
             alert,
             rule.target_field
         )
 
-        if target_value_str is None:
+        if target_value is None:
             return False
 
-        match_value = rule.match_value
-        match_type = rule.match_type
+        if rule.match_type == MatchTypeEnum.EQUALS:
+            return target_value == rule.match_value
 
-        if match_type == MatchTypeEnum.EQUALS:
-            return target_value_str == match_value
+        if rule.match_type == MatchTypeEnum.NOT_EQUALS:
+            return target_value != rule.match_value
 
-        if match_type == MatchTypeEnum.NOT_EQUALS:
-            return target_value_str != match_value
+        if rule.match_type == MatchTypeEnum.CONTAINS:
+            return rule.match_value in target_value
 
-        if match_type == MatchTypeEnum.CONTAINS:
-            return match_value in target_value_str
-
-        if match_type == MatchTypeEnum.NOT_CONTAINS:
-            return match_value not in target_value_str
+        if rule.match_type == MatchTypeEnum.NOT_CONTAINS:
+            return rule.match_value not in target_value
 
         return False
 
     async def _create_incident_from_alert(
-            self,
-            alert: Dict[str, Any],
-            system_user: User
+        self,
+        alert: Dict[str, Any],
+        system_user: User
     ) -> Incident:
-        """
-        Creates an incident record from an
-        alert using a dedicated system user.
-        """
-
-        logger.info(
-            "Creating incident from alert, "
-            "initiated by system user "
-            f"'{system_user.username}'."
-        )
 
         annotations = alert.get('annotations', {})
 
         labels = alert.get('labels', {})
 
-        title = annotations.get('summary', labels.get(
-            'alertname', 'Untitled Incident')
+        title = annotations.get(
+            'summary',
+            labels.get(
+                'alertname',
+                'Untitled Incident'
+            )
         )
 
         summary = annotations.get(
@@ -259,7 +257,7 @@ class AlertService:
             'critical'
         ).lower()
 
-        severity_mapping = {
+        severity_map = {
             "critical": SeverityLevelEnum.CRITICAL,
             "high": SeverityLevelEnum.HIGH,
             "medium": SeverityLevelEnum.MEDIUM,
@@ -267,40 +265,46 @@ class AlertService:
             "informational": SeverityLevelEnum.INFORMATIONAL,
         }
 
-        severity = severity_mapping.get(
+        severity = severity_map.get(
             severity_str,
             SeverityLevelEnum.CRITICAL
         )
 
         try:
             detected_at = datetime.fromisoformat(
-                alert['startsAt'].replace('Z', '+00:00')
+                alert[
+                    'startsAt'
+                ].replace('Z', '+00:00')
             )
 
         except (KeyError, ValueError):
             detected_at = datetime.now(timezone.utc)
 
         incident_in = IncidentCreate(
+
+            alert_fingerprint=alert.get('fingerprint'),
+
             profile=IncidentProfileCreate(
                 title=f"[AUTO] {title}",
                 summary=summary,
                 severity=severity,
                 status=IncidentStatusEnum.OPEN,
-                # The incident is created by the system user,
-                # and by default, assigned to itself as commander.
-                # This can be changed later or by an escalation policy.
                 commander_id=system_user.id,
                 is_auto_detected=True,
                 datetime_detected_utc=detected_at
             ),
-            impacts=ImpactsCreate(),
-            shallow_rca=ShallowRCACreate(
-                what_happened=(
-                    f"Alert '{labels.get('alertname', 'N/A')}' fired."
-                ),
-                detection_mechanisms="Prometheus AlertManager"
+
+            impacts=ImpactsCreate(
+                customer_impact="To be determined.",
+                business_impact="To be determined."
             ),
-            alert_fingerprint=alert.get('fingerprint')
+
+            shallow_rca=ShallowRCACreate(
+                what_happened=f"Alert '{labels.get('alertname', 'N/A')}' fired.",
+                why_it_happened="To be investigated.",
+                technical_causes="To be investigated.",
+                detection_mechanisms="Prometheus AlertManager"
+            )
         )
 
         new_incident = await self.incident_service.create_incident(
@@ -309,7 +313,9 @@ class AlertService:
         )
 
         logger.info(
-            f"Successfully created incident {new_incident.id} "
-            f"from alert fingerprint {alert.get('fingerprint')}."
+            "Successfully created incident "
+            f"{new_incident.id} for alert "
+            f"{alert.get('fingerprint')}."
         )
+
         return new_incident

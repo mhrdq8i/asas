@@ -374,23 +374,21 @@ class CrudIncident:
         return count > 0
 
     async def get_incident_by_fingerprint(
-        self,
-        fingerprint: str
+            self,
+            fingerprint: str
     ) -> Optional[Incident]:
         """
-        Get an incident by its alert
-        fingerprint to avoid duplicates.
-        """
+        Finds an incident by its alert_fingerprint.
 
-        if not fingerprint:
-            return None
+        This version uses the correct SQLAlchemy syntax to query a key
+        within a JSONB column using the '->>' operator, which extracts
+        a JSON object field as text.
+        """
 
         statement = select(Incident).where(
             Incident.alert_fingerprint == fingerprint
         )
 
-        result = await self.db_session.execute(
-            statement
-        )
+        result = await self.db.exec(statement)
 
-        return result.scalar_one_or_none()
+        return result.first()
