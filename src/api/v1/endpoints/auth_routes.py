@@ -135,7 +135,10 @@ async def reset_password(
         )
 
         return Msg(
-            message="Your password has been reset successfully."
+            message=(
+                "Your password has been "
+                "reset successfully."
+            )
         )
 
     except AppException as e:
@@ -161,8 +164,10 @@ async def request_new_email_verification(
     ]
 ) -> Msg:
     """
-    Requests a new email verification token for the current user.
-    The task is handled in the background by Celery.
+    Requests a new email verification
+    token for the current user.
+    The task is handled in the
+    background by Celery.
     """
 
     try:
@@ -191,9 +196,11 @@ async def verify_email(
     ],
 ) -> Msg:
     """
-    Verify a user's email address using the provided token.
+    Verify a user's email address
+    using the provided token.
     Upon successful verification,
-    a welcome email task is queued by the service.
+    a welcome email task is
+    queued by the service.
     """
 
     try:
@@ -202,7 +209,10 @@ async def verify_email(
         )
 
         return Msg(
-            message="Your email address has been successfully verified."
+            message=(
+                "Your email address has "
+                "been successfully verified."
+            )
         )
 
     except AppException as e:
