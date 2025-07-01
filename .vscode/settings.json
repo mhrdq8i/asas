@@ -3,6 +3,7 @@
     "alertname",
     "autoflush",
     "levelname",
+    "onupdate",
     "pwdlib",
     "redoc",
     "selectinload",

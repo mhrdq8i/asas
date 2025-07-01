@@ -36,6 +36,7 @@ from src.models.postmortem import (
     PostMortem
 )
 
+
 IncidentID: TypeAlias = UUID
 
 
@@ -148,7 +149,8 @@ class Incident(BaseEntity, table=True):
 
     @property
     def is_critical(self) -> bool:
-        return self.profile.severity == SeverityLevelEnum.CRITICAL
+        return self.profile.severity == \
+            SeverityLevelEnum.CRITICAL
 
     class Config:
         """

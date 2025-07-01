@@ -26,6 +26,7 @@ from src.models.enums import (
 )
 from src.models.base import BaseEntity
 
+
 # Forward declaration to avoid circular imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -40,7 +41,9 @@ class PostMortem(BaseEntity, table=True):
         PostMortemStatusEnum,
         Field(
             default=PostMortemStatusEnum.DRAFT,
-            description="Status of the post-mortem"
+            description=(
+                "Status of the post-mortem"
+            )
         )
     ]
 
@@ -65,7 +68,8 @@ class PostMortem(BaseEntity, table=True):
                 server_default='[]'
             ),
             description=(
-                "The lessons that learned from the incident"
+                "The lessons that learned "
+                "from the incident"
             )
         )
     ]
