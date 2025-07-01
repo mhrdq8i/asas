@@ -65,7 +65,8 @@ print(
     "references updated."
 )
 
-# Define __all__ to control `from src.models import *` behavior
+# Define __all__ to control `from
+# src.models import *` behavior
 __all__ = [
 
     #  Enums
