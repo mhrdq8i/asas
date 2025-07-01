@@ -1,5 +1,5 @@
-from typing import Annotated, List
 from uuid import UUID
+from typing import Annotated, List
 
 from fastapi import (
     APIRouter,
@@ -31,9 +31,6 @@ from src.exceptions.base_exceptions import (
     AppException
 )
 
-# ===================
-# Router Definitions
-# ===================
 
 # Public user router
 # (for registration and self-management)
@@ -55,7 +52,6 @@ admin_router = APIRouter(
 # Public User Endpoints
 # ======================
 
-
 @user_router.post(
     "/",
     response_model=UserRead,
@@ -72,7 +68,8 @@ async def register_new_user(
     """
     Create a new user account.
     - Username and email must be unique.
-    - A verification email will be queued by the service via Celery.
+    - A verification email will be queued
+      by the service via Celery.
     """
 
     try:
@@ -147,7 +144,9 @@ async def change_current_user_password(
     password_in: UserUpdatePassword,
     current_user: Annotated[
         UserModel,
-        Depends(get_current_active_user)
+        Depends(
+            get_current_active_user
+        )
     ],
     user_service: Annotated[
         UserService,

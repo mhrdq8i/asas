@@ -170,7 +170,9 @@ class Incident(BaseEntity, table=True):
         - It's needed because some Python types
         don't have a direct JSON representation
         """
+
         arbitrary_types_allowed = True
+
         json_encoders = {
             UUID: str,
             datetime: lambda v: v.isoformat()
@@ -178,7 +180,6 @@ class Incident(BaseEntity, table=True):
 
 
 # --- Incident Profile ---
-
 
 class IncidentProfile(BaseEntity, table=True):
     __tablename__ = "incident_profile"
@@ -233,7 +234,6 @@ class IncidentProfile(BaseEntity, table=True):
 
 
 # --- Resolution & Mitigation ---
-
 
 class ResolutionMitigation(BaseEntity, table=True):
     __tablename__ = "resolution_mitigations"
@@ -300,7 +300,6 @@ class AffectedItem(BaseEntity, table=True):
 
 
 # --- Impacts ---
-
 
 class Impacts(BaseEntity, table=True):
     __tablename__ = "impacts"

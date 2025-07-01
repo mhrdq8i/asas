@@ -80,9 +80,15 @@ class CrudUser:
 
         for field, value in user_in_update_data.items():
             if value is not None:
-                setattr(db_user_to_update, field, value)
+                setattr(
+                    db_user_to_update,
+                    field,
+                    value
+                )
 
-        self.db.add(db_user_to_update)
+        self.db.add(
+            db_user_to_update
+        )
 
         return db_user_to_update
 
@@ -98,7 +104,11 @@ class CrudUser:
 
         statement = select(User).offset(
             skip
-        ).limit(limit).order_by(User.username)
+        ).limit(
+            limit
+        ).order_by(
+            User.username
+        )
 
         result = await self.db.exec(statement)
 
@@ -106,7 +116,8 @@ class CrudUser:
 
     async def get_commanders(self) -> List[User]:
         """
-        Retrieve a list of all active users designated as commanders.
+        Retrieve a list of all active
+        users designated as commanders.
         """
 
         statement = select(User).where(
