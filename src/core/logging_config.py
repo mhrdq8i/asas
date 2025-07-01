@@ -12,12 +12,18 @@ from src.core.config import settings
 
 class JsonFormatter(Formatter):
     """
-    Custom formatter to output logs in JSON format.
-    Ensures that logs are machine-readable
+    Custom formatter to output
+    logs in JSON format.
+    Ensures that logs are
+    machine-readable
     for monitoring systems.
     """
 
-    def format(self, record: LogRecord) -> str:
+    def format(
+            self,
+            record: LogRecord
+    ) -> str:
+
         log_record = {
             "timestamp": self.formatTime(
                 record,
@@ -39,11 +45,15 @@ class JsonFormatter(Formatter):
             )
 
         if record.exc_text:
-            log_record["exc_text"] = record.exc_text
+            log_record[
+                "exc_text"
+            ] = record.exc_text
 
         # Add any extra fields passed to the logger
         if hasattr(record, "extra_info"):
-            log_record.update(record.extra_info)
+            log_record.update(
+                record.extra_info
+            )
 
         return json.dumps(log_record)
 
