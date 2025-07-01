@@ -3,7 +3,9 @@ from typing import List
 
 from src.models.incident import Incident
 from src.core.config import settings
-from src.core.email_utils import send_email_async
+from src.core.email_utils import (
+    send_email_async
+)
 
 
 logger = getLogger(__name__)
@@ -32,18 +34,21 @@ class NotificationService:
         about a newly created incident.
         """
 
-        recipients_str = settings.INCIDENT_NOTIFICATION_RECIPIENTS
+        recipients_str = \
+            settings.INCIDENT_NOTIFICATION_RECIPIENTS
 
         if not recipients_str:
             logger.warning(
-                "INCIDENT_NOTIFICATION_RECIPIENTS is not set. "
+                "INCIDENT_NOTIFICATION_RECIPIENTS "
+                "is not set. "
                 "Skipping email notification."
             )
 
             return
 
         recipients: List[str] = [
-            email.strip() for email in recipients_str.split(
+            email.strip(
+            ) for email in recipients_str.split(
                 ','
             ) if email.strip()
         ]
@@ -53,6 +58,7 @@ class NotificationService:
                 "No valid recipients found. "
                 "Skipping email notification."
             )
+
             return
 
         subject = (
