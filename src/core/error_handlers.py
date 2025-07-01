@@ -21,6 +21,7 @@ from src.exceptions.user_exceptions import (
     UserNotFoundException
 )
 
+
 logger = getLogger(__name__)
 
 
@@ -64,8 +65,11 @@ async def user_not_found_exception_handler(
     """
 
     logger.warning(
-        "UserNotFoundException caught for identifier "
-        f"'{exc.identifier}' on path '{request.url.path}'"
+        "UserNotFoundException "
+        "caught for identifier "
+        f"'{exc.identifier}' "
+        "on path "
+        f"'{request.url.path}'"
     )
 
     return JSONResponse(
@@ -83,11 +87,13 @@ async def request_validation_exception_handler(
     exc: RequestValidationError
 ) -> JSONResponse:
     """
-    Handles FastAPI's own request validation errors.
+    Handles FastAPI's own
+    request validation errors.
     """
 
     logger.warning(
-        "RequestValidationError caught for path "
+        "RequestValidationError "
+        "caught for path "
         f"'{request.url.path}'",
         extra={
             "errors": exc.errors()
@@ -113,7 +119,8 @@ async def pydantic_validation_error_handler(
     """
 
     logger.warning(
-        "Pydantic ValidationError (manual) caught "
+        "Pydantic ValidationError"
+        "(manual) caught "
         f"for path '{request.url.path}'",
         extra={"errors": exc.errors()}
     )
@@ -137,7 +144,8 @@ async def generic_exception_handler(
     """
 
     logger.error(
-        "Unhandled exception caught for request: "
+        "Unhandled exception "
+        "caught for request: "
         f"{request.url.path}",
         exc_info=True
     )
@@ -145,7 +153,10 @@ async def generic_exception_handler(
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "detail": "An unexpected internal server error occurred."
+            "detail": (
+                "An unexpected internal "
+                "server error occurred."
+            )
         }
     )
 
