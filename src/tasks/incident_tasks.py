@@ -17,12 +17,18 @@ from src.services.notification_service import (
 logger = getLogger(__name__)
 
 
-async def _send_incident_notification_async(incident_id: UUID):
+async def _send_incident_notification_async(
+        incident_id: UUID
+):
     """
-    Asynchronous helper function to send the notification.
-    This function creates its own database engine
-    and session to ensure complete isolation between
-    task executions in different processes.
+    Asynchronous helper function
+    to send the notification.
+    This function creates
+    its own database engine
+    and session to ensure
+    complete isolation between
+    task executions in
+    different processes.
     """
 
     logger.info(
@@ -32,8 +38,12 @@ async def _send_incident_notification_async(incident_id: UUID):
 
     # Create a temporary, isolated engine
     # and session for this task
-    from sqlalchemy.ext.asyncio import create_async_engine
-    from sqlmodel.ext.asyncio.session import AsyncSession
+    from sqlalchemy.ext.asyncio import (
+        create_async_engine
+    )
+    from sqlmodel.ext.asyncio.session import (
+        AsyncSession
+    )
     from sqlalchemy.orm import sessionmaker
     from src.core.config import settings
 
@@ -41,14 +51,15 @@ async def _send_incident_notification_async(incident_id: UUID):
 
     if not async_db_url:
         logger.critical(
-            "DATABASE_URL is not configured in settings."
+            "DATABASE_URL is not "
+            "configured in settings."
         )
 
         return
 
     # Create a new engine specifically
     temp_engine = create_async_engine(
-        async_db_url,
+        url=async_db_url,
         pool_recycle=3600
     )
 
@@ -60,19 +71,25 @@ async def _send_incident_notification_async(incident_id: UUID):
     )
 
     async with TempSessionLocal() as db:
+
         try:
             # Initialize services with the
             # new isolated database session.
-            incident_service = IncidentService(db)
+            incident_service = IncidentService(
+                db_session=db
+            )
+
             notification_service = NotificationService()
 
-            incident = await incident_service.get_incident_by_id(
-                incident_id=incident_id
-            )
+            incident = await \
+                incident_service.get_incident_by_id(
+                    incident_id=incident_id
+                )
 
             if not incident:
                 raise IncidentNotFoundException(
-                    f"Incident with ID {incident_id} not found."
+                    "Incident with ID "
+                    f"{incident_id} not found."
                 )
 
             await notification_service.send_incident_creation_email(
@@ -100,8 +117,12 @@ async def _send_incident_notification_async(incident_id: UUID):
             await temp_engine.dispose()
 
 
-@celery_app.task(name="tasks.create_incident")
-def send_incident_notification(incident_id: str):
+@celery_app.task(
+    name="tasks.create_incident"
+)
+def send_incident_notification(
+    incident_id: str
+):
     """
     Celery task to send a notification
     for a new incident.
@@ -122,7 +143,7 @@ def send_incident_notification(incident_id: str):
 
         except RuntimeError:
             loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            asyncio.set_event_loop(loop=loop)
 
         loop.run_until_complete(
             _send_incident_notification_async(
@@ -131,6 +152,7 @@ def send_incident_notification(incident_id: str):
         )
 
     except Exception as e:
+
         # Log the actual exception
         # with its traceback.
         logger.critical(
