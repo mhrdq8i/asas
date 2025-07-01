@@ -1,4 +1,8 @@
-import asyncio
+from asyncio import (
+    get_running_loop,
+    new_event_loop,
+    set_event_loop
+)
 from logging import getLogger
 from uuid import UUID
 
@@ -139,11 +143,11 @@ def send_incident_notification(
         incident_uuid = UUID(incident_id)
 
         try:
-            loop = asyncio.get_running_loop()
+            loop = get_running_loop()
 
         except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop=loop)
+            loop = new_event_loop()
+            set_event_loop(loop=loop)
 
         loop.run_until_complete(
             _send_incident_notification_async(
