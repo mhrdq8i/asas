@@ -14,7 +14,10 @@ from src.models.postmortem import (
 
 class CrudPostmortem:
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+        self,
+        db_session: AsyncSession
+    ):
         self.db: AsyncSession = db_session
 
     async def get_all_postmortems(
@@ -30,12 +33,16 @@ class CrudPostmortem:
         statement = select(
             PostMortem
         ).options(
-            selectinload(PostMortem.contributing_factors),
+            selectinload(
+                PostMortem.contributing_factors
+            ),
             selectinload(PostMortem.action_items),
             selectinload(PostMortem.approvals)
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.all()
 
@@ -54,12 +61,16 @@ class CrudPostmortem:
         ).where(
             PostMortem.id == postmortem_id
         ).options(
-            selectinload(PostMortem.contributing_factors),
+            selectinload(
+                PostMortem.contributing_factors
+            ),
             selectinload(PostMortem.action_items),
             selectinload(PostMortem.approvals)
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.unique().first()
 
@@ -69,14 +80,19 @@ class CrudPostmortem:
         incident_id: UUID
     ) -> Optional[PostMortem]:
         """
-        Retrieves a post-mortem by its associated incident's ID.
+        Retrieves a post-mortem by
+        its associated incident's ID.
         """
 
-        statement = select(PostMortem).where(
+        statement = select(
+            PostMortem
+        ).where(
             PostMortem.incident_id == incident_id
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.first()
 
@@ -86,12 +102,17 @@ class CrudPostmortem:
         postmortem: PostMortem
     ) -> PostMortem:
         """
-        Adds a new PostMortem instance to the database.
+        Adds a new PostMortem
+        instance to the database.
         """
 
-        self.db.add(postmortem)
+        self.db.add(
+            instance=postmortem
+        )
         await self.db.flush()
-        await self.db.refresh(postmortem)
+        await self.db.refresh(
+            instance=postmortem
+        )
 
         return postmortem
 
@@ -102,18 +123,29 @@ class CrudPostmortem:
         update_data: dict
     ) -> PostMortem:
         """
-        Updates a post-mortem instance with new data.
+        Updates a post-mortem
+        instance with new data.
         """
 
-        for field, value in update_data.items():
+        for (
+            field,
+            value
+        ) in update_data.items():
+
             if value is not None:
                 setattr(
-                    db_postmortem, field, value
+                    db_postmortem,
+                    field,
+                    value
                 )
 
-        self.db.add(db_postmortem)
+        self.db.add(
+            instance=db_postmortem
+        )
         await self.db.flush()
-        await self.db.refresh(db_postmortem)
+        await self.db.refresh(
+            instance=db_postmortem
+        )
 
         return db_postmortem
 
@@ -123,10 +155,13 @@ class CrudPostmortem:
         db_postmortem: PostMortem
     ) -> None:
         """
-        Deletes a post-mortem instance from the database.
+        Deletes a post-mortem
+        instance from the database.
         """
 
-        await self.db.delete(db_postmortem)
+        await self.db.delete(
+            instance=db_postmortem
+        )
         await self.db.flush()
 
     async def refresh_with_relationships(
