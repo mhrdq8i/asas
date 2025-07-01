@@ -11,7 +11,9 @@ from src.exceptions.common_exceptions import (
 )
 
 
-class AuthenticationFailedException(AppException):
+class AuthenticationFailedException(
+    AppException
+):
     """
     Raised when authentication fails
     (e.g., incorrect username/password,
@@ -85,7 +87,9 @@ class UserNotFoundException(ResourceNotFoundException):
             self.detail = detail
 
 
-class UserAlreadyDeletedException(InvalidOperationException):
+class UserAlreadyDeletedException(
+    InvalidOperationException
+):
     """
     Raised when an operation is attempted
     on an already soft-deleted user.
@@ -98,7 +102,9 @@ class UserAlreadyDeletedException(InvalidOperationException):
         super().__init__(detail=detail)
 
 
-class CannotDeleteActiveCommanderException(InvalidOperationException):
+class CannotDeleteActiveCommanderException(
+    InvalidOperationException
+):
     """
     Raised when attempting to delete a user
     who is an active incident commander.

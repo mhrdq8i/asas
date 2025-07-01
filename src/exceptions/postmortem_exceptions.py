@@ -12,7 +12,8 @@ class PostMortemNotFoundException(
     ResourceNotFoundException
 ):
     """
-    Raised specifically when a post-mortem is not found.
+    Raised specifically when a
+    post-mortem is not found.
     """
 
     def __init__(self, identifier: Any = None):
