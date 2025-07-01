@@ -12,7 +12,9 @@ from fastapi.security import (
 )
 
 from src.core import security
-from src.services.user_service import UserService
+from src.services.user_service import (
+    UserService
+)
 from src.api.v1.schemas.auth_schemas import (
     Token,
     PasswordResetRequest,
@@ -20,10 +22,18 @@ from src.api.v1.schemas.auth_schemas import (
     Msg,
     EmailVerifyTokenSchema,
 )
-from src.dependencies.service_deps import get_user_service
-from src.dependencies.auth_deps import get_current_active_user
-from src.exceptions.base_exceptions import AppException
-from src.models.user import User as UserModel
+from src.dependencies.service_deps import (
+    get_user_service
+)
+from src.dependencies.auth_deps import (
+    get_current_active_user
+)
+from src.exceptions.base_exceptions import (
+    AppException
+)
+from src.models.user import (
+    User as UserModel
+)
 
 
 router = APIRouter(
@@ -51,7 +61,8 @@ async def login_for_access_token(
     get an access token for future requests.
     """
 
-    client_ip = request.client.host if request.client else None
+    client_ip = \
+        request.client.host if request.client else None
 
     try:
         user = await user_service.authenticate_user(
@@ -59,6 +70,7 @@ async def login_for_access_token(
             password=form_data.password,
             client_ip=client_ip
         )
+
         access_token = security.create_access_token(
             subject=user.username
         )
@@ -96,14 +108,20 @@ async def password_recovery(
     """
 
     try:
-        message = await user_service.prepare_password_reset_data(
-            email_in=email_in
-        )
+        message = await \
+            user_service.prepare_password_reset_data(
+                email_in=email_in
+            )
 
         return Msg(message=message)
 
     except Exception as e:
-        print(f"Error during password recovery request: {e}")
+
+        print(
+            "Error during password "
+            f"recovery request: {e}"
+        )
+
         return Msg(
             message=(
                 "If an account with this email exists, "
@@ -156,11 +174,15 @@ async def reset_password(
 async def request_new_email_verification(
     current_user: Annotated[
         UserModel,
-        Depends(get_current_active_user)
+        Depends(
+            get_current_active_user
+        )
     ],
     user_service: Annotated[
         UserService,
-        Depends(get_user_service)
+        Depends(
+            get_user_service
+        )
     ]
 ) -> Msg:
     """
@@ -171,9 +193,10 @@ async def request_new_email_verification(
     """
 
     try:
-        message = await user_service.request_new_verification_email(
-            current_user=current_user
-        )
+        message = await \
+            user_service.request_new_verification_email(
+                current_user=current_user
+            )
 
         return Msg(message=message)
 
