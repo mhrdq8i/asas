@@ -19,27 +19,80 @@ class CrudUser:
     initialized with an AsyncSession.
     """
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+            self, db_session: AsyncSession
+    ):
         self.db: AsyncSession = db_session
 
-    async def get_user_by_id(self, *, user_id: UUID) -> Optional[User]:
-        """Retrieve a user by their ID."""
-        statement = select(User).where(User.id == user_id)
-        result = await self.db.exec(statement)
+    async def get_user_by_id(
+        self,
+        *,
+        user_id: UUID
+    ) -> Optional[User]:
+        """
+        Retrieve a user by their ID.
+        """
+
+        statement = select(
+            User
+        ).where(
+            User.id == user_id
+        )
+
+        result = await self.db.exec(
+            statement=statement
+        )
+
         return result.first()
 
-    async def get_user_by_username(self, *, username: str) -> Optional[User]:
-        """Retrieve a user by their username (case-insensitive)."""
-        statement = select(User).where(func.lower(
-            User.username) == func.lower(username))
-        result = await self.db.exec(statement)
-        return result.first()
+    async def get_user_by_username(
+        self,
+        *,
+        username: str
+    ) -> Optional[User]:
+        """
+        Retrieve a user by their username
+        (case-insensitive).
+        """
 
-    async def get_user_by_email(self, *, email: str) -> Optional[User]:
-        """Retrieve a user by their email address (case-insensitive)."""
         statement = select(User).where(
-            func.lower(User.email) == func.lower(email))
-        result = await self.db.exec(statement)
+            func.lower(
+                User.username
+            ) == func.lower(
+                username
+            )
+        )
+
+        result = await self.db.exec(
+            statement=statement
+        )
+
+        return result.first()
+
+    async def get_user_by_email(
+        self,
+        *,
+        email: str
+    ) -> Optional[User]:
+        """
+        Retrieve a user by their
+        email address (case-insensitive).
+        """
+
+        statement = select(
+            User
+        ).where(
+            func.lower(
+                User.email
+            ) == func.lower(
+                email
+            )
+        )
+
+        result = await self.db.exec(
+            statement=statement
+        )
+
         return result.first()
 
     async def get_user_by_username_or_email(
@@ -49,23 +102,46 @@ class CrudUser:
         email: str
     ) -> Optional[User]:
         """
-        Retrieves a user by either username or email (case-insensitive).
-        This method is fixed to use the correct 'or_' operator from SQLAlchemy.
+        Retrieves a user by either username
+        or email (case-insensitive).
+        This method is fixed to use
+        the correct 'or_' operator from SQLAlchemy.
         """
+
         statement = select(User).where(
             or_(
-                func.lower(User.username) == func.lower(username),
-                func.lower(User.email) == func.lower(email)
+                func.lower(
+                    User.username
+                ) == func.lower(username),
+                func.lower(
+                    User.email
+                ) == func.lower(email)
             )
         )
-        result = await self.db.exec(statement)
+
+        result = await self.db.exec(
+            statement=statement
+        )
+
         return result.first()
 
-    async def create_user(self, *, user_in: UserCreateInternal) -> User:
-        """Create a new user in the database."""
+    async def create_user(
+        self,
+        *,
+        user_in: UserCreateInternal
+    ) -> User:
+        """
+        Create a new user in the database.
+        """
+
         db_user = User.model_validate(user_in)
-        self.db.add(db_user)
-        # The service layer will handle the commit.
+
+        self.db.add(
+            instance=db_user
+        )
+
+        # The service layer will
+        # handle the commit.
         return db_user
 
     async def update_user(
@@ -78,7 +154,11 @@ class CrudUser:
         Update an existing user's information.
         """
 
-        for field, value in user_in_update_data.items():
+        for (
+            field,
+            value
+        ) in user_in_update_data.items():
+
             if value is not None:
                 setattr(
                     db_user_to_update,
@@ -103,14 +183,16 @@ class CrudUser:
         """
 
         statement = select(User).offset(
-            skip
+            offset=skip
         ).limit(
-            limit
+            limit=limit
         ).order_by(
             User.username
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return list(result.all())
 
@@ -125,6 +207,8 @@ class CrudUser:
             User.is_active
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return list(result.all())
