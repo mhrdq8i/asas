@@ -43,11 +43,24 @@ SYSTEM_USER_USERNAME = "alert_manager"
 
 class AlertService:
     def __init__(self, db_session: AsyncSession):
+
         self.db_session = db_session
-        self.rule_crud = CrudAlertFilterRule(db_session)
-        self.incident_crud = CrudIncident(db_session)
-        self.user_crud = CrudUser(db_session)
-        self.incident_service = IncidentService(db_session)
+
+        self.rule_crud = CrudAlertFilterRule(
+            db_session=db_session
+        )
+
+        self.incident_crud = CrudIncident(
+            db_session=db_session
+        )
+
+        self.user_crud = CrudUser(
+            db_session=db_session
+        )
+
+        self.incident_service = IncidentService(
+            db_session=db_session
+        )
 
     async def fetch_alerts_from_prometheus(
             self
@@ -57,8 +70,10 @@ class AlertService:
 
         if not api_url:
             logger.error(
-                "PROMETHEUS_API_URL is not configured."
+                "PROMETHEUS_API_URL "
+                "is not configured."
             )
+
             return []
 
         try:
@@ -106,7 +121,8 @@ class AlertService:
         alerts: List[Dict[str, Any]]
     ) -> None:
 
-        active_rules = await self.rule_crud.get_all_active_rules()
+        active_rules = await \
+            self.rule_crud.get_all_active_rules()
 
         if not active_rules:
             logger.warning(
@@ -116,17 +132,18 @@ class AlertService:
 
             return
 
-        system_user = await self.user_crud.get_user_by_username(
-            username=SYSTEM_USER_USERNAME
-        )
+        system_user = await \
+            self.user_crud.get_user_by_username(
+                username=SYSTEM_USER_USERNAME
+            )
 
         if not system_user:
             logger.error(
                 "CRITICAL: System user "
-                f"'{SYSTEM_USER_USERNAME}' not found. "
+                f"'{SYSTEM_USER_USERNAME}' "
+                "not found. "
                 "Cannot create incidents."
             )
-
             return
 
         for alert in alerts:
@@ -164,7 +181,8 @@ class AlertService:
 
             else:
                 logger.info(
-                    f"Alert with fingerprint {fingerprint} "
+                    f"Alert with "
+                    f"fingerprint {fingerprint} "
                     "did not match filters."
                 )
 
@@ -187,7 +205,6 @@ class AlertService:
                         f"'{rule.rule_name}'. "
                         "Will not create incident."
                     )
-
                     return False
 
                 matched_inclusion = True
@@ -249,7 +266,9 @@ class AlertService:
         system_user: User
     ) -> Incident:
 
-        annotations = alert.get('annotations', {})
+        annotations = alert.get(
+            'annotations', {}
+        )
 
         labels = alert.get('labels', {})
 
@@ -288,7 +307,9 @@ class AlertService:
             detected_at = datetime.fromisoformat(
                 alert[
                     'startsAt'
-                ].replace('Z', '+00:00')
+                ].replace(
+                    'Z', '+00:00'
+                )
             )
 
         except (KeyError, ValueError):
@@ -319,7 +340,9 @@ class AlertService:
 
             shallow_rca=ShallowRCACreate(
                 what_happened=(
-                    f"Alert '{labels.get('alertname', 'N/A')}' fired."
+                    "Alert "
+                    f"'{labels.get('alertname', 'N/A')}' "
+                    "fired."
                 ),
                 why_it_happened="To be investigated.",
                 technical_causes="To be investigated.",
