@@ -33,7 +33,8 @@ AsyncSessionLocal = sessionmaker(
 async def init_db():
 
     logger.info(
-        "Attempting to initialize database and create tables."
+        "Attempting to initialize "
+        "database and create tables."
     )
 
     try:
