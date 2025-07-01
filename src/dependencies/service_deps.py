@@ -6,7 +6,6 @@ from sqlmodel.ext.asyncio.session import (
 from src.database.session import (
     get_async_session
 )
-
 from src.services.user_service import (
     UserService
 )
@@ -30,7 +29,8 @@ def get_user_service(
     )
 ) -> UserService:
     """
-    Dependency to get an instance of UserService.
+    Dependency to get an
+    instance of UserService.
     It initializes the UserService
     with an active database session.
     """
