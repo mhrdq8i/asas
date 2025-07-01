@@ -13,8 +13,10 @@ from typing import Any, Dict
 
 class Settings(BaseSettings):
     """
-    Application settings are managed by this class.
-    Values MUST be provided via environment variables
+    Application settings are managed
+    by this class.
+    Values MUST be provided via
+    environment variables
     or a .env file for required fields.
     """
 
@@ -84,21 +86,25 @@ class Settings(BaseSettings):
         Ensures all necessary DB components are
         present if DATABASE_URL is to be constructed.
         """
+
         db_url_provided = values.get('DATABASE_URL')
 
         if db_url_provided and isinstance(
             db_url_provided,
             str
         ) and db_url_provided.strip():
+
             if "sqlite" in db_url_provided:
                 values[
                     'DATABASE_URL'
                 ] = db_url_provided
+
             elif db_url_provided.startswith(
                 "postgresql://"
             ) or db_url_provided.startswith(
                 "postgres://"
             ):
+
                 values[
                     'DATABASE_URL'
                 ] = db_url_provided.replace(
@@ -108,30 +114,40 @@ class Settings(BaseSettings):
                     "postgres://",
                     "postgresql+asyncpg://"
                 )
+
             elif not db_url_provided.startswith(
                 "postgresql+asyncpg://"
             ):
+
                 error_msg = (
-                    f"DATABASE_URL '{db_url_provided}'\
-                         for PostgreSQL must use "
-                    f"'postgresql+asyncpg://', 'postgresql://', or "
-                    f"'postgres://' scheme."
+                    f"DATABASE_URL '{db_url_provided}' "
+                    "for PostgreSQL must use "
+                    "'postgresql+asyncpg://', "
+                    "'postgresql://', or "
+                    "'postgres://' scheme."
                 )
+
                 raise ValueError(error_msg)
+
             return values
 
         elif db_url_provided is not None:
             raise ValueError(
-                f"DATABASE_URL must be a non-empty string if provided, "
-                f"got: '{db_url_provided}' (type: {type(db_url_provided)})"
+                "DATABASE_URL must be a "
+                "non-empty string if provided, "
+                f"got: '{db_url_provided}' "
+                f"(type: {type(db_url_provided)})"
             )
 
         scheme = values.get('POSTGRES_SCHEME')
         user = values.get('POSTGRES_USER')
+
         # In 'before' mode validator,
         # password_from_env
         # is still a raw string or None
-        password_from_env = values.get('POSTGRES_PASSWORD')
+        password_from_env = values.get(
+            'POSTGRES_PASSWORD'
+        )
         server = values.get('POSTGRES_SERVER')
         port_str = values.get('POSTGRES_PORT')
         db_name = values.get('POSTGRES_DB')
@@ -155,8 +171,11 @@ class Settings(BaseSettings):
                 ) and not value.strip()
             )
         ]
-        # If password_from_env was a string but empty,
-        # it's caught by `not value.strip()`
+
+        # If password_from_env was
+        # a string but empty,
+        # it's caught by
+        # `not value.strip()`
 
         if missing_db_params:
             error_message = (
@@ -174,6 +193,7 @@ class Settings(BaseSettings):
                 "with non-empty values in the "
                 "environment or .env file."
             )
+
             raise ValueError(error_message)
 
         # Should be true
@@ -188,6 +208,7 @@ class Settings(BaseSettings):
 
         try:
             port = int(port_str)
+
             # Use password_from_env
             # directly as it's the plain string here
             password_plain = str(password_from_env)
@@ -208,16 +229,20 @@ class Settings(BaseSettings):
 
         except ValueError as e:
             original_error_msg = str(e)
-            prefix = "Error constructing DATABASE_URL from parts. "
+            prefix = (
+                "Error constructing "
+                "DATABASE_URL from parts. "
+            )
             current_detailed_error: str
 
             if "invalid port number" \
                 in original_error_msg.lower() or \
                "invalid literal for int()" in \
                     original_error_msg.lower():
+
                 current_detailed_error = (
-                    f"POSTGRES_PORT ('{port_str}')\
-                          must be a valid integer."
+                    f"POSTGRES_PORT ('{port_str}') "
+                    "must be a valid integer."
                 )
 
             else:
@@ -229,6 +254,7 @@ class Settings(BaseSettings):
                 current_detailed_error = (
                     msg_part1 + msg_part2 + msg_part3
                 )
+
             raise ValueError(
                 f"{prefix}{current_detailed_error}"
             )
@@ -242,13 +268,19 @@ class Settings(BaseSettings):
         values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Validates that if MAIL_USERNAME is provided,
-        MAIL_PASSWORD is also provided and non-empty.
+        Validates that if MAIL_USERNAME
+        is provided, MAIL_PASSWORD is
+        also provided and non-empty.
         """
-        mail_user = values.get('MAIL_USERNAME')
+
+        mail_user = values.get(
+            'MAIL_USERNAME'
+        )
 
         # This is a raw string or None
-        mail_pass_from_env = values.get('MAIL_PASSWORD')
+        mail_pass_from_env = values.get(
+            'MAIL_PASSWORD'
+        )
 
         # If mail_user is provided (and not empty),
         # mail_pass_from_env must also be
@@ -259,29 +291,37 @@ class Settings(BaseSettings):
                     str
                 ) and mail_user.strip()
         ):
+
             if not mail_pass_from_env or (
                     isinstance(
                         mail_pass_from_env,
                         str
                     ) and not mail_pass_from_env.strip()
             ):
+
                 raise ValueError(
                     "If MAIL_USERNAME is provided and\
                          non-empty, MAIL_PASSWORD must also be "
                     "provided and non-empty in the .env file."
                 )
+
         return values
 
-    def get_notification_recipients(self) -> list[str]:
+    def get_notification_recipients(
+        self
+    ) -> list[str]:
         """
-        Returns a list of notification recipient email addresses.
+        Returns a list of notification
+        recipient email addresses.
         """
 
         if not self.INCIDENT_NOTIFICATION_RECIPIENTS:
             return []
+
         return [
             email.strip(
-            ) for email in self.INCIDENT_NOTIFICATION_RECIPIENTS.split(',')
+            ) for email in
+            self.INCIDENT_NOTIFICATION_RECIPIENTS.split(',')
         ]
 
     model_config = SettingsConfigDict(
