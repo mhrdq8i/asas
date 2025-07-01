@@ -36,6 +36,7 @@ def verify_password(
         plain_password: str,
         hashed_password: str
 ) -> bool:
+
     try:
         return password_hasher.verify(
             plain_password.encode('utf-8'),
@@ -80,10 +81,14 @@ def create_access_token(
                 settings.EMAIL_VERIFY_TOKEN_EXPIRE_MINUTES
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(
+            timezone.utc
+        ) + expires_delta
 
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(
+            timezone.utc
+        ) + timedelta(
             minutes=default_expiry_minutes
         )
 
@@ -91,7 +96,9 @@ def create_access_token(
         to_encode = subject.copy()
 
     else:
-        to_encode = {"sub": str(subject)}
+        to_encode = {
+            "sub": str(subject)
+        }
 
     to_encode["exp"] = expire
 
@@ -104,7 +111,9 @@ def create_access_token(
     return encoded_jwt
 
 
-def decode_token(token: str) -> dict | None:
+def decode_token(
+    token: str
+) -> dict | None:
     """
     Decodes a JWT token.
     Provides specific error logging.
@@ -118,13 +127,15 @@ def decode_token(token: str) -> dict | None:
         )
 
         logger.debug(
-            "Token decoded successfully for subject "
+            "Token decoded successfully "
+            "for subject "
             f"{payload.get('sub')}"
         )
 
         return payload
 
     except ExpiredSignatureError:
+
         logger.warning(
             "Token decoding failed: "
             "Token has expired."
@@ -133,16 +144,20 @@ def decode_token(token: str) -> dict | None:
         return None
 
     except JWTError as e:
+
         logger.warning(
-            f"Token decoding failed due to JWTError: {e}. "
+            "Token decoding failed "
+            f"due to JWTError: {e}. "
             "This could be due to an "
-            "invalid signature, algorithm mismatch, "
+            "invalid signature, "
+            "algorithm mismatch, "
             "or a tampered token."
         )
 
         return None
 
     except Exception:
+
         logger.error(
             "An unexpected error occurred "
             "during token decoding.",
