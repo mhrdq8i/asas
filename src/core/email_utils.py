@@ -17,7 +17,9 @@ logger = getLogger(__name__)
 # This logic determines if credentials
 # should be used for the SMTP server.
 use_credentials = bool(
-    settings.MAIL_USERNAME and settings.MAIL_PASSWORD
+    settings.MAIL_USERNAME
+    and
+    settings.MAIL_PASSWORD
 )
 
 password = settings.MAIL_PASSWORD.get_secret_value(
@@ -54,6 +56,7 @@ async def send_email_async(
     """
 
     if not settings.MAIL_FROM_EMAIL:
+
         logger.error(
             "MAIL_FROM_EMAIL is not configured. "
             "Cannot send email."
@@ -70,23 +73,33 @@ async def send_email_async(
 
     try:
         logger.info(
-            f"Attempting to send email to {email_to} via "
-            f"{settings.MAIL_SERVER}:{settings.MAIL_PORT}"
+            "Attempting to send email to "
+            f"{email_to} via "
+            f"{settings.MAIL_SERVER}:"
+            f"{settings.MAIL_PORT}"
         )
 
         await fm.send_message(message)
 
         logger.info(
-            f"Email successfully sent to {email_to} with subject: {subject}"
+            "Email successfully sent to "
+            f"{email_to} "
+            "with subject: "
+            f"{subject}"
         )
 
     except Exception as e:
-        # This will catch any error during the send_message call,
-        # including connection errors, auth errors, etc.
+
+        # This will catch any error
+        # during the send_message call,
+        # including connection errors,
+        # auth errors, etc.
         logger.error(
             f"Failed to send email to {email_to}. Error: {e}",
-            exc_info=True  # This includes the full traceback in the log
+            # This includes the full traceback in the log
+            exc_info=True
         )
+
         # Re-raise the exception so the Celery
         # task knows it failed and can retry
         raise e
@@ -98,7 +111,8 @@ async def send_email_verification(
     verification_token: str
 ) -> None:
     """
-    Prepares and sends the email verification message.
+    Prepares and sends the
+    email verification message.
     """
 
     project_name = settings.APP_NAME
@@ -144,7 +158,8 @@ async def send_password_reset_email(
     reset_token: str
 ) -> None:
     """
-    Prepares and sends the password reset message.
+    Prepares and sends the
+    password reset message.
     """
 
     project_name = settings.APP_NAME
@@ -164,7 +179,8 @@ async def send_password_reset_email(
     )
 
     subject = (
-        f"Password Reset Request for {project_name}"
+        "Password Reset Request "
+        f"for {project_name}"
     )
 
     html_content = f"""
