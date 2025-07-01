@@ -160,6 +160,7 @@ class UserService:
             self.crud_user.create_user(
                 user_in=user_data
             )
+
         await self.db_session.commit()
         await self.db_session.refresh(
             created_user
@@ -234,7 +235,9 @@ class UserService:
         ] != current_user.username:
             existing_user = await \
                 self.crud_user.get_user_by_username(
-                    username=update_data["username"]
+                    username=update_data[
+                        "username"
+                    ]
                 )
 
             if existing_user:
@@ -278,15 +281,17 @@ class UserService:
             current_user.hashed_password
         ):
             raise InvalidInputException(
-                "Incorrect current password."
+                detail="Incorrect current password."
             )
 
         if password_in.current_password == \
                 password_in.new_password:
 
             raise InvalidInputException(
-                "New password cannot be the "
-                "same as the old password."
+                detail=(
+                    "New password cannot be the "
+                    "same as the old password."
+                )
             )
 
         new_hashed_password = get_password_hash(
@@ -327,8 +332,10 @@ class UserService:
 
         if user_to_delete_id == performing_user.id:
             raise InvalidOperationException(
-                "Admins cannot delete "
-                "their own account."
+                detail=(
+                    "Admins cannot delete "
+                    "their own account."
+                )
             )
 
         user_to_delete = await self.get_user_by_id(
@@ -388,8 +395,8 @@ class UserService:
             )
 
         if not user or not verify_password(
-            password,
-            user.hashed_password
+            plain_password=password,
+            hashed_password=user.hashed_password
         ):
             raise AuthenticationFailedException()
 
@@ -445,7 +452,7 @@ class UserService:
         if current_user.is_email_verified:
 
             raise InvalidOperationException(
-                "Email is already verified."
+                detail="Email is already verified."
             )
 
         try:
@@ -536,6 +543,7 @@ class UserService:
                 )
 
             except Exception as e:
+
                 logger.error(
                     "Failed to queue password reset "
                     f"task for {user.email}: {e}",

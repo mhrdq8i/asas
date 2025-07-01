@@ -94,7 +94,9 @@ async def register_new_user(
 async def read_current_user_me(
     current_user: Annotated[
         UserModel,
-        Depends(get_current_active_user)
+        Depends(
+            get_current_active_user
+        )
     ]
 ) -> UserRead:
     """
@@ -112,8 +114,18 @@ async def read_current_user_me(
 )
 async def update_current_user_me(
     user_update_in: UserUpdate,
-    current_user: Annotated[UserModel, Depends(get_current_active_user)],
-    user_service: Annotated[UserService, Depends(get_user_service)],
+    current_user: Annotated[
+        UserModel,
+        Depends(
+            get_current_active_user
+        )
+    ],
+    user_service: Annotated[
+        UserService,
+        Depends(
+            get_user_service
+        )
+    ],
 ) -> UserRead:
     """
     Update the profile information for
@@ -121,10 +133,11 @@ async def update_current_user_me(
     """
 
     try:
-        updated_user = await user_service.update_user_profile(
-            current_user=current_user,
-            user_in=user_update_in
-        )
+        updated_user = await \
+            user_service.update_user_profile(
+                current_user=current_user,
+                user_in=user_update_in
+            )
 
         return updated_user
 
