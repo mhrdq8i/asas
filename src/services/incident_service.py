@@ -3,10 +3,14 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from logging import getLogger
 
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel.ext.asyncio.session import (
+    AsyncSession
+)
 
 from src.crud.user_crud import CrudUser
-from src.crud.incident_crud import CrudIncident
+from src.crud.incident_crud import (
+    CrudIncident
+)
 from src.models.user import User
 from src.models.incident import (
     Incident,
@@ -47,15 +51,25 @@ logger = getLogger(__name__)
 
 class IncidentService:
     """
-    The "brain" for all business logic related to incidents.
-    It uses the CRUD layer to interact with the
-    database and enforces business rules.
+    The "brain" for all business logic
+    related to incidents.
+    It uses the CRUD layer to
+    interact with the
+    database and enforces
+    business rules.
     """
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+        self,
+        db_session: AsyncSession
+    ):
         self.db_session = db_session
-        self.crud_user = CrudUser(self.db_session)
-        self.crud_incident = CrudIncident(self.db_session)
+        self.crud_user = CrudUser(
+            db_session=self.db_session
+        )
+        self.crud_incident = CrudIncident(
+            db_session=self.db_session
+        )
 
     async def _check_permission(
         self,
@@ -73,6 +87,7 @@ class IncidentService:
         """
 
         is_commander = incident.profile.commander_id == user.id
+
         is_superuser = user.is_superuser
 
         if is_superuser or is_commander:
@@ -82,26 +97,31 @@ class IncidentService:
             return
 
         raise InsufficientPermissionsException(
-            "You do not have permission to perform this action."
+            "You do not have permission "
+            "to perform this action."
         )
 
     async def get_incident_by_id(
-            self,
-            *,
-            incident_id: UUID
+        self,
+        *,
+        incident_id: UUID
     ) -> Incident:
         """
         Retrieves an incident by its ID.
-        Raises an exception if the incident is not found.
+        Raises an exception if the
+        incident is not found.
         """
 
-        incident = await self.crud_incident.get_incident_by_id(
-            incident_id=incident_id
-        )
+        incident = await \
+            self.crud_incident.get_incident_by_id(
+                incident_id=incident_id
+            )
 
         if not incident:
             raise IncidentNotFoundException(
-                identifier=str(incident_id)
+                identifier=str(
+                    incident_id
+                )
             )
 
         return incident
@@ -112,7 +132,9 @@ class IncidentService:
         statuses: Optional[
             List[IncidentStatusEnum]
         ] = None,
-        severities: Optional[List[SeverityLevelEnum]] = None,
+        severities: Optional[
+            List[SeverityLevelEnum]
+        ] = None,
         commander_id: Optional[UUID] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
@@ -124,21 +146,23 @@ class IncidentService:
         of incidents based on filter criteria.
         """
 
-        incidents = await self.crud_incident.search_incidents(
-            statuses=statuses,
-            severities=severities,
-            commander_id=commander_id,
-            start_date=start_date,
-            end_date=end_date,
-            skip=skip,
-            limit=limit,
-        )
+        incidents = await \
+            self.crud_incident.search_incidents(
+                statuses=statuses,
+                severities=severities,
+                commander_id=commander_id,
+                start_date=start_date,
+                end_date=end_date,
+                skip=skip,
+                limit=limit,
+            )
 
-        total_count = await self.crud_incident.count_incidents(
-            statuses=statuses,
-            severities=severities,
-            commander_id=commander_id,
-        )
+        total_count = await \
+            self.crud_incident.count_incidents(
+                statuses=statuses,
+                severities=severities,
+                commander_id=commander_id,
+            )
 
         return PaginatedResponse(
             items=incidents,
@@ -161,15 +185,18 @@ class IncidentService:
             f"'{current_user.username}'"
         )
 
-        commander_id = incident_in.profile.commander_id
+        commander_id = \
+            incident_in.profile.commander_id
 
         if commander_id:
 
-            commander = await self.crud_user.get_user_by_id(
-                user_id=commander_id
-            )
+            commander = await \
+                self.crud_user.get_user_by_id(
+                    user_id=commander_id
+                )
 
             if not commander or not commander.is_active:
+
                 raise UserNotFoundException(
                     detail=(
                         "Commander with ID "
@@ -179,6 +206,7 @@ class IncidentService:
                 )
 
             if not commander.is_commander:
+
                 raise InvalidOperationException(
                     detail=(
                         f"User '{commander.username}' "
@@ -203,9 +231,10 @@ class IncidentService:
             creation_event
         )
 
-        new_incident = await self.crud_incident.create_incident(
-            incident_in=incident_in
-        )
+        new_incident = await \
+            self.crud_incident.create_incident(
+                incident_in=incident_in
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
@@ -274,10 +303,13 @@ class IncidentService:
         # Business logic for status transitions
         old_status = incident.profile.status
 
-        if 'status' in update_dict and old_status != update_dict[
-            'status'
-        ]:
+        if 'status' in update_dict \
+                and old_status != update_dict[
+                    'status'
+                ]:
+
             if old_status == IncidentStatusEnum.RESOLVED:
+
                 raise InvalidStatusTransitionException(
                     from_status=old_status,
                     to_status=update_dict[
@@ -288,19 +320,21 @@ class IncidentService:
         elif old_status == IncidentStatusEnum.RESOLVED and len(
             update_dict
         ) > 0:
+
             raise IncidentAlreadyResolvedException(
                 "Cannot update profile details "
                 "of a resolved incident."
             )
 
-        updated_incident = await self.crud_incident.update_incident_profile(
-            db_incident=incident,
-            update_data=update_dict
-        )
+        updated_incident = await \
+            self.crud_incident.update_incident_profile(
+                db_incident=incident,
+                update_data=update_dict
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            updated_incident
+            instance=updated_incident
         )
 
         return updated_incident
@@ -322,19 +356,22 @@ class IncidentService:
             user=current_user
         )
 
-        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == \
+                IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
-                "Cannot update impacts of a resolved incident."
+                "Cannot update impacts"
+                " of a resolved incident."
             )
 
         update_dict = update_data.model_dump(
             exclude_unset=True
         )
 
-        updated_incident = await self.crud_incident.update_incident_impacts(
-            db_incident=incident,
-            impacts_data=update_dict
-        )
+        updated_incident = await \
+            self.crud_incident.update_incident_impacts(
+                db_incident=incident,
+                impacts_data=update_dict
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
@@ -360,7 +397,8 @@ class IncidentService:
             user=current_user
         )
 
-        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == \
+                IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
                 "Cannot update RCA of a resolved incident."
             )
@@ -369,14 +407,15 @@ class IncidentService:
             exclude_unset=True
         )
 
-        updated_incident = await self.crud_incident.update_shallow_rca(
-            db_incident=incident,
-            rca_data=update_dict
-        )
+        updated_incident = await \
+            self.crud_incident.update_shallow_rca(
+                db_incident=incident,
+                rca_data=update_dict
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            updated_incident
+            instance=updated_incident
         )
 
         return updated_incident
@@ -399,9 +438,11 @@ class IncidentService:
             allow_viewer=True
         )
 
-        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == \
+                IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
-                "Cannot add timeline events to a resolved incident."
+                "Cannot add timeline events "
+                "to a resolved incident."
             )
 
         event_in.owner_user_id = current_user.id
@@ -410,17 +451,20 @@ class IncidentService:
         # to create a valid TimelineEvent model.
         new_event = TimelineEvent.model_validate(
             event_in,
-            update={'incident_id': incident_id}
+            update={
+                'incident_id': incident_id
+            }
         )
 
-        updated_incident = await self.crud_incident.add_timeline_event(
-            incident=incident,
-            new_event=new_event
-        )
+        updated_incident = await \
+            self.crud_incident.add_timeline_event(
+                incident=incident,
+                new_event=new_event
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            updated_incident
+            instance=updated_incident
         )
 
         return updated_incident
@@ -443,24 +487,29 @@ class IncidentService:
             allow_viewer=True
         )
 
-        if incident.profile.status == IncidentStatusEnum.RESOLVED:
+        if incident.profile.status == \
+                IncidentStatusEnum.RESOLVED:
             raise IncidentAlreadyResolvedException(
-                "Cannot add communication logs to a resolved incident."
+                "Cannot add communication "
+                "logs to a resolved incident."
             )
 
         new_log = CommunicationLog.model_validate(
             log_in,
-            update={'incident_id': incident_id}
+            update={
+                'incident_id': incident_id
+            }
         )
 
-        updated_incident = await self.crud_incident.add_communication_log(
-            incident=incident,
-            new_log=new_log
-        )
+        updated_incident = await \
+            self.crud_incident.add_communication_log(
+                incident=incident,
+                new_log=new_log
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            updated_incident
+            instance=updated_incident
         )
 
         return updated_incident
@@ -482,17 +531,20 @@ class IncidentService:
             user=current_user
         )
 
-        if incident.profile.status == IncidentStatusEnum.RESOLVED \
+        if incident.profile.status == \
+            IncidentStatusEnum.RESOLVED \
                 and not incident.resolution_mitigation:
+
             raise InvalidOperationException(
                 "Cannot add resolution to an already "
                 "resolved incident without one."
             )
 
-        updated_incident = await self.crud_incident.update_resolution(
-            db_incident=incident,
-            resolution_data=resolution_in
-        )
+        updated_incident = await \
+            self.crud_incident.update_resolution(
+                db_incident=incident,
+                resolution_data=resolution_in
+            )
 
         await self.db_session.commit()
         await self.db_session.refresh(
@@ -517,7 +569,9 @@ class IncidentService:
             incident_id=incident_id
         )
 
-        if incident_to_delete.profile.status != IncidentStatusEnum.RESOLVED:
+        if incident_to_delete.profile.status != \
+                IncidentStatusEnum.RESOLVED:
+
             raise InvalidOperationException(
                 "Cannot delete an incident that "
                 "is not in 'Resolved' status. "
