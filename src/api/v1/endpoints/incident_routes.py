@@ -85,15 +85,19 @@ async def create_incident(
     """
 
     try:
-        new_incident = await incident_service.create_incident(
-            incident_in=incident_in,
-            current_user=current_user
-        )
+        new_incident = await \
+            incident_service.create_incident(
+                incident_in=incident_in,
+                current_user=current_user
+            )
+
         # We need to refetch the incident to get
         # all eager-loaded fields for the response
-        return await incident_service.get_incident_by_id(
-            incident_id=new_incident.id
-        )
+
+        return await \
+            incident_service.get_incident_by_id(
+                incident_id=new_incident.id
+            )
 
     except AppException as e:
         raise HTTPException(
@@ -111,7 +115,9 @@ async def create_incident(
 async def search_incidents(
     incident_service: Annotated[
         IncidentService,
-        Depends(get_incident_service)
+        Depends(
+            get_incident_service
+        )
     ],
     statuses: Optional[
         List[
@@ -124,6 +130,7 @@ async def search_incidents(
         ]
     ] = Query(None),
     commander_id: Optional[UUID] = Query(None),
+
     start_date: Optional[str] = Query(
         None,
         description=(
@@ -146,13 +153,14 @@ async def search_incidents(
     various filter criteria.
     """
 
-    incidents = await incident_service.get_incidents_list(
-        statuses=statuses,
-        severities=severities,
-        commander_id=commander_id,
-        skip=skip,
-        limit=limit
-    )
+    incidents = await \
+        incident_service.get_incidents_list(
+            statuses=statuses,
+            severities=severities,
+            commander_id=commander_id,
+            skip=skip,
+            limit=limit
+        )
 
     return incidents
 
@@ -174,9 +182,10 @@ async def get_incident_by_id(
     Retrieve a single incident by its ID.
     """
     try:
-        return await incident_service.get_incident_by_id(
-            incident_id=incident_id
-        )
+        return await \
+            incident_service.get_incident_by_id(
+                incident_id=incident_id
+            )
 
     except AppException as e:
         raise HTTPException(
@@ -210,15 +219,18 @@ async def update_incident_profile(
     Only the commander or an
     admin can perform this action.
     """
+
     try:
         await incident_service.update_incident_profile(
             incident_id=incident_id,
             update_data=update_data,
             current_user=current_user
         )
-        return await incident_service.get_incident_by_id(
-            incident_id=incident_id
-        )
+
+        return await \
+            incident_service.get_incident_by_id(
+                incident_id=incident_id
+            )
 
     except AppException as e:
         raise HTTPException(
@@ -379,6 +391,7 @@ async def add_communication_log(
     Add a new communication log
     to an incident.
     """
+
     try:
         return await incident_service.add_communication_log(
             incident_id=incident_id,
