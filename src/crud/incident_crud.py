@@ -29,7 +29,10 @@ from src.api.v1.schemas.incident_schemas import (
 
 class CrudIncident:
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+        self,
+        db_session: AsyncSession
+    ):
         self.db: AsyncSession = db_session
 
     async def get_incident_by_id(
@@ -61,7 +64,9 @@ class CrudIncident:
             )
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.unique().first()
 
@@ -103,11 +108,15 @@ class CrudIncident:
             ) for c in incident_in.communication_logs
         ]
 
-        self.db.add(db_incident)
+        self.db.add(
+            instance=db_incident
+        )
         # We flush to send changes to the DB and get IDs,
         # but the service layer handles the commit.
         await self.db.flush()
-        await self.db.refresh(db_incident)
+        await self.db.refresh(
+            instance=db_incident
+        )
 
         return db_incident
 
@@ -127,18 +136,24 @@ class CrudIncident:
         limit: int = 100
     ) -> List[Incident]:
 
-        statement = select(Incident).join(IncidentProfile)
+        statement = select(
+            Incident
+        ).join(IncidentProfile)
 
         conditions = []
 
         if statuses:
             conditions.append(
-                IncidentProfile.status.in_(statuses)
+                IncidentProfile.status.in_(
+                    statuses
+                )
             )
 
         if severities:
             conditions.append(
-                IncidentProfile.severity.in_(severities)
+                IncidentProfile.severity.in_(
+                    severities
+                )
             )
 
         if commander_id:
@@ -183,9 +198,15 @@ class CrudIncident:
             selectinload(Incident.postmortem)
         ).order_by(
             Incident.created_at.desc()
-        ).offset(skip).limit(limit)
+        ).offset(
+            offset=skip
+        ).limit(
+            limit=limit
+        )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return list(result.unique().all())
 
@@ -202,19 +223,25 @@ class CrudIncident:
     ) -> int:
 
         statement = select(
-            func.count(Incident.id)
+            func.count(
+                Incident.id
+            )
         ).join(IncidentProfile)
 
         conditions = []
 
         if statuses:
             conditions.append(
-                IncidentProfile.status.in_(statuses)
+                IncidentProfile.status.in_(
+                    statuses
+                )
             )
 
         if severities:
             conditions.append(
-                IncidentProfile.severity.in_(severities)
+                IncidentProfile.severity.in_(
+                    severities
+                )
             )
 
         if commander_id:
@@ -223,10 +250,16 @@ class CrudIncident:
             )
 
         if conditions:
-            statement = statement.where(and_(*conditions))
+            statement = statement.where(
+                and_(*conditions)
+            )
 
         statement = statement.select_from(Incident)
-        result = await self.db.exec(statement)
+
+        result = await self.db.exec(
+            statement=statement
+        )
+
         count = result.one_or_none()
 
         return count if count is not None else 0
@@ -238,13 +271,29 @@ class CrudIncident:
         update_data: Dict[str, Any]
     ) -> Incident:
 
-        for field, value in update_data.items():
-            if hasattr(db_incident.profile, field):
-                setattr(db_incident.profile, field, value)
+        for (
+            field,
+            value
+        ) in update_data.items():
 
-        self.db.add(db_incident)
+            if hasattr(
+                db_incident.profile,
+                field
+            ):
+
+                setattr(
+                    db_incident.profile,
+                    field,
+                    value
+                )
+
+        self.db.add(
+            instance=db_incident
+        )
         await self.db.flush()
-        await self.db.refresh(db_incident)
+        await self.db.refresh(
+            instance=db_incident
+        )
 
         return db_incident
 
@@ -255,9 +304,21 @@ class CrudIncident:
         impacts_data: Dict[str, Any]
     ) -> Incident:
 
-        for field, value in impacts_data.items():
-            if hasattr(db_incident.impacts, field):
-                setattr(db_incident.impacts, field, value)
+        for (
+            field,
+            value
+        ) in impacts_data.items():
+
+            if hasattr(
+                db_incident.impacts,
+                field
+            ):
+
+                setattr(
+                    db_incident.impacts,
+                    field,
+                    value
+                )
 
         self.db.add(db_incident)
         await self.db.flush()
@@ -272,13 +333,27 @@ class CrudIncident:
         rca_data: Dict[str, Any]
     ) -> Incident:
 
-        for field, value in rca_data.items():
-            if hasattr(db_incident.shallow_rca, field):
-                setattr(db_incident.shallow_rca, field, value)
+        for (
+            field,
+            value
+        ) in rca_data.items():
+            if hasattr(
+                db_incident.shallow_rca,
+                field
+            ):
+                setattr(
+                    db_incident.shallow_rca,
+                    field,
+                    value
+                )
 
-        self.db.add(db_incident)
+        self.db.add(
+            instance=db_incident
+        )
         await self.db.flush()
-        await self.db.refresh(db_incident)
+        await self.db.refresh(
+            instance=db_incident
+        )
 
         return db_incident
 
@@ -303,9 +378,13 @@ class CrudIncident:
                 **resolution_data.model_dump()
             )
 
-        self.db.add(db_incident)
+        self.db.add(
+            instance=db_incident
+        )
         await self.db.flush()
-        await self.db.refresh(db_incident)
+        await self.db.refresh(
+            instance=db_incident
+        )
 
         return db_incident
 
@@ -316,11 +395,17 @@ class CrudIncident:
         new_event: TimelineEvent
     ) -> Incident:
 
-        incident.timeline_events.append(new_event)
+        incident.timeline_events.append(
+            new_event
+        )
 
-        self.db.add(incident)
+        self.db.add(
+            instance=incident
+        )
         await self.db.flush()
-        await self.db.refresh(incident)
+        await self.db.refresh(
+            instance=incident
+        )
 
         return incident
 
@@ -335,9 +420,13 @@ class CrudIncident:
             new_log
         )
 
-        self.db.add(incident)
+        self.db.add(
+            instance=incident
+        )
         await self.db.flush()
-        await self.db.refresh(incident)
+        await self.db.refresh(
+            instance=incident
+        )
 
         return incident
 
@@ -347,7 +436,9 @@ class CrudIncident:
         incident: Incident
     ) -> None:
 
-        await self.db.delete(incident)
+        await self.db.delete(
+            instance=incident
+        )
         await self.db.flush()
 
     async def is_user_active_commander(
@@ -357,7 +448,9 @@ class CrudIncident:
     ) -> bool:
 
         statement = select(
-            func.count(IncidentProfile.id)
+            func.count(
+                IncidentProfile.id
+            )
         ).where(
             IncidentProfile.commander_id == user_id,
             IncidentProfile.status.in_(
@@ -368,7 +461,9 @@ class CrudIncident:
             )
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
         count = result.one()
 
         return count > 0
@@ -380,15 +475,21 @@ class CrudIncident:
         """
         Finds an incident by its alert_fingerprint.
 
-        This version uses the correct SQLAlchemy syntax to query a key
-        within a JSONB column using the '->>' operator, which extracts
+        This version uses the correct
+        SQLAlchemy syntax to query a key
+        within a JSONB column using
+        the '->>' operator, which extracts
         a JSON object field as text.
         """
 
-        statement = select(Incident).where(
+        statement = select(
+            Incident
+        ).where(
             Incident.alert_fingerprint == fingerprint
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.first()
