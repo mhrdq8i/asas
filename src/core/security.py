@@ -33,8 +33,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 
 
 def verify_password(
-        plain_password: str,
-        hashed_password: str
+    plain_password: str,
+    hashed_password: str
 ) -> bool:
 
     try:
