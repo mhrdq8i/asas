@@ -46,9 +46,11 @@ from src.exceptions.user_exceptions import (
     AuthenticationFailedException,
     UserNotFoundException,
     UserAlreadyDeletedException,
-    CannotDeleteActiveCommanderException,
+    CannotDeleteActiveCommanderException
 )
-
+from src.models.enums import (
+    UserRoleEnum
+)
 
 logger = getLogger(__name__)
 
@@ -127,6 +129,12 @@ class UserService:
         and queuing a verification email.
         """
 
+        logger.info(
+            "Attempting to create "
+            "user with email: "
+            f"{user_in.email}"
+        )
+
         existing_user = await \
             self.crud_user.get_user_by_username_or_email(
                 username=user_in.username,
@@ -159,6 +167,17 @@ class UserService:
         created_user = await \
             self.crud_user.create_user(
                 user_in=user_data
+            )
+
+        if user_in.is_system_user:
+
+            user_in.is_active = True
+            user_in.role = UserRoleEnum.SYS_USER
+
+            logger.info(
+                "Service user flag detected. "
+                "Setting role to SYSTEM_USER "
+                "and activating user."
             )
 
         await self.db_session.commit()
@@ -207,7 +226,7 @@ class UserService:
 
         if not update_data:
             raise InvalidInputException(
-                "No fields provided for update."
+                detail="No fields provided for update."
             )
 
         # If email is being updated,

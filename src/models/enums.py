@@ -8,7 +8,8 @@ class UserRoleEnum(str, Enum):
     VIEWER = "viewer"
     EDITOR = "editor"
     ADMIN = "admin"
-    INCIDENT_COMMANDER = "incident_commander"
+    SYS_USER = "system_user"
+    COMMANDER = "commander"
 
 
 class RolesEnum(str, Enum):
