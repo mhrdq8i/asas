@@ -21,9 +21,14 @@ from src.exceptions.common_exceptions import (
 
 class AlertFilterRuleService:
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+        self,
+        db_session: AsyncSession
+    ):
         self.db_session = db_session
-        self.crud = CrudAlertFilterRule(db_session)
+        self.crud = CrudAlertFilterRule(
+            db_session=db_session
+        )
 
     async def get_by_id(
         self,
@@ -51,7 +56,8 @@ class AlertFilterRuleService:
     ) -> List[AlertFilterRule]:
 
         return await self.crud.get_all_rules(
-            skip=skip, limit=limit
+            skip=skip,
+            limit=limit
         )
 
     async def create(
@@ -71,13 +77,17 @@ class AlertFilterRuleService:
                 "already exists."
             )
 
-        db_rule = AlertFilterRule.model_validate(rule_in)
+        db_rule = AlertFilterRule.model_validate(
+            rule_in
+        )
 
         new_rule = await self.crud.create_rule(
             rule=db_rule
         )
         await self.db_session.commit()
-        await self.db_session.refresh(new_rule)
+        await self.db_session.refresh(
+            instance=new_rule
+        )
 
         return new_rule
 
@@ -120,7 +130,7 @@ class AlertFilterRuleService:
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            updated_rule
+            instance=updated_rule
         )
 
         return updated_rule
