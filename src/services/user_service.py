@@ -182,7 +182,7 @@ class UserService:
 
         await self.db_session.commit()
         await self.db_session.refresh(
-            created_user
+            instance=created_user
         )
 
         if not created_user.is_system_user:
@@ -587,13 +587,20 @@ class UserService:
         ) != "password_reset":
 
             raise InvalidInputException(
-                "Invalid or expired "
-                "password reset token."
+                detail=(
+                    "Invalid or expired "
+                    "password reset token."
+                )
             )
 
-        user_id = UUID(
-            payload.get("sub")
-        )
+        try:
+            user_id = UUID(
+                payload.get("sub")
+            )
+        except (ValueError, TypeError):
+            raise InvalidInputException(
+                detail="Invalid user identifier in token."
+            )
 
         user = await \
             self.crud_user.get_user_by_id(
@@ -664,8 +671,14 @@ class UserService:
                 "Invalid or expired email "
                 "verification token."
             )
-
-        user_id = UUID(payload.get("sub"))
+        try:
+            user_id = UUID(
+                payload.get("sub")
+            )
+        except (ValueError, TypeError):
+            raise InvalidInputException(
+                detail="Invalid user identifier in token."
+            )
 
         user = await \
             self.crud_user.get_user_by_id(
@@ -679,7 +692,7 @@ class UserService:
         ):
 
             raise InvalidInputException(
-                "Invalid token or user state."
+                detail="Invalid token or user state."
             )
 
         if not verify_password(
@@ -687,7 +700,7 @@ class UserService:
             hashed_password=user.email_verification_token
         ):
             raise InvalidInputException(
-                "Invalid email verification token."
+                detail="Invalid email verification token."
             )
 
         update_data = {
