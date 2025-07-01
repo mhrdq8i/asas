@@ -12,55 +12,78 @@ from src.models.enums import (
 )
 
 
-# =================================================================================
 # Reusable Schemas for JSON fields
-# =================================================================================
 
 class DeepRCAItem(BaseModel):
+
     title: str = Field(
         ...,
-        description="The title or category of the RCA finding."
+        description=(
+            "The title or category "
+            "of the RCA finding."
+        )
     )
+
     analysis: str = Field(
         ...,
-        description="The detailed analysis for this finding."
+        description=(
+            "The detailed analysis "
+            "for this finding."
+        )
     )
 
 
-# =================================================================================
 # ContributingFactor Schemas
-# =================================================================================
 
 class ContributingFactorBase(BaseModel):
-    factor_type: FactorTypeEnum = FactorTypeEnum.UNKNOWN
+
+    factor_type: FactorTypeEnum = \
+        FactorTypeEnum.UNKNOWN
+
     description: str
 
 
-class ContributingFactorCreate(ContributingFactorBase):
+class ContributingFactorCreate(
+    ContributingFactorBase
+):
     pass
 
 
 class ContributingFactorUpdate(BaseModel):
-    factor_type: Optional[FactorTypeEnum] = None
-    description: Optional[str] = None
+
+    factor_type: Optional[
+        FactorTypeEnum
+    ] = None
+
+    description: Optional[
+        str
+    ] = None
 
 
-class ContributingFactorRead(ContributingFactorBase):
+class ContributingFactorRead(
+    ContributingFactorBase
+):
+
     id: UUID
 
     class Config:
         from_attributes = True
 
-# =================================================================================
-# ActionItem Schemas
-# =================================================================================
 
+# ActionItem Schemas
 
 class ActionItemBase(BaseModel):
+
     description: str
+
     due_date: date
-    status: ActionItemStatusEnum = ActionItemStatusEnum.OPEN
-    owner_user_id: Optional[UUID] = None
+
+    status: ActionItemStatusEnum = \
+        ActionItemStatusEnum.OPEN
+
+    owner_user_id: Optional[
+        UUID
+    ] = None
 
 
 class ActionItemCreate(ActionItemBase):
@@ -68,77 +91,130 @@ class ActionItemCreate(ActionItemBase):
 
 
 class ActionItemUpdate(BaseModel):
+
     description: Optional[str] = None
+
     due_date: Optional[date] = None
-    status: Optional[ActionItemStatusEnum] = None
-    owner_user_id: Optional[UUID] = None
+
+    status: Optional[
+        ActionItemStatusEnum
+    ] = None
+
+    owner_user_id: Optional[
+        UUID
+    ] = None
 
 
 class ActionItemRead(ActionItemBase):
     id: UUID
-    # ToDo: Add owner_user details if needed by creating a UserRead schema
+    # TODO: Add owner_user details if
+    # TODO: needed by creating a UserRead schema
 
     class Config:
         from_attributes = True
 
-# =================================================================================
-# PostMortemApproval Schemas
-# =================================================================================
 
+# PostMortemApproval Schemas
 
 class PostMortemApprovalBase(BaseModel):
+
     role: RolesEnum
+
     approver_user_id: UUID
+
     approval_date: date
 
 
-class PostMortemApprovalCreate(PostMortemApprovalBase):
+class PostMortemApprovalCreate(
+    PostMortemApprovalBase
+):
     pass
 
 
-class PostMortemApprovalRead(PostMortemApprovalBase):
+class PostMortemApprovalRead(
+    PostMortemApprovalBase
+):
     id: UUID
-    # ToDo: Add approver_user details if needed
+    # TODO: Add approver_user details if needed
 
     class Config:
         from_attributes = True
 
-# =================================================================================
-# PostMortem Schemas
-# =================================================================================
 
+# PostMortem Schemas
 
 class PostMortemBase(BaseModel):
-    status: PostMortemStatusEnum = PostMortemStatusEnum.DRAFT
+
+    status: PostMortemStatusEnum = \
+        PostMortemStatusEnum.DRAFT
+
     links: Optional[str] = None
-    deep_rca: List[DeepRCAItem] = Field(default_factory=list)
-    lessons_learned: List[str] = Field(default_factory=list)
+
+    deep_rca: List[
+        DeepRCAItem
+    ] = Field(
+        default_factory=list
+    )
+
+    lessons_learned: List[
+        str
+    ] = Field(
+        default_factory=list
+    )
 
 
 class PostMortemCreate(BaseModel):
-    # Only incident_id is needed to create a draft post-mortem.
+
+    # Only incident_id is needed
+    # to create a draft post-mortem.
     # The rest can be added via update endpoints.
     incident_id: UUID
 
 
 class PostMortemUpdate(BaseModel):
-    status: Optional[PostMortemStatusEnum] = None
+
+    status: Optional[
+        PostMortemStatusEnum
+    ] = None
+
     links: Optional[str] = None
-    deep_rca: Optional[List[DeepRCAItem]] = None
-    lessons_learned: Optional[List[str]] = None
+
+    deep_rca: Optional[
+        List[DeepRCAItem]
+    ] = None
+
+    lessons_learned: Optional[
+        List[str]
+    ] = None
 
 
 class PostMortemRead(PostMortemBase):
+
     id: UUID
+
     incident_id: UUID
-    date_completed_utc: Optional[datetime]
+
+    date_completed_utc: Optional[
+        datetime
+    ]
+
     created_at: datetime
+
     updated_at: datetime
 
     # Nested data
-    contributing_factors: List[ContributingFactorRead] = []
-    action_items: List[ActionItemRead] = []
-    approvals: List[PostMortemApprovalRead] = []
+
+    contributing_factors: List[
+        ContributingFactorRead
+    ] = []
+
+    action_items: List[
+        ActionItemRead
+    ] = []
+
+    approvals: List[
+        PostMortemApprovalRead
+    ] = []
 
     class Config:
         from_attributes = True
