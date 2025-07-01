@@ -85,7 +85,7 @@ app = FastAPI(
     redoc_url="/api/v1/redoc"
 )
 
-register_error_handlers(app)
+register_error_handlers(app=app)
 
 print(
     "Custom error handlers registered "
@@ -168,7 +168,8 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     print(
-        "Starting Uvicorn server programmatically"
+        "Starting Uvicorn "
+        "server programmatically"
     )
 
     server_host = getattr(

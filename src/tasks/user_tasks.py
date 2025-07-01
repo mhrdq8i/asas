@@ -75,7 +75,7 @@ async def _send_verification_email_async(
 
         update_data = {
             "email_verification_token": get_password_hash(
-                email_verification_token
+                password=email_verification_token
             )
         }
 
