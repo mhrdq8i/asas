@@ -13,7 +13,10 @@ from src.models.alert_filter_rule import (
 
 class CrudAlertFilterRule:
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(
+            self,
+            db_session: AsyncSession
+    ):
         self.db = db_session
 
     async def create_rule(
@@ -24,7 +27,9 @@ class CrudAlertFilterRule:
 
         self.db.add(rule)
         await self.db.flush()
-        await self.db.refresh(rule)
+        await self.db.refresh(
+            instance=rule
+        )
 
         return rule
 
@@ -34,11 +39,15 @@ class CrudAlertFilterRule:
         rule_id: UUID
     ) -> Optional[AlertFilterRule]:
 
-        statement = select(AlertFilterRule).where(
+        statement = select(
+            AlertFilterRule
+        ).where(
             AlertFilterRule.id == rule_id
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.first()
 
@@ -48,11 +57,15 @@ class CrudAlertFilterRule:
         name: str
     ) -> Optional[AlertFilterRule]:
 
-        statement = select(AlertFilterRule).where(
+        statement = select(
+            AlertFilterRule
+        ).where(
             AlertFilterRule.rule_name == name
         )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return result.first()
 
@@ -63,11 +76,19 @@ class CrudAlertFilterRule:
         limit: int = 100
     ) -> List[AlertFilterRule]:
 
-        statement = select(AlertFilterRule).order_by(
+        statement = select(
+            AlertFilterRule
+        ).order_by(
             AlertFilterRule.rule_name
-        ).offset(offset=skip).limit(limit=limit)
+        ).offset(
+            offset=skip
+        ).limit(
+            limit=limit
+        )
 
-        result = await self.db.exec(statement)
+        result = await self.db.exec(
+            statement=statement
+        )
 
         return list(result.all())
 
@@ -107,10 +128,12 @@ class CrudAlertFilterRule:
                     value
                 )
 
-        self.db.add(db_rule)
+        self.db.add(
+            instance=db_rule
+        )
         await self.db.flush()
         await self.db.refresh(
-            db_rule
+            instance=db_rule
         )
 
         return db_rule
@@ -121,5 +144,7 @@ class CrudAlertFilterRule:
         rule: AlertFilterRule
     ) -> None:
 
-        await self.db.delete(rule)
+        await self.db.delete(
+            instance=rule
+        )
         await self.db.flush()
