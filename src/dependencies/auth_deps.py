@@ -94,14 +94,19 @@ async def get_current_user(
                 )
             )
 
-        # Assumes 'sub' claim in the JWT payload is the username.
-        user = await user_service.crud_user.get_user_by_username(
-            username=token_sub
-        )
+        # Assumes 'sub' claim in the
+        # JWT payload is the username.
+        user = await \
+            user_service.crud_user.get_user_by_username(
+                username=token_sub
+            )
 
-    # Covers various JWT issues like signature, expiry etc
+    # Covers various JWT issues
+    # like signature, expiry etc
     except JWTError:
-        # Log the specific JWTError for debugging if needed
+
+        # Log the specific JWTError
+        # for debugging if needed
         raise NotAuthenticatedException(
             detail=(
                 "Could not validate credentials "
@@ -110,14 +115,17 @@ async def get_current_user(
             )
         )
 
-    # Re-raise the custom exception to be handled by FastAPI.
+    # Re-raise the custom exception
+    # to be handled by FastAPI.
     except NotAuthenticatedException:
         raise
 
-    # Catch any other unexpected errors during token processing
+    # Catch any other unexpected
+    # errors during token processing
     except Exception as e:
         print(
-            f"Unexpected error during token processing: {e}"
+            "Unexpected error during "
+            f"token processing: {e}"
         )
 
         raise NotAuthenticatedException(
