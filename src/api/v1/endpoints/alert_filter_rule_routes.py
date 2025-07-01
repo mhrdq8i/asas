@@ -43,7 +43,9 @@ async def create_alert_filter_rule(
     rule_in: AlertFilterRuleCreate,
     service: Annotated[
         AlertFilterRuleService,
-        Depends(get_alert_filter_rule_service)
+        Depends(
+            get_alert_filter_rule_service
+        )
     ]
 ) -> AlertFilterRuleRead:
 
@@ -63,7 +65,9 @@ async def create_alert_filter_rule(
 async def get_all_alert_filter_rules(
     service: Annotated[
         AlertFilterRuleService,
-        Depends(get_alert_filter_rule_service)
+        Depends(
+            get_alert_filter_rule_service
+        )
     ],
     skip: int = 0,
     limit: int = 100
@@ -107,7 +111,9 @@ async def update_alert_filter_rule(
     update_data: AlertFilterRuleUpdate,
     service: Annotated[
         AlertFilterRuleService,
-        Depends(get_alert_filter_rule_service)
+        Depends(
+            get_alert_filter_rule_service
+        )
     ]
 ) -> AlertFilterRuleRead:
 
