@@ -248,19 +248,23 @@ async def update_incident_impacts(
     ],
 ) -> IncidentRead:
     """
-    Update the impacts section of an incident.
+    Update the impacts section
+    of an incident.
     Only the commander or an
     admin can perform this action.
     """
+
     try:
         await incident_service.update_incident_impacts(
             incident_id=incident_id,
             update_data=update_data,
             current_user=current_user
         )
+
         return await incident_service.get_incident_by_id(
             incident_id=incident_id
         )
+
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,
@@ -413,11 +417,13 @@ async def delete_incident(
     Delete an incident.
     Requires superuser privileges.
     """
+
     try:
         await incident_service.delete_incident(
             incident_id=incident_id,
             current_user=current_user
         )
+
     except AppException as e:
         raise HTTPException(
             status_code=e.status_code,

@@ -80,15 +80,18 @@ async def _send_incident_notification_async(incident_id: UUID):
             )
 
             logger.info(
-                f"Successfully sent notification for incident {incident_id}."
+                "Successfully sent notification "
+                f"for incident {incident_id}."
             )
 
         except Exception as e:
             logger.error(
-                f"Error in notification task for incident {incident_id}: {e}",
+                "Error in notification task "
+                f"for incident {incident_id}: {e}",
                 exc_info=True
             )
-            # Re-raise the exception to mark the Celery task as failed
+            # Re-raise the exception to
+            # mark the Celery task as failed
             raise
 
         finally:
@@ -100,7 +103,8 @@ async def _send_incident_notification_async(incident_id: UUID):
 @celery_app.task(name="tasks.create_incident")
 def send_incident_notification(incident_id: str):
     """
-    Celery task to send a notification for a new incident.
+    Celery task to send a notification
+    for a new incident.
     Manages the asyncio event loop
     correctly for long-running workers.
     """
@@ -127,7 +131,8 @@ def send_incident_notification(incident_id: str):
         )
 
     except Exception as e:
-        # Log the actual exception with its traceback.
+        # Log the actual exception
+        # with its traceback.
         logger.critical(
             "Execution of incident notification "
             f"task for {incident_id}: {e} failed.",
