@@ -23,7 +23,6 @@ celery_app.conf.update(
 # This dictionary tells Celery Beat
 # what tasks to run and when.
 celery_app.conf.beat_schedule = {
-    # A descriptive name for the scheduled task
     'fetch-alerts-periodically': {
         # The full path to the task function
         'task': 'tasks.fetch_and_process_alerts',
