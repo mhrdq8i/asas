@@ -2,12 +2,16 @@
   "cSpell.words": [
     "alertname",
     "autoflush",
+    "healthcheck",
+    "isready",
     "levelname",
+    "loglevel",
     "onupdate",
     "pwdlib",
     "redoc",
     "selectinload",
     "sessionmaker",
-    "uselist"
+    "uselist",
+    "uvicorn"
   ]
 }

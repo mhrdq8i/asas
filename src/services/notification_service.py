@@ -87,8 +87,7 @@ class NotificationService:
             <p><strong>Status:</strong> {incident.profile.status.value}</p>
             <p>
             <strong>Commander:</strong>
-            {incident.profile.commander.username \
-             if incident.profile.commander else 'N/A'}
+            {incident.profile.commander.username if incident.profile.commander else 'N/A'}
             </p>
             <hr>
             <h3>Summary:</h3>

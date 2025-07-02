@@ -164,20 +164,19 @@ class UserService:
             hashed_password=hashed_password
         )
 
-        created_user = await \
-            self.crud_user.create_user(
-                user_in=user_data
-            )
-
         if user_in.is_system_user:
-
-            user_in.is_active = True
-            user_in.role = UserRoleEnum.SYS_USER
+            user_data.is_email_verified = True
+            user_data.role = UserRoleEnum.SYS_USER
 
             logger.info(
                 "Service user flag detected. "
                 "Setting role to SYSTEM_USER "
                 "and activating user."
+            )
+
+        created_user = await \
+            self.crud_user.create_user(
+                user_in=user_data
             )
 
         await self.db_session.commit()

@@ -34,9 +34,11 @@ class UserBase(BaseModel):
 
     is_superuser: bool = False
 
-    is_commander: bool = False
+    is_commander: bool = True
 
     is_system_user: bool = False
+
+    is_email_verified: bool = False
 
     avatar_url: str | None = None
 
@@ -51,16 +53,13 @@ class UserCreate(UserBase):
     Requires a plain password.
     """
 
-    role: UserRoleEnum = UserRoleEnum.VIEWER
+    role: str = PydanticField(
+        default=UserRoleEnum.VIEWER
+    )
 
     password: str = PydanticField(
         min_length=8,
         description="User password"
-    )
-
-    is_system_user: bool = PydanticField(
-        default=False,
-        exclude=True
     )
 
     is_superuser: bool = PydanticField(
@@ -89,7 +88,7 @@ class UserUpdate(BaseModel):
 
     is_superuser: bool | None = None
 
-    role: UserRoleEnum | None = None
+    role: str | None = None
 
     avatar_url: str | None = None
 
@@ -105,21 +104,17 @@ class UserRead(UserBase):
     """
 
     id: UUID
-    # Role should be included
-    # in the read model
 
-    role: UserRoleEnum
+    role: str
 
     created_at: datetime | None = None
 
     updated_at: datetime | None = None
-    # Value will come from
-    # the DB model instance
-
-    is_email_verified: bool
 
     last_login_at: datetime | None = None
 
+    # Value will come from
+    # the DB model instance
     class Config:
         from_attributes = True
 
@@ -141,7 +136,7 @@ class UserCreateInternal(UserBase):
 
     hashed_password: str
 
-    role: UserRoleEnum
+    role: str
 
     # Logic: a system user is
     # considered verified by default.

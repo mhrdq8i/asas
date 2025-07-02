@@ -300,8 +300,8 @@ class Settings(BaseSettings):
             ):
 
                 raise ValueError(
-                    "If MAIL_USERNAME is provided and\
-                         non-empty, MAIL_PASSWORD must also be "
+                    "If MAIL_USERNAME is provided and"
+                    "non-empty, MAIL_PASSWORD must also be "
                     "provided and non-empty in the .env file."
                 )
 

@@ -61,8 +61,10 @@ async def login_for_access_token(
     get an access token for future requests.
     """
 
-    client_ip = \
-        request.client.host if request.client else None
+    if request.client:
+        client_ip = request.client.host
+    else:
+        client_ip = None
 
     try:
         user = await user_service.authenticate_user(

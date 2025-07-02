@@ -51,6 +51,14 @@ class User(BaseEntity, table=True):
     ]
 
     # User status and roles
+    role: Annotated[
+        str,
+        Field(
+            default=UserRoleEnum.VIEWER,
+            nullable=False
+        )
+    ]
+
     is_active: Annotated[
         bool,
         Field(
@@ -93,29 +101,21 @@ class User(BaseEntity, table=True):
         )
     ]
 
-    role: Annotated[
-        UserRoleEnum,
+    # Email fields
+    is_email_verified: Annotated[
+        bool,
         Field(
-            default=UserRoleEnum.VIEWER,
+            default=False,
             nullable=False
         )
     ]
 
-    # Email fields
     email: Annotated[
         EmailStr, Field(
             index=True,
             unique=True,
             nullable=False,
             max_length=255
-        )
-    ]
-
-    is_email_verified: Annotated[
-        bool,
-        Field(
-            default=False,
-            nullable=False
         )
     ]
 
