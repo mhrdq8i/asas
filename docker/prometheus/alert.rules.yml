@@ -1,0 +1,45 @@
+groups:
+  - name: TestAlerts
+    rules:
+      # Alert 1: This one SHOULD create an incident
+      - alert: HighCpuUsage
+        expr: vector(1) > 0
+        for: 1m
+        labels:
+          severity: critical
+          team: sre-team
+        annotations:
+          summary: "High CPU Usage on Core Server"
+          description: "CPU usage has been over 90% for more than 1 minute on the core application server."
+
+      # Alert 2: This one SHOULD ALSO create an incident
+      - alert: PaymentGatewayDown
+        expr: vector(1) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: payments
+        annotations:
+          summary: "Payment Gateway API is Unresponsive"
+          description: "The primary payment gateway is not responding to health checks."
+
+      # Alert 3: This one SHOULD BE IGNORED by our filter
+      - alert: HighMemoryUsage
+        expr: vector(1) > 0
+        for: 1m
+        labels:
+          severity: high # Note: not 'critical'
+          team: database-admins
+        annotations:
+          summary: "High Memory Usage on DB Server"
+          description: "The main database server is using over 95% of its available memory."
+
+      # Alert 4: This one SHOULD BE IGNORED as well
+      - alert: LowDiskSpace
+        expr: vector(1) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low Disk Space on Log Server"
+          description: "The log aggregation server has less than 10% disk space remaining."
