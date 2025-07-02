@@ -2,8 +2,8 @@ from datetime import datetime
 from typing import Annotated, List
 
 from pydantic import EmailStr
-from sqlmodel import Field, Relationship, DateTime
 from sqlalchemy import Column, Text
+from sqlmodel import Field, Relationship, DateTime
 
 from src.models.enums import UserRoleEnum
 from src.models.base import BaseEntity

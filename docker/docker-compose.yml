@@ -1,52 +1,98 @@
-version: "3.7"
-
 services:
-  prometheus:
-    image: prom/prometheus:v2.53.5
-    container_name: prometheus
-    restart: unless-stopped
+  database:
+    image: postgres:16-bookworm
+    container_name: postgres
     volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
-      - "--web.console.templates=/usr/share/prometheus/consoles"
-      - "--web.enable-lifecycle"
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
     ports:
-      - "9090:9090"
+      - "5432:5432"
+    healthcheck:
+      test:
+        ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - monitoring_net
-
-  alertmanager:
-    image: prom/alertmanager:v0.28.1
-    container_name: alertmanager
-    restart: unless-stopped
-    volumes:
-      - ./alertmanager:/config
-      - alertmanager_data:/alertmanager
-    command:
-      - "--config.file=/config/config.yml"
-      - "--storage.path=/alertmanager"
-    ports:
-      - "9093:9093"
-    networks:
-      - monitoring_net
+      - app-network
 
   redis:
     image: redis:8.0.2-bookworm
     container_name: redis
-    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
-      - monitoring_net
+      - app-network
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: asas
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+    entrypoint: /app/docker/entrypoint.sh
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: celery
+    command: celery -A src.core.celery.celery_app worker --loglevel=info
+    volumes:
+      - ../:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - redis
+      - api
+      - database
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.53.5
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+    networks:
+      - app-network
 
 volumes:
-  prometheus_data: {}
-  alertmanager_data: {}
+  postgres_data:
 
 networks:
-  monitoring_net:
+  app-network:
     driver: bridge
