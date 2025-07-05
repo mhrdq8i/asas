@@ -1,154 +1,102 @@
-# Incident Template
+# Incident Management System
 
-## Incident Profile
+## Summary
 
-- **Incident ID:** UUID
-- **Title:** Main incident title
-- **Severity:** Sev-Levels
-- **Date/Time Detected (UTC):** 2025‑05‑18 07:42
-- **Detected By:** Prometheus Alert (SIP 5xx error rate)
-- **Incident Commander:** Maria Schuster
-- **Status**: [Open, Doing, Resolved]
-- **Summary**: Short Description
+This is a web-based [**Incident Management System**](Incident.md) designed to help teams track and manage incidents effectively. It provides a _centralized platform_ for **reporting**, **tracking**, **resolving** incidents.
 
-## Affects
+Conducting [**postmortems**](Postmortem.md), ensuring a **streamlined workflow**, **clear communication**, and **continuous improvement**.
 
-### Services Affected
+## Tech Stack
 
-- **SIP Proxy**
-- **Media Gateway**
-- **Call Detail Record (CDR) Ingestion**
+This project is built with a modern and robust technology stack:
 
-### Regions/Networks Affected
+- **Backend:** **Python** with the **Flask** _async_ framework.
+- **Database:** **PostgreSQL** for reliable and relational data storage.
+- **Task Queue:** **Celery** for running asynchronous background tasks.
+- **Message Broker & Cache:** **Redis** to work with Celery and for caching purposes.
+- **Containerization:** **Docker** and **Docker Compose** for creating a consistent development and deployment environment.
+- **Frontend:** Standard **HTML**, **CSS**, and **JavaScript** for the user interface.
 
-Southeast Asia (Philippines, Indonesia), Fiber Backbone Route SEA-07
+## Features
 
-## Resolution & Mitigation
+- **User Authentication & Authorization:**
 
-### Resolution Time (UTC)
+  - Secure user registration to create a new account.
+  - **JWT-based authentication:** User login is handled via JSON Web Tokens (JWT) for secure and stateless authentication.
+  - **Role-Based Access Control (RBAC):** The system supports different user roles (e.g., administrator, user), with specific permissions for actions like creating, updating, and managing incidents.
+  - Password hashing for enhanced security.
 
-2023-05-15 10:00
+- **Incident Reporting:**
 
-### Short‑Term Remediation (Mitigation Steps)
+  - Create new incidents with a title, detailed description, and priority level.
+  - Each incident is automatically assigned a unique ID and timestamp.
 
-1. **Rollback:** Reverted SBC config to pre‑change version (v3.4.7).
-2. **Traffic Shift:** Diverted 30 % of EU SIP traffic to DR proxy cluster.
-3. **Alert Adjustment:** Raised threshold for CDR lag alerts to prevent noise.
-4. **Restarted unhealthy** Cassandra nodes.
+- **Automated Incident Creation:**
 
-### Long‑Term Preventative Measures
+  - Define custom filters to monitor alerts from an external alert manager.
+  - Automatically create a new incident in the system when an alert matches your predefined criteria for critical issues.
 
-- **Automated SIP Tests:** Add CI jobs validating header‑rewrite rules against live‑like SIP traffic.
-- **Staging Expansion:** Mirror full SBC+Media Gateway topology for EU in staging.
-- **Runbook Enhancements:**
-  - Include explicit traffic‑shift steps.
-  - Add quick‑verify tests post‑rollback.
+- **Incident Tracking and Management:**
 
-## Impacts
+  - A central dashboard to view all reported incidents in a clear, tabular format.
+  - Each incident in the list displays its ID, title, status, priority, and creation date.
+  - Ability to update the status of an incident (e.g., "Open", "In Progress", "Closed").
 
-### Customer Impact
+- **Persistent Storage:**
+  - Incidents and user data are stored in a relational database, ensuring data is saved between sessions.
 
-- 2.3 million subscribers affected for 3.5 hours.
-- 120,000 IoT devices disconnected, impacting logistics partners.
+## Installation (with Docker)
 
-### Business Impact
+This project is configured to run in a Docker container, which makes the setup process straightforward.
 
-- Estimated $180,000 in lost revenue (based on SLA penalties).
+### Prerequisites
 
-## Root Cause Analysis (Shallow RCA)
+- **Docker:** You will need to have Docker installed on your system. You can download it from the official [Docker website](https://www.docker.com/products/docker-desktop).
+- **Docker Compose:** Docker Compose is included with Docker Desktop for Windows and macOS. On Linux, you may need to install it separately.
 
-### What Happened
+### Steps
 
-A new SIP header‑rewrite rule was deployed without validating the custom “X-Operator-Route” header, causing proxy mismatches and 5xx responses.
+1. **Clone the repository**
 
-### Why It Happened
+   ```sh
+   git clone https://github.com/mhrdq8i/asas.git
+   ```
 
-1. Deployment skipped end‑to‑end SIP tests in the EU pre‑prod environment.
-2. CI pipeline lacked automated SIP compliance checks.
-3. The rollback procedure did not include traffic‑shift instructions.
+2. **Navigate to the project directory**
 
-### Technical Cause
+   ```sh
+   cd asas/docker
+   ```
 
-Faulty query retry logic in v2.1.3 caused exponential load on Cassandra cluster.
+3. **Build and run the containers**
 
-### Detection Mechanism
+   Use Docker Compose to build the images and start the services in the background:
 
-- Automated Prometheus alert on “SIP 5xx error rate”
-- Elevated customer support tickets in Germany and France
+   ```sh
+   docker compose up --build -d
+   ```
 
-## Communications Log
+4. **Access the application**
 
-| Time (UTC) | Channel            | Message                                                           |
-| ---------- | ------------------ | ----------------------------------------------------------------- |
-| 07:47      | #sre-ops (Slack)   | “High SIP 5xx error rate detected in EU. Investigating.”          |
-| 07:58      | Status Page (Web)  | “Partial voice service degradation in Europe. Working on fix.”    |
-| 08:10      | #all-hands (Email) | “Incident update: rollback in progress; partial traffic shifted.” |
-| 08:55      | Status Page (Web)  | “Full service restored. Monitoring continues.”                    |
+   Once the containers are running, you should be able to access the application in your web browser. Typically, this will be at [http://localhost:8000] or another port if specified in your `docker-compose.yml` file.
 
-## Timeline of Events (Chronological Updates)
+5. **Stopping the application**
 
-| Time (UTC) | Event                                             | Owner/Team      |
-| ---------- | ------------------------------------------------- | --------------- |
-| 07:42      | Prometheus alert: SIP 5xx error rate at 2 %       | Monitoring Team |
-| 07:45      | Incident declared                                 | Maria Schuster  |
-| 07:50      | Identified recent SBC config push at 07:30 UTC    | Networking SRE  |
-| 07:56      | Rolled back SBC header‑rewrite rule               | Release Team    |
-| 08:05      | Error rate still 8 % → shifted 30 % traffic to DR | Networking SRE  |
-| 08:20      | Call success rate improves to 96.3 %              | On‑call SRE     |
-| 08:35      | Full traffic shifted to standby cluster           | Networking SRE  |
-| 08:50      | Metrics returned to baseline; incident resolved   | Maria Schuster  |
-| 09:00      | Post‑incident monitoring started                  | Monitoring Team |
+   To stop the running containers, you can use the following command:
 
-## Sign‑Off
+   ```sh
+   docker compose down
+   ```
 
-| **Role**             | **Approver**   | **Date**     |
-| -------------------- | -------------- | ------------ |
-| Incident Commander   | Maria Schuster |   2025‑05‑18 |
-| SRE Manager          | Lars Becker    |   2025‑05‑19 |
-| Telecom Ops Lead     | Antoine Dubois |   2025‑05‑19 |
+   Got it. That's a great way to handle API documentation. Here is a new section that directs users to the FastAPI-generated docs. This can be placed after the "Usage" section.
 
----
+## API Documentation
 
----
+This application provides a full REST API for interacting with the incident management system programmatically.
 
-## Post-Mortem (Completed)
+The API documentation is automatically generated by FastAPI and is available at the following endpoints when the application is running:
 
-### Metadata
+- **Swagger UI:** [http://localhost:8000/docs]
+- **ReDoc:** [http://localhost:5000/redoc]
 
-- **Incident number**
-- **Status**
-- **Document link**
-
-### Root Cause Analysis (Deep RCA)
-
-Completed part of the **Shallow RCA**
-
-- A code change in v2.1.3 introduced unbounded retries for failed database queries under high latency.
-- Cassandra nodes became overloaded, triggering cascading failures. Logs show CPU saturation at 95% for 30 minutes.
-
-### Contributing Factors
-
-- **Process Gap**: No canary deployment for database-critical changes.
-- **Tooling Gap**: Cluster health alerts relied on disk/memory metrics, not query throughput.
-
-### Lessons Learned
-
-1. Canary deployments required for all database-impacting changes.
-2. Improve alerting on query-per-second (QPS) thresholds.
-
-### Action Items
-
-Completed part of the **_Long‑Term Preventative Measures_**
-
-| **Task**                             | **Owner**       | **Due Date** | **Status**  |
-| ------------------------------------ | --------------- | ------------ | ----------- |
-| Implement canary deployment pipeline | CI/CD Team      | 2023-06-01   | In Progress |
-| Update Cassandra alerts for QPS      | Monitoring Team | 2023-05-25   | Completed   |
-| Add load-testing for retry logic     | Messaging Team  | 2023-06-15   | Open        |
-
-## Approvals
-
-| **Role**            | **Name**      | **Date**   |
-| ------------------- | ------------- | ---------- |
-| Incident Lead       | Alex Lee      | 2023-05-16 |
-| Engineering Manager | Sarah Johnson | 2023-05-16 |
+These interfaces allow you to explore all available API endpoints, view their parameters, and test them directly from your browser.
