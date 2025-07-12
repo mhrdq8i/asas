@@ -2,9 +2,9 @@
 
 ## Summary
 
-This is a web-based [**Incident Management System**](Incident.md) designed to help teams track and manage incidents effectively. It provides a _centralized platform_ for **reporting**, **tracking**, **resolving** incidents.
+This is a web-based [**Incident Management System**](doc/Incident.md) designed to help teams track and manage incidents effectively. It provides a _centralized platform_ for **reporting**, **tracking**, **resolving** incidents.
 
-Conducting [**postmortems**](Postmortem.md), ensuring a **streamlined workflow**, **clear communication**, and **continuous improvement**.
+Conducting [**Postmortems**](doc/Postmortem.md), ensuring a **streamlined workflow**, **clear communication**, and **continuous improvement**.
 
 ## Tech Stack
 
