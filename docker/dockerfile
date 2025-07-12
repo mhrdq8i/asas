@@ -21,7 +21,3 @@ RUN pip install --upgrade pip && \
 # Copy the rest of the application code from the build context
 # This will copy the entire project, including the 'docker' directory
 COPY . .
-
-# Run FastAPI with uvicorn
-# CMD ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "8000"]
-CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000", "src/main.py"]

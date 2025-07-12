@@ -1,10 +1,8 @@
 services:
   database:
     image: postgres:16-bookworm
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: asas_db
+    env_file:
+      - ./.env.prod
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
@@ -15,25 +13,28 @@ services:
 
   backend:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/dockerfile
+    # The docker-compose.yml command overrides the Dockerfile CMD
+    command: fastapi run --host 0.0.0.0 --port 8000 src/main.py
     env_file:
-      - .env.prod
+      - ./.env.prod
     depends_on:
       - database
       - redis
     ports:
-      - "80:8000"
+      - "8000:8000"
     volumes:
-      - .:/app
+      - ..:/app
     restart: always
 
   celery_worker:
     build:
-      context: .
+      context: ..
+      dockerfile: docker/dockerfile
     command: celery -A src.core.celery.celery_app worker --loglevel=info
     env_file:
-      - .env.prod
+      - ./.env.prod
     depends_on:
       - backend
       - redis
@@ -41,10 +42,11 @@ services:
 
   celery_beat:
     build:
-      context: .
+      context: ..
+      dockerfile: docker/dockerfile
     command: celery -A src.core.celery.celery_app beat --loglevel=info
     env_file:
-      - .env.prod
+      - ./.env.prod
     depends_on:
       - backend
       - redis

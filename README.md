@@ -10,7 +10,7 @@ Conducting [**postmortems**](Postmortem.md), ensuring a **streamlined workflow**
 
 This project is built with a modern and robust technology stack:
 
-- **Backend:** **Python** with the **Flask** _async_ framework.
+- **Backend:** **Python** with the **FastAPI** _async_ framework.
 - **Database:** **PostgreSQL** for reliable and relational data storage.
 - **Task Queue:** **Celery** for running asynchronous background tasks.
 - **Message Broker & Cache:** **Redis** to work with Celery and for caching purposes.
@@ -51,44 +51,178 @@ This project is configured to run in a Docker container, which makes the setup p
 
 ### Prerequisites
 
-- **Docker:** You will need to have Docker installed on your system. You can download it from the official [Docker website](https://www.docker.com/products/docker-desktop).
-- **Docker Compose:** Docker Compose is included with Docker Desktop for Windows and macOS. On Linux, you may need to install it separately.
+- **Docker:** You will need to have Docker installed on your system. For Linux, follow the [official Docker installation guide](https://docs.docker.com/engine/install/).
+- **Docker Compose:** Install Docker Compose following the [official installation guide](https://docs.docker.com/compose/install/). On most Linux distributions, you can install it via package manager:
+
+  ```bash
+  # Ubuntu/Debian
+  sudo apt-get update
+  sudo apt-get install docker-compose-plugin
+
+  # CentOS/RHEL/Fedora
+  sudo yum install docker-compose-plugin
+  ```
 
 ### Steps
 
 1. **Clone the repository**
 
-   ```sh
+   ```bash
    git clone https://github.com/mhrdq8i/asas.git
    ```
 
 2. **Navigate to the project directory**
 
-   ```sh
-   cd asas/docker
+   ```bash
+   cd asas
    ```
 
-3. **Build and run the containers**
+3. **Set up environment variables**
 
-   Use Docker Compose to build the images and start the services in the background:
+   Copy the example environment file and configure it as needed:
 
-   ```sh
+   ```bash
+   cp .env.example docker/.env.prod
+   ```
+
+   Edit `docker/.env.prod` to customize your configuration (database credentials, JWT secret, etc.):
+
+   ```bash
+   # Use your preferred editor
+   nano docker/.env.prod
+   # or
+   vim docker/.env.prod
+   ```
+
+4. **Build and run the containers**
+
+   Navigate to the docker directory and use Docker Compose to build and start the services:
+
+   ```bash
+   cd docker
    docker compose up --build -d
    ```
 
-4. **Access the application**
+5. **Access the application**
 
-   Once the containers are running, you should be able to access the application in your web browser. Typically, this will be at [http://localhost:8000] or another port if specified in your `docker-compose.yml` file.
+   Once the containers are running, you can access the application:
 
-5. **Stopping the application**
+   - **Web Application:** [http://localhost:80] (via nginx proxy)
+   - **Direct API Access:** [http://localhost:8000] (FastAPI backend)
 
-   To stop the running containers, you can use the following command:
+6. **Stopping the application**
 
-   ```sh
+   To stop the running containers, use the following command from the docker directory:
+
+   ```bash
    docker compose down
    ```
 
-   Got it. That's a great way to handle API documentation. Here is a new section that directs users to the FastAPI-generated docs. This can be placed after the "Usage" section.
+### Services
+
+The application consists of the following services:
+
+- **nginx:** Reverse proxy server (port 80)
+- **backend:** FastAPI application (port 8000)
+- **database:** PostgreSQL database (port 5432, internal)
+- **redis:** Redis cache and message broker (port 6379, internal)
+- **celery_worker:** Background task processor
+- **celery_beat:** Periodic task scheduler
+
+### Project Structure
+
+After following the installation steps, your Docker-related files will be organized as follows:
+
+```
+asas/
+├── docker/
+│   ├── .env.prod              # Environment variables
+│   ├── docker-compose.yml     # Docker Compose configuration
+│   ├── docker-run.sh          # Management script
+│   ├── dockerfile             # Backend service Dockerfile
+│   └── nginx.conf             # Nginx configuration
+├── src/                       # Application source code
+└── .env.example              # Example environment file
+```
+
+### Common Docker Commands
+
+Here are some useful Docker Compose commands for managing the application:
+
+**Option 1: Using the provided shell script (recommended)**
+
+```bash
+# Navigate to docker directory
+cd docker
+
+# Make the script executable
+chmod +x docker-run.sh
+
+# Start the application
+./docker-run.sh
+
+# Start with rebuild
+./docker-run.sh "up --build -d"
+
+# Stop the application
+./docker-run.sh "down"
+
+# View logs
+./docker-run.sh "logs -f"
+```
+
+**Option 2: Manual Docker Compose commands**
+
+```bash
+# Navigate to docker directory (if not already there)
+cd docker
+
+# Start the application
+docker compose up -d
+
+# Start with rebuild
+docker compose up --build -d
+
+# Stop the application
+docker compose down
+
+# View logs for all services
+docker compose logs -f
+
+# View logs for specific service
+docker compose logs -f backend
+
+# Restart a specific service
+docker compose restart backend
+
+# Check service status
+docker compose ps
+```
+
+### Troubleshooting
+
+**Permission Issues:**
+If you encounter permission issues with Docker, you may need to add your user to the docker group:
+
+```bash
+sudo usermod -aG docker $USER
+# Log out and log back in for changes to take effect
+```
+
+**Port Already in Use:**
+If ports 80 or 8000 are already in use, you can modify the port mappings in `docker/docker-compose.yml`:
+
+```yaml
+ports:
+  - "8080:80" # Change host port from 80 to 8080
+```
+
+**Database Connection Issues:**
+Ensure that the database service is fully started before other services by checking logs:
+
+```bash
+docker compose logs database
+```
 
 ## API Documentation
 
@@ -97,6 +231,6 @@ This application provides a full REST API for interacting with the incident mana
 The API documentation is automatically generated by FastAPI and is available at the following endpoints when the application is running:
 
 - **Swagger UI:** [http://localhost:8000/docs]
-- **ReDoc:** [http://localhost:5000/redoc]
+- **ReDoc:** [http://localhost:8000/redoc]
 
 These interfaces allow you to explore all available API endpoints, view their parameters, and test them directly from your browser.
