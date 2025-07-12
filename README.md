@@ -56,11 +56,11 @@ This project is configured to run in a Docker container, which makes the setup p
 
   ```bash
   # Ubuntu/Debian
-  sudo apt-get update
-  sudo apt-get install docker-compose-plugin
+  sudo apt update -y
+  sudo apt install -y docker-compose-plugin
 
   # CentOS/RHEL/Fedora
-  sudo yum install docker-compose-plugin
+  sudo yum install -y docker-compose-plugin
   ```
 
 ### Steps
