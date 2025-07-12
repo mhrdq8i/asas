@@ -1,32 +1,27 @@
 # Use an official Python runtime as a parent image
 FROM python:3.10.18-bookworm
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
 # Set the working directory in the container
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends \
   build-essential \
   libpq-dev \
-  && rm -rf /var/lib/apt/lists/*
+  gcc && \
+  rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 # This path is relative to the build context (project root)
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+  pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code from the build context
 # This will copy the entire project, including the 'docker' directory
 COPY . .
 
-# Make the entrypoint script executable
-# The path is relative to the workdir (/app) after the COPY . . command
-RUN chmod +x /app/docker/entrypoint.sh
-
-# Expose the port the app runs on
-EXPOSE 8000
+# Run FastAPI with uvicorn
+# CMD ["uvicorn", "src:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["fastapi", "run", "--host", "0.0.0.0", "--port", "8000", "src/main.py"]
